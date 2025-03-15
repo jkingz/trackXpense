@@ -10,6 +10,7 @@ const serilizeTransaction = (obj) => {
   if (obj.balance) {
     serialized.balance = obj.balance.toNumber();
   }
+  return serialized;
 };
 export async function createAccount(data) {
   try {
@@ -26,7 +27,9 @@ export async function createAccount(data) {
 
     //convert the balance into float
     const balanceFloat = parseFloat(data.balance);
-    if (isNaN(balance)) throw new Error('Invalid balance');
+    if (isNaN(balanceFloat)) {
+      throw new Error('Invalid balance');
+    }
 
     // check if this is the users first account
     const existingAccounts = await db.account.findMany({
