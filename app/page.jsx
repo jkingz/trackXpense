@@ -6,7 +6,10 @@ import {
   testimonialsData,
 } from '@/data/landing';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import Image from 'next/image';
+import Link from 'next/link';
+
 
 export default function Home() {
   return (
@@ -94,6 +97,21 @@ export default function Home() {
               </Card>
             ))}
           </div>
+        </div>
+      </section>
+      {/* CTA Section */}
+      <section className="bg-blue-600 py-20">
+        <div className="container text-center mx-auto px-4">
+          <h2 className="text-3xl font-bold text-white mb-4">
+            Take control of your finances
+          </h2>
+          <p className="text-blue-100 max-w-2xl mx-auto text-center mb-8">
+            Join now and be one of thousands of users who already managing their
+            finances smarter with TrackXpense
+          </p>
+          <Link href="/dashboard">
+            <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 animate-pulse">Start Free Trial</Button>
+          </Link>
         </div>
       </section>
     </div>
