@@ -1,17 +1,10 @@
 'use server';
 
+import { serilizeTransaction } from '@/app/lib/serialized-transaction';
 import { db } from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 
-const serilizeTransaction = (obj) => {
-  const serialized = { ...obj };
-
-  if (obj.balance) {
-    serialized.balance = obj.balance.toNumber();
-  }
-  return serialized;
-};
 export async function createAccount(data) {
   try {
     const { userId } = await auth();
@@ -66,4 +59,31 @@ export async function createAccount(data) {
   } catch (error) {
     throw new Error(error.message);
   }
+}
+
+export async function getUserAccounts() {
+  const { userId } = await auth();
+  //check if user is logged in
+  if (!userId) throw new Error('Unauthorized');
+
+  //check if user exists
+  const user = await db.user.findUnique({
+    where: { clerkUserId: userId },
+  });
+
+  //if user doesn't exist,
+  if (!user) throw new Error('User not found');
+
+  //get all accounts for this user
+  const accounts = await db.account.findMany({
+    where: { userId: user.id },
+    orderBy: { createdAt: 'desc' },
+    include: {
+      _count: {
+        select: { transactions: true },
+      },
+    },
+  });
+  const serializedAccount = accounts.map(serilizeTransaction);
+  return serializedAccount;
 }
