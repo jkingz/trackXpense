@@ -83,6 +83,13 @@ const TransactionsTable = ({ transactions }) => {
       });
     }
 
+    // Apply recurring filter
+    if (recurringFilter) {
+      result = result.filter((transaction) => {
+        if (recurringFilter === 'recurring') return transaction.isRecurring;
+        return !transaction.isRecurring;
+      });
+    }
     return result;
   }, [transactions, sortConfig, searchTerm, typeFilter, recurringFilter]);
 
