@@ -95,6 +95,25 @@ const TransactionsTable = ({ transactions }) => {
     if (typeFilter) {
       result = result.filter((transaction) => transaction.type === typeFilter);
     }
+
+    // Apply sorting
+    result.sort((a, b) => {
+      let comparison = 0;
+      switch (sortConfig.field) {
+        case 'date':
+          comparison = new Date(b.date) - new Date(a.date);
+          break;
+        case 'category':
+          comparison = a.category.localeCompare(b.category);
+          break;
+        case 'amount':
+          comparison = a.amount - b.amount;
+          break;
+        default:
+          comparison = 0;
+      }
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
+    });
     return result;
   }, [transactions, sortConfig, searchTerm, typeFilter, recurringFilter]);
 
@@ -265,11 +284,8 @@ const TransactionsTable = ({ transactions }) => {
                     ))}
                 </div>
               </TableHead>
-              <TableHead
-                className="cursor-pointer"
-                onClick={() => handleSort('amount')}
-              >
-                <div className="flex items-center justify-end">Recurring</div>
+              <TableHead>
+                <div className="flex items-center">Recurring</div>
               </TableHead>
               <TableHead className="w-[50px]"></TableHead>
             </TableRow>
