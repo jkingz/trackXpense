@@ -45,7 +45,7 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 const RECURRING_INTERVALS = {
   DAILY: 'Daily',
@@ -67,7 +67,24 @@ const TransactionsTable = ({ transactions }) => {
   const [recurringFilter, setRecurringFilter] = useState('');
 
   // handle filtering
-  const filteredAndSortedTransactions = transactions;
+  const filteredAndSortedTransactions = useMemo(() => {
+    let result = [...transactions];
+
+    // Apply search filter
+    if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
+      result = result.filter((transaction) => {
+        return (
+          transaction.description?.toLowerCase().includes(searchLower) ||
+          transaction.category.toLowerCase().includes(searchLower) ||
+          transaction.amount.toString().includes(searchLower) ||
+          format(new Date(transaction.date), 'PP').includes(searchLower)
+        );
+      });
+    }
+
+    return result;
+  }, [transactions, sortConfig, searchTerm, typeFilter, recurringFilter]);
 
   // handle sorting
   const handleSort = (field) => {
