@@ -68,6 +68,19 @@ const TransactionsTable = ({ transactions }) => {
     }));
   };
 
+  //handle selection
+  const handleSelectAll = (event) => {
+    if (event.target.checked) {
+      setSelectedIds(filteredAndSortedTransactions.map((transaction) => transaction.id));
+    } else {
+      setSelectedIds([]);
+    }
+
+  const handleSelect = (id) => {
+    setSelectedIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
+  };
+
+
   return (
     <div className="space-y-4">
       <div className="rounded-md border">
@@ -145,7 +158,7 @@ const TransactionsTable = ({ transactions }) => {
               filteredAndSortedTransactions.map((transaction) => (
                 <TableRow key={transaction.id}>
                   <TableCell>
-                    <Checkbox />
+                    <Checkbox onCheckChange={ () => handleSelect(transaction.id)} checked={selectedIds.includes(transaction.id)}/>
                   </TableCell>
                   <TableCell>
                     {format(new Date(transaction.date), 'PP')}
