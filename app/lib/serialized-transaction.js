@@ -1,4 +1,4 @@
-export const serilizeTransaction = (obj) => {
+export const serializeTransaction = (obj) => {
   const serialized = { ...obj };
 
   if (obj.balance) {

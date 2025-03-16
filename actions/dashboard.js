@@ -3,21 +3,13 @@
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 
-import { serilizeTransaction } from '@/app/lib/serialized-transaction';
+import { serializeTransaction } from '@/app/lib/serialized-transaction';
+import { userVerification } from '@/app/lib/user-verifications';
 import { db } from '@/lib/prisma';
 
 export async function createAccount(data) {
   try {
-    const { userId } = await auth();
-    //check if user is logged in
-    if (!userId) throw new Error('Unauthorized');
-
-    //check if user exists
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-    //if user doesn't exist,
-    if (!user) throw new Error('User not found');
+    const user = userVerification();
 
     //convert the balance into float
     const balanceFloat = parseFloat(data.balance);
@@ -52,7 +44,7 @@ export async function createAccount(data) {
       },
     });
     // serilize the account balance
-    const serializedAccount = serilizeTransaction(account);
+    const serializedAccount = serializeTransaction(account);
 
     // refetch the values of a page
     revalidatePath('/dashboard');
@@ -85,6 +77,6 @@ export async function getUserAccounts() {
       },
     },
   });
-  const serializedAccount = accounts.map(serilizeTransaction);
+  const serializedAccount = accounts.map(serializeTransaction);
   return serializedAccount;
 }
