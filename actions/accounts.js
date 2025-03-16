@@ -1,14 +1,24 @@
 'use server';
 
+import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 
 import { serializeTransaction } from '@/app/lib/serialized-transaction';
-import { userVerification } from '@/app/lib/user-verifications';
 import { db } from '@/lib/prisma';
 
 export async function updateDefaultAccount(accountId) {
   try {
-    const user = userVerification();
+    const { userId } = await auth();
+    //check if user is logged in
+    if (!userId) throw new Error('Unauthorized');
+
+    //check if user exists
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    //if user doesn't exist,
+    if (!user) throw new Error('User not found');
 
     // set all other accounts to false
     await db.account.updateMany({
@@ -31,7 +41,18 @@ export async function updateDefaultAccount(accountId) {
 
 export async function getAccountsWithTransactions(accountId) {
   try {
-    const user = userVerification();
+    const { userId } = await auth();
+    //check if user is logged in
+    if (!userId) throw new Error('Unauthorized');
+
+    //check if user exists
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    //if user doesn't exist,
+    if (!user) throw new Error('User not found');
+
     const account = await db.account.findUnique({
       where: { id: accountId, userId: user.id },
       include: {
