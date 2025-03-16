@@ -67,3 +67,59 @@ export async function getAccountsWithTransactions(accountId) {
     };
   } catch (error) {}
 }
+
+export async function bulkDeleteTransactions(transactionsIds) {
+  try {
+    const { userId } = await auth();
+    //check if user is logged in
+    if (!userId) throw new Error('Unauthorized');
+
+    //check if user exists
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    //if user doesn't exist,
+    if (!user) throw new Error('User not found');
+
+    //delete the transactions
+    const transactions = await db.transaction.findMany({
+      where: { id: { in: transactionsIds }, userId: user.id },
+    });
+
+    //recalculate the account balance
+    const accountBalanceChanges = transactions.reduce((acc, transaction) => {
+      const change =
+        transaction.type === 'EXPENSE'
+          ? transaction.amount
+          : -transaction.amount;
+
+      // accumulate the changes by account
+      acc[transaction.accountId] = (acc[transaction.accountId] || 0) + change;
+      return acc;
+    }, {});
+
+    // Delete transactions and update account balances in a single transaction
+    // Prisma transaction is used to ensure atomicity
+    await db.$transaction(async (tx) => {
+      // Delete transactions
+      await tx.transaction.deleteMany({
+        where: { id: { in: transactionsIds }, userId: user.id },
+      });
+      for (const [accountId, balanceChange] of Object.entries(
+        accountBalanceChanges
+      )) {
+        // Update account balance
+        await tx.account.update({
+          where: { id: accountId },
+          data: { balance: { increment: balanceChange } },
+        });
+      }
+    });
+    revalidatePath('/dashboard');
+    revalidatePath('account/[id]');
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
