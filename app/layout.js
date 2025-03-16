@@ -21,7 +21,7 @@ export default function RootLayout({ children }) {
       <html lang="en">
         <body className={`${poppins.className} `}>
           <Header />
-          <main className="min-h-screen">{children}</main>
+          <main className="min-h-screen w-screen">{children}</main>
           <Toaster richColors />
           <Footer />
         </body>
