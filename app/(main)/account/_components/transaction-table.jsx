@@ -10,6 +10,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -32,6 +40,9 @@ import {
   Clock,
   MoreHorizontal,
   RefreshCcw,
+  Search,
+  Trash,
+  X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -51,10 +62,9 @@ const TransactionsTable = ({ transactions }) => {
     field: 'date',
     direction: 'desc',
   });
-
-  const deleteFn = (ids) => {
-    console.log(ids);
-  };
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [recurringFilter, setRecurringFilter] = useState('');
 
   // handle filtering
   const filteredAndSortedTransactions = transactions;
@@ -68,7 +78,7 @@ const TransactionsTable = ({ transactions }) => {
     }));
   };
 
-  //handle selection
+  //handle single selection
   const handleSelect = (id) => {
     setSelectedIds((current) =>
       current.includes(id)
@@ -77,29 +87,109 @@ const TransactionsTable = ({ transactions }) => {
     );
   };
 
-  const handleSelectAll = () => {
-    setSelectedIds((current) =>
-      current.length === filteredAndSortedTransactions.length
-        ? []
-        : filteredAndSortedTransactions.map((t) => t.id)
-    );
+  // handle select all
+  const handleSelectAll = (checked) => {
+    if (checked) {
+      setSelectedIds((current) =>
+        current.length === filteredAndSortedTransactions.length
+          ? []
+          : filteredAndSortedTransactions.map((t) => t.id)
+      );
+    } else {
+      setSelectedIds([]);
+    }
   };
 
+  // Check if all rows are selected
+  const allSelected =
+    filteredAndSortedTransactions.length > 0 &&
+    selectedIds.length === filteredAndSortedTransactions.length;
+
+  // handle bulk delete
+  const handleBulkDelete = () => {
+    // Implement bulk delete logic here
+    console.log('Bulk delete selected transactions:', selectedIds);
+  };
+
+  // handle clear filter
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setTypeFilter('');
+    setRecurringFilter('');
+    setSelectedIds([]);
+  };
   return (
     <div className="space-y-4">
+      {/* {Filters section} */}
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search transactions..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-8 shadow-none focus:ring-1 focus:ring-ring border border-input"
+          />
+        </div>
+
+        {/* {Type filter} */}
+        <div className="flex items-center gap-2">
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger className="w-[110px]">
+              <SelectValue placeholder="All Types" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="INCOME">Income</SelectItem>
+              <SelectItem value="EXPENSE">Expense</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {/* {Recurring filter} */}
+          <Select
+            value={recurringFilter}
+            onValueChange={(value) => setRecurringFilter(value)}
+          >
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="All Transactions" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recurring">Recurring Only</SelectItem>
+              <SelectItem value="non-recurring">Non-Recurring Only</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {selectedIds.length > 0 && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => handleBulkDelete(selectedIds)}
+              >
+                <Trash className="mr-2 h-4 w-4" />
+                Delete Selected ({selectedIds.length})
+              </Button>
+            </div>
+          )}
+          {(searchTerm || typeFilter || recurringFilter) && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleClearFilters}
+              title="Clear Filters"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </div>
       <div className="rounded-md border">
-        {/* {Filters section} */}
         {/* {Table} */}
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px]">
                 <Checkbox
-                  checked={
-                    selectedIds.length ===
-                      filteredAndSortedTransactions.length &&
-                    filteredAndSortedTransactions > 0
-                  }
+                  checked={allSelected}
                   onCheckedChange={handleSelectAll}
                 />
               </TableHead>
@@ -172,6 +262,7 @@ const TransactionsTable = ({ transactions }) => {
                     <Checkbox
                       onCheckedChange={() => handleSelect(transaction.id)}
                       checked={selectedIds.includes(transaction.id)}
+                      aria-label="Select all transactions"
                     />
                   </TableCell>
                   <TableCell>
