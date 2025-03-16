@@ -1,15 +1,14 @@
 import HeroSection from '@/components/hero';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   featuresData,
   howItWorksData,
   statsData,
   testimonialsData,
 } from '@/data/landing';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import Link from 'next/link';
-
 
 export default function Home() {
   return (
@@ -110,7 +109,12 @@ export default function Home() {
             finances smarter with TrackXpense
           </p>
           <Link href="/dashboard">
-            <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 animate-pulse">Start Free Trial</Button>
+            <Button
+              size="lg"
+              className="bg-white text-blue-600 hover:bg-blue-50 animate-pulse"
+            >
+              Start Free Trial
+            </Button>
           </Link>
         </div>
       </section>

@@ -7,8 +7,8 @@ const nextConfig = {
         hostname: "randomuser.me",
         port: "",
       },
-    ]
-  }
+    ],
+  },
 };
 
 export default nextConfig;

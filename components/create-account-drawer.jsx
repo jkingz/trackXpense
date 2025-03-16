@@ -1,21 +1,21 @@
 'use client';
-import React, { useState, useEffect } from 'react';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useForm } from 'react-hook-form';
 import useFetch from '@/hooks/use-fetch';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Loader2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import { Button } from '@/components/ui/button';
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerHeader,
   DrawerTitle,
-  DrawerDescription,
-  DrawerFooter,
   DrawerTrigger,
-  DrawerClose,
 } from '@/components/ui/drawer';
+import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -23,12 +23,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 
-import { accountSchema } from '@/app/lib/schema';
 import { createAccount } from '@/actions/dashboard';
+import { accountSchema } from '@/app/lib/schema';
 
 const CreateAccountDrawer = ({ children }) => {
   const [open, setOpen] = useState(false);

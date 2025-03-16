@@ -1,9 +1,10 @@
 'use server';
 
-import { serilizeTransaction } from '@/app/lib/serialized-transaction';
-import { db } from '@/lib/prisma';
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
+
+import { serilizeTransaction } from '@/app/lib/serialized-transaction';
+import { db } from '@/lib/prisma';
 
 export async function createAccount(data) {
   try {

@@ -1,10 +1,10 @@
-import { Poppins } from 'next/font/google';
 import { ClerkProvider } from '@clerk/nextjs';
-import './globals.css';
-
-import Header from '@/components/header';
-import Footer from '@/components/footer';
+import { Poppins } from 'next/font/google';
 import { Toaster } from 'sonner';
+
+import Footer from '@/components/footer';
+import Header from '@/components/header';
+import './globals.css';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
         <body className={`${poppins.className} `}>
           <Header />
           <main className="min-h-screen">{children}</main>
-          <Toaster richColors/>
+          <Toaster richColors />
           <Footer />
         </body>
       </html>

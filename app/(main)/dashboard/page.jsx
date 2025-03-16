@@ -1,10 +1,10 @@
-import React from 'react';
+import React from "react";
 
-import CreateAccountDrawer from '@/components/create-account-drawer';
-import { Card, CardContent } from '@/components/ui/card';
-import { Plus } from 'lucide-react';
-import { getUserAccounts } from '@/actions/dashboard';
-import AccountCard from './_components/account-card';
+import CreateAccountDrawer from "@/components/create-account-drawer";
+import { Card, CardContent } from "@/components/ui/card";
+import { Plus } from "lucide-react";
+import { getUserAccounts } from "@/actions/dashboard";
+import AccountCard from "./_components/account-card";
 
 const DashBoardPage = async () => {
   const accounts = await getUserAccounts();
@@ -20,9 +20,10 @@ const DashBoardPage = async () => {
             </CardContent>
           </Card>
         </CreateAccountDrawer>
-        {accounts.length > 0 && accounts.map((account) => (
-          <AccountCard key={account.id} account={account} />
-        ))}
+        {accounts.length > 0 &&
+          accounts.map((account) => (
+            <AccountCard key={account.id} account={account} />
+          ))}
       </div>
     </div>
   );
