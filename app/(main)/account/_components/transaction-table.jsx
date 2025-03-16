@@ -69,17 +69,21 @@ const TransactionsTable = ({ transactions }) => {
   };
 
   //handle selection
-  const handleSelectAll = (event) => {
-    if (event.target.checked) {
-      setSelectedIds(filteredAndSortedTransactions.map((transaction) => transaction.id));
-    } else {
-      setSelectedIds([]);
-    }
-
   const handleSelect = (id) => {
-    setSelectedIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id]);
+    setSelectedIds((current) =>
+      current.includes(id)
+        ? current.filter((item) => item !== id)
+        : [...current, id]
+    );
   };
 
+  const handleSelectAll = () => {
+    setSelectedIds((current) =>
+      current.length === filteredAndSortedTransactions.length
+        ? []
+        : filteredAndSortedTransactions.map((t) => t.id)
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -90,7 +94,14 @@ const TransactionsTable = ({ transactions }) => {
           <TableHeader>
             <TableRow>
               <TableHead className="w-[50px]">
-                <Checkbox></Checkbox>
+                <Checkbox
+                  checked={
+                    selectedIds.length ===
+                      filteredAndSortedTransactions.length &&
+                    filteredAndSortedTransactions > 0
+                  }
+                  onCheckedChange={handleSelectAll}
+                />
               </TableHead>
               <TableHead
                 className="cursor-pointer"
@@ -158,7 +169,10 @@ const TransactionsTable = ({ transactions }) => {
               filteredAndSortedTransactions.map((transaction) => (
                 <TableRow key={transaction.id}>
                   <TableCell>
-                    <Checkbox onCheckChange={ () => handleSelect(transaction.id)} checked={selectedIds.includes(transaction.id)}/>
+                    <Checkbox
+                      onCheckedChange={() => handleSelect(transaction.id)}
+                      checked={selectedIds.includes(transaction.id)}
+                    />
                   </TableCell>
                   <TableCell>
                     {format(new Date(transaction.date), 'PP')}
