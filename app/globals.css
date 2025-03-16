@@ -120,7 +120,7 @@
 
   html {
     @apply scroll-smooth;
-    @apply overflow-x-hidden
+    @apply overflow-x-hidden;
   }
   body {
     @apply bg-background text-foreground;
