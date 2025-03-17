@@ -1,4 +1,5 @@
 'use client';
+import { bulkDeleteTransactions } from '@/actions/accounts';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -6,7 +7,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
@@ -33,6 +33,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { categoryColors } from '@/data/categories';
+import useFetch from '@/hooks/use-fetch';
 import { format } from 'date-fns';
 import {
   ChevronDown,
@@ -45,7 +46,9 @@ import {
   X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { BarLoader } from 'react-spinners';
+import { toast } from 'sonner';
 
 const RECURRING_INTERVALS = {
   DAILY: 'Daily',
@@ -153,11 +156,34 @@ const TransactionsTable = ({ transactions }) => {
     filteredAndSortedTransactions.length > 0 &&
     selectedIds.length === filteredAndSortedTransactions.length;
 
+  const {
+    loading: deleteLoading,
+    fn: deleteFn,
+    data: deleted,
+  } = useFetch(bulkDeleteTransactions);
+
   // handle bulk delete
-  const handleBulkDelete = () => {
-    // Implement bulk delete logic here
-    console.log('Bulk delete selected transactions:', selectedIds);
+  const handleBulkDelete = async () => {
+    console.log('Handle bulk delete, selected IDs:', selectedIds); // Log selection
+    if (
+      !window.confirm(
+        `Are you sure you want to delete these ${selectedIds.length} transactions?`
+      )
+    )
+      return;
+
+    const response = await deleteFn(selectedIds);
+    if (response?.success) {
+      setSelectedIds([]);
+      router.refresh();
+    }
   };
+
+  useEffect(() => {
+    if (deleted && !deleteLoading) {
+      toast.error('Transactions deleted');
+    }
+  }, [deleted, deleteLoading]);
 
   // handle clear filter
   const handleClearFilters = () => {
@@ -168,6 +194,9 @@ const TransactionsTable = ({ transactions }) => {
   };
   return (
     <div className="space-y-4">
+      {deleteLoading && (
+        <BarLoader className="mt-4" width={'100%'} height={5} color="#0ea5e9" />
+      )}
       {/* {Filters section} */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
@@ -211,10 +240,13 @@ const TransactionsTable = ({ transactions }) => {
               <Button
                 variant="destructive"
                 size="sm"
-                onClick={() => handleBulkDelete(selectedIds)}
+                onClick={handleBulkDelete}
+                disabled={deleteLoading || selectedIds.length === 0}
               >
                 <Trash className="mr-2 h-4 w-4" />
-                Delete Selected ({selectedIds.length})
+                {deleteLoading
+                  ? 'Deleting...'
+                  : `Delete Selected (${selectedIds.length})`}
               </Button>
             </div>
           )}
@@ -379,7 +411,7 @@ const TransactionsTable = ({ transactions }) => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
-                        <DropdownMenuLabel
+                        <DropdownMenuItem
                           onClick={() =>
                             router.push(
                               `/transaction/create?edit=${transaction.id}`
@@ -387,7 +419,7 @@ const TransactionsTable = ({ transactions }) => {
                           }
                         >
                           Edit
-                        </DropdownMenuLabel>
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           className="text-destructive"
