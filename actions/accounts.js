@@ -89,10 +89,11 @@ export async function bulkDeleteTransactions(transactionsIds) {
 
     //recalculate the account balance
     const accountBalanceChanges = transactions.reduce((acc, transaction) => {
+      const amount = parseFloat(transaction.amount); // Convert to number
       const change =
         transaction.type === 'EXPENSE'
-          ? transaction.amount
-          : -transaction.amount;
+          ? amount
+          : -amount;
 
       // accumulate the changes by account
       acc[transaction.accountId] = (acc[transaction.accountId] || 0) + change;
@@ -117,7 +118,8 @@ export async function bulkDeleteTransactions(transactionsIds) {
       }
     });
     revalidatePath('/dashboard');
-    revalidatePath('account/[id]');
+    const accountIds = [...new Set(transactions.map((t) => t.accountId))];
+    accountIds.forEach((id) => revalidatePath(`/account/${id}`));
     return { success: true };
   } catch (error) {
     return { success: false, error: error.message };
