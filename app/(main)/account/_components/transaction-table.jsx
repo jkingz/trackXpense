@@ -1,6 +1,17 @@
 'use client';
 import { bulkDeleteTransactions } from '@/actions/accounts';
 import PaginationControls from '@/components/pagination';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'; // Import Shadcn AlertDialog components
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -62,7 +73,7 @@ const ITEMS_PER_PAGE = 10;
 const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
   const router = useRouter();
   const urlSearchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition(); // Detect URL transitions
+  const [isPending, startTransition] = useTransition();
 
   const [selectedIds, setSelectedIds] = useState([]);
   const [searchTerm, setSearchTerm] = useState(searchParams.search || '');
@@ -70,6 +81,7 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
   const [recurringFilter, setRecurringFilter] = useState(
     searchParams.recurring || ''
   );
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // State for dialog
 
   const currentPage = parseInt(urlSearchParams.get('page') || '1', 10);
   const sortField = urlSearchParams.get('sortField') || 'date';
@@ -82,7 +94,6 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
     data: deleted,
   } = useFetch(bulkDeleteTransactions);
 
-  // Handle sorting
   const handleSort = (field) => {
     const newDirection =
       field === sortField && sortDirection === 'asc' ? 'desc' : 'asc';
@@ -92,7 +103,6 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
     startTransition(() => router.push(`?${params.toString()}`));
   };
 
-  // Handle single selection
   const handleSelect = (id) => {
     setSelectedIds((current) =>
       current.includes(id)
@@ -101,7 +111,6 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
     );
   };
 
-  // Handle select all
   const handleSelectAll = (checked) => {
     if (checked) {
       setSelectedIds((current) =>
@@ -117,20 +126,17 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
   const allSelected =
     transactions.length > 0 && selectedIds.length === transactions.length;
 
-  // Handle bulk delete
   const handleBulkDelete = async () => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete these ${selectedIds.length} transactions?`
-      )
-    )
-      return;
+    setIsDeleteDialogOpen(true); // Open the dialog instead of window.confirm
+  };
 
+  const confirmBulkDelete = async () => {
     const response = await deleteFn(selectedIds);
     if (response?.success) {
       setSelectedIds([]);
       router.refresh();
     }
+    setIsDeleteDialogOpen(false); // Close dialog after action
   };
 
   useEffect(() => {
@@ -139,7 +145,6 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
     }
   }, [deleted, deleteLoading]);
 
-  // Handle filter updates
   const updateSearchParams = (key, value) => {
     const params = new URLSearchParams(urlSearchParams.toString());
     if (value) {
@@ -147,11 +152,10 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
     } else {
       params.delete(key);
     }
-    params.set('page', '1'); // Reset to page 1 on filter change
+    params.set('page', '1');
     startTransition(() => router.push(`?${params.toString()}`));
   };
 
-  // Handle clear filters
   const handleClearFilters = () => {
     setSearchTerm('');
     setTypeFilter('');
@@ -162,12 +166,10 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
 
   return (
     <div className="space-y-4">
-      {/* Show BarLoader during delete or URL transitions */}
       {(deleteLoading || isPending) && (
-        <BarLoader className="mt-4" width={'100%'} height={5} color="#0ea5e9" />
+        <BarLoader className="mt-4" width={'100%'} height={5} color="#9333ea" />
       )}
 
-      {/* Filters section */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -217,17 +219,41 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
 
           {selectedIds.length > 0 && (
             <div className="flex items-center gap-2">
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleBulkDelete}
-                disabled={deleteLoading || selectedIds.length === 0}
+              <AlertDialog
+                open={isDeleteDialogOpen}
+                onOpenChange={setIsDeleteDialogOpen}
               >
-                <Trash className="mr-2 h-4 w-4" />
-                {deleteLoading
-                  ? 'Deleting...'
-                  : `Delete Selected (${selectedIds.length})`}
-              </Button>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    disabled={deleteLoading || selectedIds.length === 0}
+                  >
+                    <Trash className="mr-2 h-4 w-4" />
+                    {deleteLoading
+                      ? 'Deleting...'
+                      : `Delete Selected (${selectedIds.length})`}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Are you absolutely sure?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action cannot be undone. This will permanently delete{' '}
+                      {selectedIds.length} transaction(s) from your account.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={confirmBulkDelete}>
+                      Continue
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           )}
           {(searchTerm || typeFilter || recurringFilter) && (
@@ -421,6 +447,7 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
           currentPage={currentPage}
           totalPages={totalPages}
           searchParams={urlSearchParams}
+          startTransition={startTransition}
         />
       </div>
     </div>

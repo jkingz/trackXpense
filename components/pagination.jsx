@@ -15,6 +15,7 @@ const PaginationControls = ({
   totalPages,
   getPageNumbers,
   searchParams,
+  startTransition,
 }) => {
   const router = useRouter();
 
@@ -22,7 +23,7 @@ const PaginationControls = ({
     if (newPage >= 1 && newPage <= totalPages) {
       const params = new URLSearchParams(searchParams.toString());
       params.set('page', newPage.toString());
-      router.push(`?${params.toString()}`);
+      startTransition(() => router.push(`?${params.toString()}`));
     }
   }
 
