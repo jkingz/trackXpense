@@ -1,5 +1,6 @@
 'use client';
 import { bulkDeleteTransactions } from '@/actions/accounts';
+import PaginationControls from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -45,8 +46,8 @@ import {
   Trash,
   X,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, useTransition } from 'react';
 import { BarLoader } from 'react-spinners';
 import { toast } from 'sonner';
 
@@ -56,80 +57,42 @@ const RECURRING_INTERVALS = {
   MONTHLY: 'Monthly',
   YEARLY: 'Yearly',
 };
+const ITEMS_PER_PAGE = 10;
 
-const TransactionsTable = ({ transactions }) => {
+const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
   const router = useRouter();
+  const urlSearchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition(); // Detect URL transitions
 
   const [selectedIds, setSelectedIds] = useState([]);
-  const [sortConfig, setSortConfig] = useState({
-    field: 'date',
-    direction: 'desc',
-  });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [recurringFilter, setRecurringFilter] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.search || '');
+  const [typeFilter, setTypeFilter] = useState(searchParams.type || '');
+  const [recurringFilter, setRecurringFilter] = useState(
+    searchParams.recurring || ''
+  );
 
-  // handle filtering
-  const filteredAndSortedTransactions = useMemo(() => {
-    let result = [...transactions];
+  const currentPage = parseInt(urlSearchParams.get('page') || '1', 10);
+  const sortField = urlSearchParams.get('sortField') || 'date';
+  const sortDirection = urlSearchParams.get('sortDirection') || 'desc';
+  const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE);
 
-    // Apply search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      result = result.filter((transaction) => {
-        return (
-          transaction.description?.toLowerCase().includes(searchLower) ||
-          transaction.category.toLowerCase().includes(searchLower) ||
-          transaction.amount.toString().includes(searchLower) ||
-          format(new Date(transaction.date), 'PP').includes(searchLower)
-        );
-      });
-    }
+  const {
+    loading: deleteLoading,
+    fn: deleteFn,
+    data: deleted,
+  } = useFetch(bulkDeleteTransactions);
 
-    // Apply recurring filter
-    if (recurringFilter) {
-      result = result.filter((transaction) => {
-        if (recurringFilter === 'recurring') return transaction.isRecurring;
-        return !transaction.isRecurring;
-      });
-    }
-
-    // Apply type filter
-    if (typeFilter) {
-      result = result.filter((transaction) => transaction.type === typeFilter);
-    }
-
-    // Apply sorting
-    result.sort((a, b) => {
-      let comparison = 0;
-      switch (sortConfig.field) {
-        case 'date':
-          comparison = new Date(b.date) - new Date(a.date);
-          break;
-        case 'category':
-          comparison = a.category.localeCompare(b.category);
-          break;
-        case 'amount':
-          comparison = a.amount - b.amount;
-          break;
-        default:
-          comparison = 0;
-      }
-      return sortConfig.direction === 'asc' ? comparison : -comparison;
-    });
-    return result;
-  }, [transactions, sortConfig, searchTerm, typeFilter, recurringFilter]);
-
-  // handle sorting
+  // Handle sorting
   const handleSort = (field) => {
-    setSortConfig((current) => ({
-      field,
-      direction:
-        current.field === field && current.direction === 'asc' ? 'desc' : 'asc',
-    }));
+    const newDirection =
+      field === sortField && sortDirection === 'asc' ? 'desc' : 'asc';
+    const params = new URLSearchParams(urlSearchParams.toString());
+    params.set('sortField', field);
+    params.set('sortDirection', newDirection);
+    startTransition(() => router.push(`?${params.toString()}`));
   };
 
-  //handle single selection
+  // Handle single selection
   const handleSelect = (id) => {
     setSelectedIds((current) =>
       current.includes(id)
@@ -138,33 +101,24 @@ const TransactionsTable = ({ transactions }) => {
     );
   };
 
-  // handle select all
+  // Handle select all
   const handleSelectAll = (checked) => {
     if (checked) {
       setSelectedIds((current) =>
-        current.length === filteredAndSortedTransactions.length
+        current.length === transactions.length
           ? []
-          : filteredAndSortedTransactions.map((t) => t.id)
+          : transactions.map((t) => t.id)
       );
     } else {
       setSelectedIds([]);
     }
   };
 
-  // Check if all rows are selected
   const allSelected =
-    filteredAndSortedTransactions.length > 0 &&
-    selectedIds.length === filteredAndSortedTransactions.length;
+    transactions.length > 0 && selectedIds.length === transactions.length;
 
-  const {
-    loading: deleteLoading,
-    fn: deleteFn,
-    data: deleted,
-  } = useFetch(bulkDeleteTransactions);
-
-  // handle bulk delete
+  // Handle bulk delete
   const handleBulkDelete = async () => {
-    console.log('Handle bulk delete, selected IDs:', selectedIds); // Log selection
     if (
       !window.confirm(
         `Are you sure you want to delete these ${selectedIds.length} transactions?`
@@ -181,37 +135,61 @@ const TransactionsTable = ({ transactions }) => {
 
   useEffect(() => {
     if (deleted && !deleteLoading) {
-      toast.error('Transactions deleted');
+      toast.success('Transactions deleted');
     }
   }, [deleted, deleteLoading]);
 
-  // handle clear filter
+  // Handle filter updates
+  const updateSearchParams = (key, value) => {
+    const params = new URLSearchParams(urlSearchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    params.set('page', '1'); // Reset to page 1 on filter change
+    startTransition(() => router.push(`?${params.toString()}`));
+  };
+
+  // Handle clear filters
   const handleClearFilters = () => {
     setSearchTerm('');
     setTypeFilter('');
     setRecurringFilter('');
     setSelectedIds([]);
+    startTransition(() => router.push('?page=1'));
   };
+
   return (
     <div className="space-y-4">
-      {deleteLoading && (
+      {/* Show BarLoader during delete or URL transitions */}
+      {(deleteLoading || isPending) && (
         <BarLoader className="mt-4" width={'100%'} height={5} color="#0ea5e9" />
       )}
-      {/* {Filters section} */}
+
+      {/* Filters section */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search transactions..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              updateSearchParams('search', e.target.value);
+            }}
             className="pl-8 shadow-none focus:ring-1 focus:ring-ring border border-input"
           />
         </div>
 
-        {/* {Type filter} */}
         <div className="flex items-center gap-2">
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
+          <Select
+            value={typeFilter}
+            onValueChange={(value) => {
+              setTypeFilter(value);
+              updateSearchParams('type', value);
+            }}
+          >
             <SelectTrigger className="w-[110px]">
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
@@ -221,10 +199,12 @@ const TransactionsTable = ({ transactions }) => {
             </SelectContent>
           </Select>
 
-          {/* {Recurring filter} */}
           <Select
             value={recurringFilter}
-            onValueChange={(value) => setRecurringFilter(value)}
+            onValueChange={(value) => {
+              setRecurringFilter(value);
+              updateSearchParams('recurring', value);
+            }}
           >
             <SelectTrigger className="w-[170px]">
               <SelectValue placeholder="All Transactions" />
@@ -262,8 +242,8 @@ const TransactionsTable = ({ transactions }) => {
           )}
         </div>
       </div>
+
       <div className="rounded-md border">
-        {/* {Table} */}
         <Table>
           <TableHeader>
             <TableRow>
@@ -279,11 +259,11 @@ const TransactionsTable = ({ transactions }) => {
               >
                 <div className="flex items-center">
                   Date
-                  {sortConfig.field === 'date' &&
-                    (sortConfig.direction === 'asc' ? (
-                      <ChevronUp className="ml-1 h-3 w-3"></ChevronUp>
+                  {sortField === 'date' &&
+                    (sortDirection === 'asc' ? (
+                      <ChevronUp className="ml-1 h-3 w-3" />
                     ) : (
-                      <ChevronDown className="ml-1 h-3 w-3"></ChevronDown>
+                      <ChevronDown className="ml-1 h-3 w-3" />
                     ))}
                 </div>
               </TableHead>
@@ -293,12 +273,12 @@ const TransactionsTable = ({ transactions }) => {
                 onClick={() => handleSort('category')}
               >
                 <div className="flex items-center">
-                  Category{' '}
-                  {sortConfig.field === 'category' &&
-                    (sortConfig.direction === 'asc' ? (
-                      <ChevronUp className="ml-1 h-3 w-3"></ChevronUp>
+                  Category
+                  {sortField === 'category' &&
+                    (sortDirection === 'asc' ? (
+                      <ChevronUp className="ml-1 h-3 w-3" />
                     ) : (
-                      <ChevronDown className="ml-1 h-3 w-3"></ChevronDown>
+                      <ChevronDown className="ml-1 h-3 w-3" />
                     ))}
                 </div>
               </TableHead>
@@ -307,12 +287,12 @@ const TransactionsTable = ({ transactions }) => {
                 onClick={() => handleSort('amount')}
               >
                 <div className="flex items-center justify-end">
-                  Amount{' '}
-                  {sortConfig.field === 'amount' &&
-                    (sortConfig.direction === 'asc' ? (
-                      <ChevronUp className="ml-1 h-3 w-3"></ChevronUp>
+                  Amount
+                  {sortField === 'amount' &&
+                    (sortDirection === 'asc' ? (
+                      <ChevronUp className="ml-1 h-3 w-3" />
                     ) : (
-                      <ChevronDown className="ml-1 h-3 w-3"></ChevronDown>
+                      <ChevronDown className="ml-1 h-3 w-3" />
                     ))}
                 </div>
               </TableHead>
@@ -323,7 +303,7 @@ const TransactionsTable = ({ transactions }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAndSortedTransactions.length === 0 ? (
+            {transactions.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={7}
@@ -333,7 +313,7 @@ const TransactionsTable = ({ transactions }) => {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredAndSortedTransactions.map((transaction) => (
+              transactions.map((transaction) => (
                 <TableRow key={transaction.id}>
                   <TableCell>
                     <Checkbox
@@ -370,7 +350,6 @@ const TransactionsTable = ({ transactions }) => {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger>
-                            {' '}
                             <Badge
                               variant="outline"
                               className="gap-1 bg-purple-100 text-purple-700 hover:bg-purple-200"
@@ -407,7 +386,7 @@ const TransactionsTable = ({ transactions }) => {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4"></MoreHorizontal>
+                          <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent>
@@ -435,6 +414,14 @@ const TransactionsTable = ({ transactions }) => {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      <div className="mt-4">
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          searchParams={urlSearchParams}
+        />
       </div>
     </div>
   );
