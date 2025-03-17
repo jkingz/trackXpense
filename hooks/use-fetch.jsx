@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { toast } from "sonner";
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 const useFetch = (cb) => {
   const [data, setData] = useState(undefined);
@@ -13,6 +13,7 @@ const useFetch = (cb) => {
       const data = await cb(...args);
       setData(data);
       setError(null);
+      return data;
     } catch (error) {
       setError(error);
       toast.error(error.message);
