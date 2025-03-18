@@ -5,6 +5,7 @@ import {
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { BarLoader } from 'react-spinners';
+import AccountChart from '../_components/acount-chart';
 import TransactionsTable from '../_components/transaction-table';
 
 const AccountsPage = async ({ params, searchParams }) => {
@@ -61,10 +62,19 @@ const AccountsPage = async ({ params, searchParams }) => {
       </div>
 
       {/* {Chart Section} */}
-      {/* {Transactions Table} */}
       <Suspense
-        fallback={<BarLoader className="mt-4" width={'100%'} color="#9333ea" />}
+        fallback={
+          <BarLoader
+            className="mt-4"
+            width={'100%'}
+            height={5}
+            color="#0ea5e9"
+          />
+        }
       >
+        <AccountChart transactions={transactions} />
+
+        {/* {Transactions Table} */}
         <TransactionsTable
           transactions={transactions}
           totalItems={total}

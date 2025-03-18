@@ -79,7 +79,7 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
   const [searchTerm, setSearchTerm] = useState(searchParams.search || '');
   const [typeFilter, setTypeFilter] = useState(searchParams.type || '');
   const [recurringFilter, setRecurringFilter] = useState(
-    searchParams.recurring || ''
+    searchParams.recurring || '',
   );
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); // State for dialog
 
@@ -107,7 +107,7 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
     setSelectedIds((current) =>
       current.includes(id)
         ? current.filter((item) => item !== id)
-        : [...current, id]
+        : [...current, id],
     );
   };
 
@@ -116,7 +116,7 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
       setSelectedIds((current) =>
         current.length === transactions.length
           ? []
-          : transactions.map((t) => t.id)
+          : transactions.map((t) => t.id),
       );
     } else {
       setSelectedIds([]);
@@ -167,9 +167,8 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
   return (
     <div className="space-y-4">
       {(deleteLoading || isPending) && (
-        <BarLoader className="mt-4" width={'100%'} height={5} color="#9333ea" />
+        <BarLoader className="mt-4" width={'100%'} height={5} color="#0ea5e9" />
       )}
-
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -183,7 +182,6 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
             className="pl-8 shadow-none focus:ring-1 focus:ring-ring border border-input"
           />
         </div>
-
         <div className="flex items-center gap-2">
           <Select
             value={typeFilter}
@@ -229,11 +227,15 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
                     size="sm"
                     onClick={handleBulkDelete}
                     disabled={deleteLoading || selectedIds.length === 0}
+                    className="flex items-center"
                   >
-                    <Trash className="mr-2 h-4 w-4" />
-                    {deleteLoading
-                      ? 'Deleting...'
-                      : `Delete Selected (${selectedIds.length})`}
+                    <Trash className="h-4 w-4 md:mr-0" />{' '}
+                    {/* Adjust margin on desktop */}
+                    <span className="hidden md:inline">
+                      {deleteLoading
+                        ? 'Deleting...'
+                        : `Delete Selected (${selectedIds.length})`}
+                    </span>
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
@@ -394,7 +396,7 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
                               <div>
                                 {format(
                                   new Date(transaction.nextRecurringDate),
-                                  'PP'
+                                  'PP',
                                 )}
                               </div>
                             </div>
@@ -419,7 +421,7 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
                         <DropdownMenuItem
                           onClick={() =>
                             router.push(
-                              `/transaction/create?edit=${transaction.id}`
+                              `/transaction/create?edit=${transaction.id}`,
                             )
                           }
                         >
