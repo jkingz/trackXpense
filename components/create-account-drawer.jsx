@@ -70,12 +70,8 @@ const CreateAccountDrawer = ({ children }) => {
   }, [error]);
 
   const onSubmit = async (data) => {
-    console.log(data.balance);
     await createAccountFn(data);
   };
-
-  const balanceValue = watch('balance'); // Optional: watch live value
-  console.log('Current balance:', balanceValue);
 
   return (
     <Drawer open={open} onOpenChange={setOpen}>

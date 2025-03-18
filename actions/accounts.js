@@ -6,22 +6,14 @@ import { revalidatePath } from 'next/cache';
 import { serializeTransaction } from '@/app/lib/serialized-transaction';
 import { db } from '@/lib/prisma';
 
+import { checkUser } from './lib';
+
 const cache = new Map();
 
 export async function updateDefaultAccount(accountId) {
   try {
-    const { userId } = await auth();
     //check if user is logged in
-    if (!userId) throw new Error('Unauthorized');
-
-    //check if user exists
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    //if user doesn't exist,
-    if (!user) throw new Error('User not found');
-
+    const user = checkUser;
     // set all other accounts to false
     await db.account.updateMany({
       where: { userId: user.id, isDefault: true },
@@ -108,7 +100,7 @@ export async function bulkDeleteTransactions(transactionsIds) {
         where: { id: { in: transactionsIds }, userId: user.id },
       });
       for (const [accountId, balanceChange] of Object.entries(
-        accountBalanceChanges
+        accountBalanceChanges,
       )) {
         // Update account balance
         await tx.account.update({

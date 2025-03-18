@@ -29,7 +29,6 @@ const DATE_RANGES = {
 };
 
 const AccountChart = ({ transactions }) => {
-  console.log('transactions', transactions);
   const [dateRange, setDateRange] = useState('1M');
 
   const filteredData = useMemo(() => {
@@ -41,7 +40,6 @@ const AccountChart = ({ transactions }) => {
       ? startOfDay(subDays(now, range.days))
       : startOfDay(new Date(0));
 
-    console.log('startDate', startDate, 'endDate', endOfDay(now));
 
     // filter transactions within date  range
     const filtered = transactions.filter(
