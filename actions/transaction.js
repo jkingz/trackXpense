@@ -3,6 +3,8 @@ import { revalidatePath } from 'next/cache';
 
 import { db } from '@/lib/prisma';
 
+import aj from '@/lib/arcjet';
+import { request } from '@arcjet/next';
 import { calculateNextRecurringDate, checkUser, serializeAmount } from './lib';
 
 export async function createTransaction(data) {
@@ -10,6 +12,31 @@ export async function createTransaction(data) {
     // check if use if logged in
     const user = await checkUser();
 
+    // Get request data for ArcJet
+    const req = await request();
+
+    // Check rate limit
+    const decision = await aj.protect(req, {
+      userId: user.id, // Specify the user ID
+      requested: 1, // Specify how many tokens to consume
+    });
+
+    if (decision.isDenied()) {
+      if (decision.reason.isRateLimit()) {
+        const { remaining, reset } = decision.reason;
+        console.error({
+          code: 'RATE_LIMIT_EXCEEDED',
+          details: {
+            remaining,
+            resetInSeconds: reset,
+          },
+        });
+
+        throw new Error('Too many requests. Please try again later.');
+      }
+
+      throw new Error('Request blocked');
+    }
     // check account if exists
     const account = await db.account.findUnique({
       where: {
