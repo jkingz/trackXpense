@@ -73,6 +73,7 @@ export async function scanReceipt(file) {
   }
 }
 
+// Create Transaction
 export async function createTransaction(data) {
   try {
     // check if use if logged in
@@ -149,4 +150,23 @@ export async function createTransaction(data) {
   } catch (error) {
     throw new Error(error);
   }
+}
+
+// get transaction by id
+export async function getTransactionById(id) {
+  // check if use if logged in
+  const user = await checkUser();
+
+  // check if transaction exists
+  const transaction = await db.transaction.findUnique({
+    where: {
+      id,
+      userId: user.id,
+    },
+  });
+  if (!transaction) {
+    throw new Error('Transaction not found');
+  }
+
+  return serializeAmount(transaction);
 }
