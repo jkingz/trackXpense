@@ -3,8 +3,8 @@
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 
-import { serializeTransaction } from '@/app/lib/serialized-transaction';
 import { db } from '@/lib/prisma';
+import { serializeTransaction } from '@/lib/serialized-transaction';
 
 import { checkUser } from './lib';
 
@@ -98,7 +98,7 @@ export async function bulkDeleteTransactions(transactionsIds) {
         where: { id: { in: transactionsIds }, userId: user.id },
       });
       for (const [accountId, balanceChange] of Object.entries(
-        accountBalanceChanges,
+        accountBalanceChanges
       )) {
         // Update account balance
         await tx.account.update({

@@ -3,8 +3,8 @@
 import { auth } from '@clerk/nextjs/server';
 import { revalidatePath } from 'next/cache';
 
-import { serializeTransaction } from '@/app/lib/serialized-transaction';
 import { db } from '@/lib/prisma';
+import { serializeTransaction } from '@/lib/serialized-transaction';
 
 export async function createAccount(data) {
   try {

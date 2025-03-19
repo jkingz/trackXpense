@@ -1,6 +1,6 @@
 'use client';
 import { createTransaction } from '@/actions/transaction';
-import { transactionSchema } from '@/app/lib/schema';
+import { transactionSchema } from '@/lib/schema';
 
 import useFetch from '@/hooks/use-fetch';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -72,7 +72,7 @@ const AddTransactionForm = ({
   const date = watch('date');
 
   const filteredCategory = categories.filter(
-    (category) => category.type === type,
+    (category) => category.type === type
   );
 
   const onSubmit = (data) => {
