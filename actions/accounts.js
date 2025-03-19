@@ -8,8 +8,6 @@ import { db } from '@/lib/prisma';
 
 import { checkUser } from './lib';
 
-const cache = new Map();
-
 export async function updateDefaultAccount(accountId) {
   try {
     //check if user is logged in
@@ -139,14 +137,6 @@ export async function getPaginatedTransactions({
   //if user doesn't exist,
   if (!user) throw new Error('User not found');
 
-  // Create a cache for this specific query
-  const cacheKey = `${user.id}:${page}:${itemsPerPage}:${searchTerm}:${typeFilter}:${recurringFilter}:${sortField}:${sortDirection}`;
-
-  if (cache.has(cacheKey)) {
-    return cache.get(cacheKey);
-  }
-
-  // Calculate skip based on page and itemsPerPage
   const skip = (page - 1) * itemsPerPage;
 
   const where = {
@@ -197,6 +187,5 @@ export async function getPaginatedTransactions({
   }));
 
   const result = { transactions: serializedTransactions, total };
-  cache.set(cacheKey, result);
   return result;
 }

@@ -1,4 +1,7 @@
+'use server';
 import { revalidatePath } from 'next/cache';
+
+import { db } from '@/lib/prisma';
 
 import { calculateNextRecurringDate, checkUser, serializeAmount } from './lib';
 
@@ -8,7 +11,7 @@ export async function createTransaction(data) {
     const user = await checkUser();
 
     // check account if exists
-    const account = await prisma.account.findUnique({
+    const account = await db.account.findUnique({
       where: {
         id: data.accountId,
         userId: user.id,
