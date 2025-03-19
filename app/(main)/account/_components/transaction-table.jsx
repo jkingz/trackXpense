@@ -93,6 +93,11 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
     fn: deleteFn,
     data: deleted,
   } = useFetch(bulkDeleteTransactions);
+  const preserveScroll = (callback) => {
+    const scrollPosition = window.scrollY;
+    callback();
+    window.scrollTo(0, scrollPosition);
+  };
 
   const handleSort = (field) => {
     const newDirection =
@@ -100,7 +105,9 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
     const params = new URLSearchParams(urlSearchParams.toString());
     params.set('sortField', field);
     params.set('sortDirection', newDirection);
-    startTransition(() => router.push(`?${params.toString()}`));
+    startTransition(() =>
+      preserveScroll(() => router.push(`?${params.toString()}`)),
+    );
   };
 
   const handleSelect = (id) => {
@@ -152,8 +159,9 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
     } else {
       params.delete(key);
     }
-    params.set('page', '1');
-    startTransition(() => router.push(`?${params.toString()}`));
+    startTransition(() =>
+      preserveScroll(() => router.push(`?${params.toString()}`)),
+    );
   };
 
   const handleClearFilters = () => {
@@ -161,7 +169,7 @@ const TransactionsTable = ({ transactions, totalItems, searchParams }) => {
     setTypeFilter('');
     setRecurringFilter('');
     setSelectedIds([]);
-    startTransition(() => router.push('?page=1'));
+    startTransition(() => router.push('?page=1'), { scroll: false });
   };
 
   return (

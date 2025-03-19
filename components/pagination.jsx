@@ -23,7 +23,9 @@ const PaginationControls = ({
     if (newPage >= 1 && newPage <= totalPages) {
       const params = new URLSearchParams(searchParams.toString());
       params.set('page', newPage.toString());
-      startTransition(() => router.push(`?${params.toString()}`));
+      startTransition(() => router.push(`?${params.toString()}`), {
+        scroll: false,
+      });
     }
   }
 
@@ -79,7 +81,7 @@ const PaginationControls = ({
             <PaginationItem key={`ellipsis-${index}`}>
               <PaginationEllipsis />
             </PaginationItem>
-          )
+          ),
         )}
 
         <PaginationItem>
