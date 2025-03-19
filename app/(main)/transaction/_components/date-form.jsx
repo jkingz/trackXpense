@@ -31,8 +31,8 @@ const DateForm = ({ date, errors, setValue }) => {
           <Calendar
             mode="single"
             selected={date}
-            onSelect={(selectedDate) => {
-              setValue('date', selectedDate); // Update form value
+            onSelect={(date) => {
+              setValue('date', date); // Update form value
               setOpen(false); // Close popover
             }}
             disabled={(date) =>

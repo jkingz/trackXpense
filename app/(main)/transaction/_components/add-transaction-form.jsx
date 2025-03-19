@@ -14,6 +14,7 @@ import CategoriesForm from './categories-form';
 import DateForm from './date-form';
 import DescriptionForm from './description-form';
 import FormButtons from './form-buttons';
+import ReceiptScanner from './scan-receipt';
 import SetDefaultForm from './set-default-form';
 import TypeForm from './type-form';
 
@@ -91,9 +92,26 @@ const AddTransactionForm = ({
     }
   }, [transactionResult, transactionLoading]);
 
+  const handleScanComplete = async (scannedData) => {
+    // Parse the scanned data and extract relevant information
+    if (scannedData) {
+      setValue('date', new Date(scannedData.date));
+      setValue('amount', scannedData.amount.toString());
+      if (scannedData.description) {
+        setValue('description', scannedData.description);
+      }
+      if (scannedData.category) {
+        setValue('category', scannedData.category);
+      }
+    }
+  };
+
   return (
     <div>
       <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+        {/* Receipt Scan */}
+        <ReceiptScanner onScanComplete={handleScanComplete} />
+
         <TypeForm type={type} setValue={setValue} errors={errors} />
         <div className="grid md:grid-cols-2 gap-6">
           <AmountForm register={register} errors={errors} />
