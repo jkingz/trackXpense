@@ -13,7 +13,7 @@ import {
 const PaginationControls = ({
   currentPage,
   totalPages,
-  getPageNumbers,
+  // getPageNumbers,
   searchParams,
   startTransition,
 }) => {
@@ -81,7 +81,7 @@ const PaginationControls = ({
             <PaginationItem key={`ellipsis-${index}`}>
               <PaginationEllipsis />
             </PaginationItem>
-          ),
+          )
         )}
 
         <PaginationItem>
