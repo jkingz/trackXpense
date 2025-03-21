@@ -76,7 +76,7 @@ const CreateAccountDrawer = ({ children }) => {
   return (
     <Drawer open={open} onOpenChange={setOpen}>
       <DrawerTrigger asChild>{children}</DrawerTrigger>
-      <DrawerContent>
+      <DrawerContent aria-describedby="drawer-create-account-description">
         <DrawerHeader>
           <DrawerTitle>Create New Account</DrawerTitle>
         </DrawerHeader>

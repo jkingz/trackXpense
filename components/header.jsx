@@ -8,7 +8,7 @@ import { checkUser } from '@/lib/checkUser';
 const Header = async () => {
   await checkUser();
   return (
-    <div className="fixed top-0 w-screen bg-white/80 backdrop-blur-md z-50 border-b">
+    <header className="fixed top-0 w-screen bg-white/80 backdrop-blur-md z-50 border-b">
       <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
         <Link href="/">
           <span className="font-bold text-xl">TrackXpense</span>
@@ -47,7 +47,7 @@ const Header = async () => {
           </SignedIn>
         </div>
       </nav>
-    </div>
+    </header>
   );
 };
 
