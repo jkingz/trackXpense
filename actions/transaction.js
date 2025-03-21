@@ -5,6 +5,7 @@ import { db } from '@/lib/prisma';
 
 import aj from '@/lib/arcjet';
 import { request } from '@arcjet/next';
+import { auth } from '@clerk/nextjs/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { calculateNextRecurringDate, checkUser, serializeAmount } from './lib';
 
@@ -172,10 +173,17 @@ export async function getTransactionById(id) {
 }
 
 // update transaction
-export async function updateTransaction(id, data) {
+export async function updateTransaction(data, id) {
   try {
     // check if use if logged in
-    const user = await checkUser();
+    const { userId } = await auth();
+    if (!userId) throw new Error('Unauthorized');
+
+    const user = await db.user.findUnique({
+      where: { clerkUserId: userId },
+    });
+
+    if (!user) throw new Error('User not found');
     // Get original transaction and calculate balance change
     const originalTransaction = await db.transaction.findUnique({
       where: {
@@ -195,7 +203,9 @@ export async function updateTransaction(id, data) {
         ? -originalTransaction.amount.toNumber()
         : originalTransaction.amount.toNumber();
     const newBalanceChange =
-      data.type === 'EXPENSE' ? -data.amount : data.amount;
+      data.type === 'EXPENSE'
+        ? -parseFloat(data.amount)
+        : parseFloat(data.amount);
     const netBalanceChange = newBalanceChange - oldBalanceChange;
 
     // Update transaction and account balance in a transaction
@@ -213,13 +223,17 @@ export async function updateTransaction(id, data) {
               : null,
         },
       });
+
+      // Update account balance using the original balance
+      const currentBalance = originalTransaction.account.balance.toNumber();
+      const newBalance = currentBalance + netBalanceChange;
       // update account balance
       await tx.account.update({
         where: {
           id: data.accountId,
         },
         data: {
-          balance: netBalanceChange.account.balance,
+          balance: newBalance,
         },
       });
       return updated;
