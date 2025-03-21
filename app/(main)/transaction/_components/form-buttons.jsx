@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 
-const FormButtons = ({ router, transactionLoading }) => {
+const FormButtons = ({ router, transactionLoading, editMode }) => {
   return (
     <div className="flex gap-4">
       <Button
@@ -12,7 +12,16 @@ const FormButtons = ({ router, transactionLoading }) => {
         Cancel
       </Button>
       <Button type="submit" disabled={transactionLoading} className="w-full">
-        Create Transaction
+        {transactionLoading ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            {editMode ? 'Updating...' : 'Creating...'}
+          </>
+        ) : editMode ? (
+          'Update Transaction'
+        ) : (
+          'Create Transaction'
+        )}
       </Button>
     </div>
   );

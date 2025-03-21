@@ -1,5 +1,5 @@
 'use client';
-import { createTransaction } from '@/actions/transaction';
+import { createTransaction, updateTransaction } from '@/actions/transaction';
 import { transactionSchema } from '@/lib/schema';
 
 import useFetch from '@/hooks/use-fetch';
@@ -27,6 +27,7 @@ const AddTransactionForm = ({
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams.get('edit');
+  
 
   const {
     register,
@@ -66,7 +67,7 @@ const AddTransactionForm = ({
     loading: transactionLoading,
     data: transactionResult,
     fn: transactionFn,
-  } = useFetch(createTransaction);
+  } = useFetch(editMode ? updateTransaction : createTransaction);
 
   const type = watch('type');
   const isRecurring = watch('isRecurring');
@@ -81,16 +82,24 @@ const AddTransactionForm = ({
       amount: parseFloat(data.amount),
       ...data,
     };
-    transactionFn(formData);
+    if (editMode) {
+      transactionFn(formData, editId);
+    } else {
+      transactionFn(formData);
+    }
   };
 
   useEffect(() => {
     if (transactionResult?.success && !transactionLoading) {
-      toast.success('Transaction added successfully');
+      toast.success(
+        editMode
+          ? 'Transaction updated successfully'
+          : 'Transaction created successfully'
+      );
       reset();
       router.push(`/account/${transactionResult.data.accountId}`);
     }
-  }, [transactionResult, transactionLoading]);
+  }, [transactionResult, transactionLoading, editMode, router, reset]);
 
   const handleScanComplete = async (scannedData) => {
     // Parse the scanned data and extract relevant information
@@ -110,7 +119,7 @@ const AddTransactionForm = ({
     <div>
       <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
         {/* Receipt Scan */}
-        <ReceiptScanner onScanComplete={handleScanComplete} />
+        {!editMode && <ReceiptScanner onScanComplete={handleScanComplete} />}
 
         <TypeForm type={type} setValue={setValue} errors={errors} />
         <div className="grid md:grid-cols-2 gap-6">
@@ -141,6 +150,7 @@ const AddTransactionForm = ({
           <FormButtons
             router={router}
             transactionLoading={transactionLoading}
+            editMode={editMode}
           />
         </div>
       </form>
