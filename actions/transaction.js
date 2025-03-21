@@ -145,7 +145,7 @@ export async function createTransaction(data) {
       return newTransaction;
     });
     revalidatePath('/dashboard');
-    revalidatePath('/account/${transaction.accountId}');
+    revalidatePath(`/account/${transaction.accountId}`);
     return { success: true, data: serializeAmount(transaction) };
   } catch (error) {
     throw new Error(error);
@@ -169,4 +169,65 @@ export async function getTransactionById(id) {
   }
 
   return serializeAmount(transaction);
+}
+
+// update transaction
+export async function updateTransaction(id, data) {
+  try {
+    // check if use if logged in
+    const user = await checkUser();
+    // Get original transaction and calculate balance change
+    const originalTransaction = await db.transaction.findUnique({
+      where: {
+        id,
+        userId: user.id,
+      },
+      include: {
+        account: true,
+      },
+    });
+    if (!originalTransaction) {
+      throw new Error('Transaction not found');
+    }
+
+    const oldBalanceChange =
+      originalTransaction.type === 'EXPENSE'
+        ? -originalTransaction.amount.toNumber()
+        : originalTransaction.amount.toNumber();
+    const newBalanceChange =
+      data.type === 'EXPENSE' ? -data.amount : data.amount;
+    const netBalanceChange = newBalanceChange - oldBalanceChange;
+
+    // Update transaction and account balance in a transaction
+    const transaction = await db.$transaction(async (tx) => {
+      const updated = await tx.transaction.update({
+        where: {
+          id,
+          userId: user.id,
+        },
+        data: {
+          ...data,
+          nextRecurringDate:
+            data.isRecurring && data.recurringInterval
+              ? calculateNextRecurringDate(data.date, data.recurringInterval)
+              : null,
+        },
+      });
+      // update account balance
+      await tx.account.update({
+        where: {
+          id: data.accountId,
+        },
+        data: {
+          balance: netBalanceChange.account.balance,
+        },
+      });
+      return updated;
+    });
+    revalidatePath('/dashboard');
+    revalidatePath(`/account/${data.accountId}`);
+    return { success: true, data: serializeAmount(transaction) };
+  } catch (error) {
+    throw new Error(error);
+  }
 }
