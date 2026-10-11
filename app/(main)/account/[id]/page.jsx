@@ -5,7 +5,7 @@ import {
 import { notFound } from 'next/navigation';
 import { Suspense } from 'react';
 import { BarLoader } from 'react-spinners';
-import AccountChart from '../_components/acount-chart';
+import AccountChart from '../_components/account-chart';
 import TransactionsTable from '../_components/transaction-table';
 
 const AccountsPage = async ({ params, searchParams }) => {
