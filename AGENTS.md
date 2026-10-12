@@ -110,7 +110,7 @@ Read these sections in order: `STANDING RULES` → `PROJECT OVERVIEW` → `ARCHI
 - **Validation:** `lib/schema.ts` — Zod schemas for form input. They run **client-side only**, through `zodResolver` in the two forms; no server action parses its input (`parseInput` is Plan B).
 
 ### 16. Datastore / external service
-PostgreSQL via Prisma 7. `postinstall` runs `prisma generate` only — it does **not** apply migrations. Migrations live in `prisma/migrations/`; never edit applied migrations. New migrations: run `npx prisma migrate dev --name` with a snake_case description, then commit the generated file.
+PostgreSQL via Prisma 7. `postinstall` runs `prisma generate` only — it does **not** apply migrations. Migrations live in `prisma/migrations/`; never edit applied migrations. New migrations: run `npx prisma migrate dev --name NAME` with a snake_case description, then commit the generated file.
 
 Prisma 7 moved the connection out of `prisma/schema.prisma` (the datasource block declares only `provider`): the CLI reads `url` from `prisma.config.ts`, which resolves `DIRECT_URL || DATABASE_URL` through `dotenv` and falls back to `''` so `prisma generate` still works without a database. `lib/prisma.ts` must pass a driver adapter (`@prisma/adapter-pg`) — Prisma 7 no longer opens its own connection.
 
@@ -842,9 +842,8 @@ grep -n '<[a-zA-Z_/]' AGENTS.md
 
 Every hit is an unfilled slot. Zero hits means this file describes your project and only your project.
 
-`tests/platform/unit/instruction-layer.test.ts` runs this check over the whole file, so a hit inside
-**VERIFICATION STANDARDS** also fails, even though that section is the one place the pattern is legitimately
-quoted. It currently produces no hits. Do not add exemptions to the command; reword the prose.
+`tests/platform/unit/instruction-layer.test.ts` runs this check over the whole file, so a hit anywhere in `AGENTS.md` fails — including inside **VERIFICATION STANDARDS**, which currently produces no hits.
+Do not add exemptions to the command; reword the prose.
 
 ## One rule that organizes everything else
 
