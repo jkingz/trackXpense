@@ -12,8 +12,11 @@ when: "user needs to write, run, or update tests; asks about test structure, cov
 `pnpm check:docs`). `integration` and `e2e` do not exist: no runner entry for them, and
 `jsdom`, `@testing-library/react` and `playwright` are not in `package.json`.
 
-Every test present is a **characterisation** test: it pins what the code does today, including
-two recorded defects (see AGENTS.md § Testing). A green run is not an endorsement of that behaviour.
+Most tests present are **characterisation**: they pin what the code does today, including two recorded
+defects (see AGENTS.md § Testing), so a green run is not an endorsement of that behaviour. The
+instruction-layer checker in `tests/platform/unit/` is the exception — it reads this repo's own guidance files
+(`AGENTS.md`, `.claude/skills/`, `.env.example`) off disk and asserts they agree, so it pins no application
+behaviour and needs no database.
 
 Never write a test count into this file or into AGENTS.md prose — a number typed here is wrong the
 day the next test lands. Run the command and quote its output in the reply.
@@ -54,6 +57,7 @@ repo root and sets `environment: 'node'`, `include: ['tests/**/*.test.ts']`.
 | Need | Command |
 | --- | --- |
 | Whole suite | `pnpm test` |
+| Instruction-layer checker alone | `pnpm check:docs` |
 | One tier or file | `TZ=UTC pnpm exec vitest run tests/money/unit` |
 | Watch | `pnpm test:watch` |
 
