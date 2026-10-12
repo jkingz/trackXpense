@@ -140,8 +140,8 @@ instruction-layer checker in `tests/platform/unit/`.
 **Not built** — Recurring transaction processing run against a database, delivered email alerts, receipt upload,
 transaction export, analytics, multi-user sharing, mobile app. Each is a bullet in TARGET STATE.
 
-**Next unit** — Plan B: the server-side `parseInput` boundary, then the two strict-flag flips. BLOCKERS in
-DEVELOPMENT WORKFLOW lists what cannot be verified until credentials exist.
+**Next unit** — Plan B: the server-side `parseInput` boundary, then the two strict-flag flips. STANDING
+RULES → Rule 13 gate 5 lists what cannot be verified until credentials exist.
 
 Verified: 2026-10-13, against the working tree on `feat/ts-zod-plan-a-bridge`. `git log --oneline` is the
 authority on what shipped and when; this file does not duplicate it.

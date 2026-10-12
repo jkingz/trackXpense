@@ -75,7 +75,7 @@ Every route/action covering `401` (unauthenticated), `403` (ownership), `400` (b
 fixture that proves a foreign account cannot be read.
 
 Server actions have zero coverage and cannot get it here: they need Postgres credentials this
-environment does not have (AGENTS.md § Progress Tracker, blockers).
+environment does not have (AGENTS.md § STANDING RULES → Rule 13 gate 5).
 
 ## Reference
 
