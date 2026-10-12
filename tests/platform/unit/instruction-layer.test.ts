@@ -132,6 +132,7 @@ const resolveInRepo: Resolve = (p) => {
   return { exists: true, lineCount: text.split('\n').length - (text.endsWith('\n') ? 1 : 0) };
 };
 
+// Mirrors tests/platform/scripts/refresh-skeleton.mjs: change one, change the other, then pnpm skeleton:refresh.
 const HEADING = /^(#{1,3}) (.+)$/;
 
 const headingsOutsideFences = (md: string): string[] =>

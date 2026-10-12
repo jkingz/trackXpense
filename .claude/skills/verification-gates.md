@@ -56,8 +56,8 @@ swaps to the pinned version once the right Node is on `PATH`; it does not touch 
 
 ## Reporting
 
-For each gate: the command, the output it printed, pass or fail. Counts belong in the reply; the only
-counts this repo keeps in AGENTS.md are the §13 gate 2 and § Verification baselines, refreshed from
+For each gate: the command, the output it printed, pass or fail. Counts belong in the reply; the only **test**
+counts this repo keeps in `AGENTS.md` are the §13 gate 2 and § Verification baselines, refreshed from
 command output whenever they move.
 
 ```

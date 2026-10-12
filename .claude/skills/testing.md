@@ -18,8 +18,9 @@ instruction-layer checker in `tests/platform/unit/` is the exception — it read
 (`AGENTS.md`, `.claude/skills/`, `.env.example`) off disk and asserts they agree, so it pins no application
 behaviour and needs no database.
 
-Never write a test count into this file or into AGENTS.md prose — a number typed here is wrong the
-day the next test lands. Run the command and quote its output in the reply.
+Never write a test count into this file, and add none to `AGENTS.md` outside its two recorded baselines —
+§13 gate 2 and § Verification, which are refreshed from command output whenever the suite moves. A number
+typed anywhere else is wrong the day the next test lands. Run the command and quote its output in the reply.
 
 ## `TZ=UTC` is load-bearing
 

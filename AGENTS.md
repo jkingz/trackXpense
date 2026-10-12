@@ -96,7 +96,7 @@ The exact chain that must be green before work is reported complete:
 4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. The config consumes `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript` directly; wrapping them in `FlatCompat` crashes. `pnpm lint` is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings**. The gate is "the census does not grow", not "green" — the census is quoted in § Verification.
 5. Manual verification when touching auth, database, or email flows — currently impossible here (no `DATABASE_URL`, no `ARCJET_KEY`, `@react-email/ui` missing); and with no `ARCJET_KEY`, `pnpm dev` answers **403** on `/`, `/sign-in` and `/dashboard`, so there is no page to smoke-test either.
 
-CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). The workflow itself has not run yet — its first push is its first execution, and its YAML is unvalidated locally (no YAML parser in `node_modules`, none in `python3`). Gate 2 is where the instruction-layer checker runs, so every push re-checks this file, `.claude/skills/` and `.env.example` against each other.
+CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). The workflow itself has not run yet — its first push is its first execution, and its YAML is unvalidated locally (no YAML parser in `node_modules`, none in `python3`). Gate 2 is where the instruction-layer checker runs, so every push re-checks this file, `.claude/skills/`, `.env.example` and the vendored heading fixture `tests/platform/fixtures/agents-md-skeleton.txt` against each other; and because the same assertion resolves every repo path cited outside a fence, a dangling pointer into `specs/` fails a push too.
 
 See `/verification-gates` skill for the full chain and how to report each gate.
 
@@ -453,7 +453,7 @@ Protected paths: the seven in STANDING RULES §17 — one authority; this line d
 
 ### Testing
 
-**Current status:** Vitest exists and `pnpm test` (which is `TZ=UTC vitest run`) is green across the `tests/money`, `tests/validation` and `tests/platform` tiers; the baseline totals live in §13 gate 2 and § Verification, the only two places this file is allowed to state them. Most of the suite is characterisation — it pins what the code does today, including two known defects, so a green run is not an endorsement of that behaviour. The instruction-layer checker in `tests/platform/unit/` is the exception: it reads this repo's own guidance files off disk and asserts they agree, so it pins no application behaviour and needs no database.
+**Current status:** Vitest exists and `pnpm test` (which is `TZ=UTC vitest run`) is green across the `tests/money`, `tests/validation` and `tests/platform` tiers; the baseline totals live in §13 gate 2 and § Verification, the only two places this file states suite totals. Most of the suite is characterisation — it pins what the code does today, including two known defects, so a green run is not an endorsement of that behaviour. The instruction-layer checker in `tests/platform/unit/` is the exception: it reads this repo's own guidance files off disk and asserts they agree, so it pins no application behaviour and needs no database.
 
 - `tests/money/unit/serialize-amount.test.ts` (6) — `serializeAmount` / `serializeTransaction` on `Decimal`-shaped stubs. Pins the shallow-spread contract, i.e. **a nested `Decimal` stays a `Decimal`** and crosses the server/client boundary unconverted.
 - `tests/money/unit/calculate-next-recurring.test.ts` (4) — the four intervals plus month-end/leap carry (`2026-01-31` + 1 month → `2026-03-03`), recorded as-is.
@@ -499,7 +499,7 @@ Quick reference:
 
 | Need | Command |
 |------|---------|
-| Dev server | `pnpm dev` — Turbopack, opens http://localhost:3000 — but with no `ARCJET_KEY` every page answers 403, so there is nothing to view here (gate 5) |
+| Dev server | `pnpm dev` — Turbopack, opens http://localhost:3000 — but with no `ARCJET_KEY` `pnpm dev` answers 403 on `/`, `/sign-in` and `/dashboard` (gate 5), so there is nothing to view here |
 | Typecheck | `pnpm typecheck` — `next typegen && tsc --noEmit`, whole tree; currently **0 errors** |
 | Test | `pnpm test` — `TZ=UTC vitest run`; the unit tier, and with it the instruction-layer checker. The `TZ` is load-bearing (recurrence tests fail in other zones) |
 | Build | `pnpm build` — production build (Turbopack). Since Plan A Task 12 it also type-checks (`Running TypeScript ...` in the output); it still does **not** lint |

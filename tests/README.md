@@ -9,6 +9,8 @@ tests/
 ├── money/unit/            # exists
 ├── validation/unit/       # exists
 ├── platform/unit/         # exists
+├── platform/fixtures/     # exists — agents-md-skeleton.txt
+├── platform/scripts/      # exists — refresh-skeleton.mjs
 └── {feature-name}/
     ├── integration/       # not created — needs Postgres credentials
     └── e2e/               # not created — needs a browser tier
