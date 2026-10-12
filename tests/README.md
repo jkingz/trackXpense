@@ -8,6 +8,7 @@ installed. `pnpm test` therefore exercises the unit tier only.
 tests/
 ├── money/unit/            # exists
 ├── validation/unit/       # exists
+├── platform/unit/         # exists
 └── {feature-name}/
     ├── integration/       # not created — needs Postgres credentials
     └── e2e/               # not created — needs a browser tier
@@ -25,6 +26,9 @@ tests/
 - **unit** — mock at I/O boundaries only; fast, no external services
 - **integration** — real database/APIs; test boundaries between modules
 - **e2e** — full user flows; browser/HTTP client against a running app
+- **platform/unit** — the instruction-layer checker (`instruction-layer.test.ts`): AGENTS.md heading parity
+  with `../agent-ready-template`, slot-free health check, citation resolution, skill-pointer and env-inventory
+  agreement. It reads files off disk; nothing it asserts needs a database.
 
 ## Running tests
 
@@ -36,6 +40,10 @@ recurrence tests fail under other local zones.
 Vitest exits **1** with `No test files found` when a run collects nothing, so a tier with no files
 reads as a failure here rather than passing vacuously. Whichever way it falls, **report the tier a
 run actually collected** — a green suite says nothing about coverage unless you name its files.
+
+`tests/platform/unit/` is populated: `instruction-layer.test.ts` checks this repo's own guidance files, so a
+wrong path, a dangling skill pointer or an undocumented env var fails `pnpm test` (and therefore CI gate 2).
+Run it alone with `pnpm check:docs`.
 
 ## Adding tests
 

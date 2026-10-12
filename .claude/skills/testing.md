@@ -7,8 +7,9 @@ when: "user needs to write, run, or update tests; asks about test structure, cov
 
 ## What exists today
 
-`pnpm test` is `TZ=UTC vitest run`. The **unit tier is populated** — `tests/money/unit/` and
-`tests/validation/unit/`. `integration` and `e2e` do not exist: no runner entry for them, and
+`pnpm test` is `TZ=UTC vitest run`. The **unit tier is populated** — `tests/money/unit/`,
+`tests/validation/unit/` and `tests/platform/unit/` (the instruction-layer checker, run alone with
+`pnpm check:docs`). `integration` and `e2e` do not exist: no runner entry for them, and
 `jsdom`, `@testing-library/react` and `playwright` are not in `package.json`.
 
 Every test present is a **characterisation** test: it pins what the code does today, including
@@ -31,6 +32,7 @@ collocated beside the module.
 tests/
   money/unit/            # exists
   validation/unit/       # exists
+  platform/unit/         # exists — instruction-layer.test.ts
   {feature}/integration/ # tier not created
 ```
 
