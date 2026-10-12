@@ -16,7 +16,7 @@ This file is the complete guidance system for trackXpense. **Read STANDING RULES
 
 **Health check (fills slots, zero hits means done):**
 ```bash
-grep -n '<[a-zA-Z_/]' AGENTS.md | grep -v 'VERIFICATION STANDARDS\|FEATURE SPECS/00-template' | grep -v 'migrate dev --name\|WHERE userId\|<Image>\|SignedIn\|<type>(<scope>)'
+grep -n '<[a-zA-Z_/]' AGENTS.md
 ```
 
 ---
@@ -110,7 +110,7 @@ Read these sections in order: `STANDING RULES` → `PROJECT OVERVIEW` → `ARCHI
 - **Validation:** `lib/schema.ts` — Zod schemas for form input. They run **client-side only**, through `zodResolver` in the two forms; no server action parses its input (`parseInput` is Plan B).
 
 ### 16. Datastore / external service
-PostgreSQL via Prisma 7. `postinstall` runs `prisma generate` only — it does **not** apply migrations. Migrations live in `prisma/migrations/`; never edit applied migrations. New migrations: `npx prisma migrate dev --name <description>`, commit the generated file.
+PostgreSQL via Prisma 7. `postinstall` runs `prisma generate` only — it does **not** apply migrations. Migrations live in `prisma/migrations/`; never edit applied migrations. New migrations: run `npx prisma migrate dev --name` with a snake_case description, then commit the generated file.
 
 Prisma 7 moved the connection out of `prisma/schema.prisma` (the datasource block declares only `provider`): the CLI reads `url` from `prisma.config.ts`, which resolves `DIRECT_URL || DATABASE_URL` through `dotenv` and falls back to `''` so `prisma generate` still works without a database. `lib/prisma.ts` must pass a driver adapter (`@prisma/adapter-pg`) — Prisma 7 no longer opens its own connection.
 
@@ -243,7 +243,7 @@ External APIs
 
 - **Identity:** Clerk session token (JWT) in cookies. `@clerk/nextjs` middleware reads it.
 - **Authority:** two functions share the name `checkUser` — `lib/checkUser.ts` (redirects to `/sign-in`, used by pages and layouts) and `actions/lib/checkUser.ts` (throws `Unauthorized`, used by server actions). "Is this user logged in?" therefore has two implementations with different failure contracts until Plan B §2c consolidates them.
-- **Ownership:** All data reads are scoped to `userId`. A transaction query always filters `WHERE userId = <from session>`. No privileged read bypass.
+- **Ownership:** All data reads are scoped to `userId`. A transaction query always scopes to the session user's `userId`. No privileged read bypass.
 - **Gate location:** `lib/checkUser.ts:checkUser()` in pages/layouts, `actions/lib/checkUser.ts:checkUser()` in actions. Example: `const userId = await checkUser();` in a Server Component.
 
 ### HTTP surface — implemented
@@ -313,7 +313,7 @@ Common utilities:
 
 ### Images / assets
 
-- Images: Next.js `<Image>` component required. Remote patterns allowed: `randomuser.me` (avatars).
+- Images: the `Image` component from `next/image` is required. Remote patterns allowed: `randomuser.me` (avatars).
 - Formats: AVIF and WebP preferred (configured in `next.config.mjs`).
 - Icons: Lucide React (`lucide-react@0.482.0`). No SVG files committed; generate from the library.
 
@@ -481,7 +481,7 @@ Quick reference:
 | Test | `pnpm test` — `TZ=UTC vitest run`; 19 unit tests. The `TZ` is load-bearing (recurrence tests fail in other zones) |
 | Build | `pnpm build` — production build (Turbopack). Since Plan A Task 12 it also type-checks (`Running TypeScript ...` in the output); it still does **not** lint |
 | Lint | `pnpm lint` — `eslint .`, flat config, exits 1 on errors |
-| Prisma | `pnpm exec prisma generate`; `pnpm exec prisma migrate dev --name <desc>`; `pnpm exec prisma studio` |
+| Prisma | `pnpm exec prisma generate`; `pnpm exec prisma migrate dev --name NAME` (snake_case description); `pnpm exec prisma studio` |
 | Email dev | `pnpm email` — **not runnable.** `@react-email/ui` is not installed, so `email dev` stops on an interactive "must be installed / Would you like to install it?" prompt. `emails/template.tsx` is proven only by `tsc` and module resolution, never by the preview renderer |
 
 `pnpm@10.6.5` only (pinned in `package.json`); Node.js 20+ (`>=20.9.0` for Next 16 / Clerk 7).
@@ -507,7 +507,7 @@ Protected paths: `lib/checkUser.ts`, `lib/prisma.ts`, `prisma/schema.prisma`, `p
 - `getServerSession()` does not exist; use `@clerk/nextjs`'s `auth()` instead.
 - Root middleware file is `proxy.ts` (this repo) — Next 16 calls it `proxy`, not `middleware`; the old `middleware.js` name is no longer picked up.
 - `next.config.mjs` rejects the removed `eslint` key; build and lint are independent gates. `next build` does type-check (no `typescript.ignoreBuildErrors`), `pnpm lint` does not gate the build.
-- Clerk 7 (Core 3) removed `<SignedIn>`, `<SignedOut>`, and `<Protect>` — rendering them **throws at runtime, not at build time**. Use `<Show when="signed-in"|"signed-out">` from `@clerk/nextjs`.
+- Clerk 7 (Core 3) removed the `SignedIn`, `SignedOut` and `Protect` components — rendering them **throws at runtime, not at build time**. Use Clerk 7's `Show` component with its `when` prop set to `signed-in` or `signed-out`.
 
 Read `node_modules/next/dist/docs/` before touching frameworks APIs.
 
@@ -517,7 +517,7 @@ Read `node_modules/next/dist/docs/` before touching frameworks APIs.
 
 To add a column:
 1. Edit `prisma/schema.prisma`.
-2. Run `pnpm exec prisma migrate dev --name <description>` — generates and applies the migration.
+2. Run `pnpm exec prisma migrate dev --name NAME` with a snake_case description — generates and applies the migration.
 3. Commit the generated file in `prisma/migrations/`.
 
 Do not edit applied migrations. If a migration has errors, create a new one that fixes it.
@@ -551,7 +551,7 @@ See `/git-workflow` skill for complete commit conventions, push discipline, and 
 
 ### PRs (summary)
 
-- Title: `<type>(<scope>): <imperative summary>` — e.g., `feat(auth): add staff role access`
+- Title: `type(scope): imperative summary` — e.g., `feat(auth): add staff role access`
 - Body: what changed (2–3 bullets), how verified (gate + manual check), what wasn't covered (third-party, prod-only)
 - One PR per feature. No grab-bag PRs.
 - Draft until gate is green; request review after.
@@ -837,12 +837,14 @@ Users may only filter their own transactions. Authority: `checkUser()` in the da
 ## Health check
 
 ```bash
-grep -n '<[a-zA-Z_/]' AGENTS.md | grep -v 'VERIFICATION STANDARDS\|FEATURE SPECS/00-template' | grep -v 'migrate dev --name\|WHERE userId\|<Image>\|SignedIn\|<type>(<scope>)'
+grep -n '<[a-zA-Z_/]' AGENTS.md
 ```
 
-Every hit outside VERIFICATION STANDARDS and FEATURE SPECS/00-template is an unfilled slot. Zero hits means this file describes your project accurately.
+Every hit is an unfilled slot. Zero hits means this file describes your project and only your project.
 
-The last `grep -v` names four patterns that look like slots but are not: JSX element names used in prose (`<Image>`, `<SignedIn>`), the Prisma placeholder `--name <description>` / `<desc>`, the ownership notation `WHERE userId = <from session>`, and the commit-subject template `<type>(<scope>): <imperative summary>`. Without them the check reports 8 false positives (lines 109, 242, 312, 478, 504, 514, 548, and this paragraph itself).
+`tests/platform/unit/instruction-layer.test.ts` runs this check over the whole file, so a hit inside
+**VERIFICATION STANDARDS** also fails, even though that section is the one place the pattern is legitimately
+quoted. It currently produces no hits. Do not add exemptions to the command; reword the prose.
 
 ## One rule that organizes everything else
 

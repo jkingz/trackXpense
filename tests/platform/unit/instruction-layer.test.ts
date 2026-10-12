@@ -20,6 +20,10 @@ function linesOutsideFences(md: string): string[] {
   return out;
 }
 
+const SLOT = /<[a-zA-Z_/]/;
+const slotLines = (md: string): number[] =>
+  md.split('\n').reduce<number[]>((acc, line, i) => (SLOT.test(line) ? [...acc, i + 1] : acc), []);
+
 function skillFilesUnder(dir: string, base: string): string[] {
   return fs
     .readdirSync(dir, { withFileTypes: true })
@@ -108,5 +112,18 @@ describe('env inventory matches', () => {
 
   it('AGENTS.md names exactly the variables .env.example inventories', () => {
     expect(envMismatch(read('AGENTS.md'), read('.env.example'))).toEqual({ undocumented: [], unmentioned: [] });
+  });
+});
+
+describe('health check reports no unfilled slot', () => {
+  it('counts angle-bracket slots anywhere in the file, including prose and fenced lines', () => {
+    // Line 3 names the Image component WITHOUT brackets — the shape the rewords in Step 4 produce — so only
+    // line 4 hits. Line 5 is inside a fence and still counts, because the template's check is a plain grep.
+    const doc = '# T\n\nUse the Image component.\nRun `cmd --name <thing>`.\n```\ngrep <pattern>\n```\n';
+    expect(slotLines(doc)).toEqual([4, 6]);
+  });
+
+  it('AGENTS.md has zero hits — the template command with no grep -v exemptions', () => {
+    expect(slotLines(read('AGENTS.md'))).toEqual([]);
   });
 });
