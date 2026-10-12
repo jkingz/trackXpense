@@ -46,7 +46,7 @@ when: "user starts a new task, needs to scope work, or asks about development pr
 
 1. The unit works end to end inside the scope you stated at the start.
 2. No invariant in ARCHITECTURE CONTEXT was violated.
-3. The spec in specs/ reflects what actually happened for a feature unit; a conversion or migration keeps its plan under docs/superpowers/plans/.
+3. The spec in `specs/` reflects what actually happened for a feature unit; a conversion or migration keeps its design doc under `docs/superpowers/specs/` and its plan under `docs/superpowers/plans/`.
 4. The full gate chain is reported (use `/verification-gates`). "Green" is not assumed: lint is red on recorded pre-existing debt, so report the census instead.
 
 ## Reference
