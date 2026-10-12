@@ -26,8 +26,8 @@ Users may only filter their own transactions. Authority: `checkUser()` in the da
 
 ## Verification
 
-This feature is not built (AGENTS.md § Status lists dashboard filtering under "Not built"), so nothing below
-has been run. These are the checks that would verify it, not results:
+This feature is not built (`AGENTS.md` § Verification Standards: "No category dropdown; dashboard has no filtering
+UI"), so nothing below has been run. These are the checks that would verify it, not results:
 
 - `pnpm build` → compiles and type-checks once the filter exists; run today it says nothing about this spec.
 - `pnpm test` → stays green while the feature is built (unit tier plus the instruction-layer checker).
