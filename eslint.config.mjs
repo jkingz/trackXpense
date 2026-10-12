@@ -1,18 +1,15 @@
-import { dirname } from 'path';
-import { fileURLToPath } from 'url';
-
-import { FlatCompat } from '@eslint/eslintrc';
+import nextConfig from 'eslint-config-next/core-web-vitals';
+import nextTsConfig from 'eslint-config-next/typescript';
 import importPlugin from 'eslint-plugin-import';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
 const eslintConfig = [
-  ...compat.extends('next/core-web-vitals'),
+  ...nextConfig,
+  ...nextTsConfig,
+  {
+    // `.delta/` holds git-excluded worktree/clone copies of this repo.
+    // `next lint` never reached them; `eslint .` does, so they are ignored here.
+    ignores: ['.delta/**', 'next-env.d.ts'],
+  },
   {
     plugins: {
       import: importPlugin,
