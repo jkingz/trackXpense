@@ -5,8 +5,8 @@ name: CI
 # deliberate. If §13 changes, change this file in the same commit.
 #
 # OMISSIONS (deliberate, not oversights):
-#   * `pnpm lint` — the tree is red on a recorded pre-existing ESLint census (AGENTS.md § Progress
-#     Tracker → Open questions). Adding a step that fails on every push teaches nobody to read CI.
+#   * `pnpm lint` — the tree is red on a recorded pre-existing ESLint census (AGENTS.md § TARGET STATE,
+#     "Lint census decides CI's fourth gate"). Adding a step that fails on every push teaches nobody to read CI.
 #     The gate in the meantime is "the census does not grow", which is a local, before/after check.
 #   * Postgres-backed tiers — no `integration`/`e2e` tier exists, and `DATABASE_URL`/`DIRECT_URL`
 #     are not repository secrets here. The money path is verified locally or not at all.

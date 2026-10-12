@@ -93,8 +93,8 @@ The exact chain that must be green before work is reported complete:
 1. `pnpm typecheck` — `next typegen && tsc --noEmit` over the whole tree. Baseline: **0 errors**. Do not let it regress; `npx tsc --noEmit --incremental false` is the non-stale re-check.
 2. `pnpm test` — `TZ=UTC vitest run`. Baseline: 19 passed in 3 files (all characterisation).
 3. `pnpm build` — Next.js production build (Turbopack). It now **is** a type gate (no `typescript.ignoreBuildErrors` in `next.config.mjs`) and still never lints.
-4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. It is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings**. The gate is "the census does not grow", not "green" — the census is quoted in § Verification.
-5. Manual verification when touching auth, database, or email flows — currently impossible here (no `DATABASE_URL`, no `ARCJET_KEY`, `@react-email/ui` missing).
+4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. The config consumes `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript` directly; wrapping them in `FlatCompat` crashes. It is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings**. The gate is "the census does not grow", not "green" — the census is quoted in § Verification.
+5. Manual verification when touching auth, database, or email flows — currently impossible here (no `DATABASE_URL`, no `ARCJET_KEY`, `@react-email/ui` missing); and with no `ARCJET_KEY`, `pnpm dev` answers **403** on `/`, `/sign-in` and `/dashboard`, so there is no page to smoke-test either.
 
 CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). The workflow itself has not run yet — its first push is its first execution, and its YAML is unvalidated locally (no YAML parser in `node_modules`, none in `python3`).
 
@@ -112,7 +112,7 @@ Read these sections in order: `STANDING RULES` → `PROJECT OVERVIEW` → `ARCHI
 ### 16. Datastore / external service
 PostgreSQL via Prisma 7. `postinstall` runs `prisma generate` only — it does **not** apply migrations. Migrations live in `prisma/migrations/`; never edit applied migrations. New migrations: run `npx prisma migrate dev --name migration_name` with a snake_case description, then commit the generated file.
 
-Prisma 7 moved the connection out of `prisma/schema.prisma` (the datasource block declares only `provider`): the CLI reads `url` from `prisma.config.ts`, which resolves `DIRECT_URL || DATABASE_URL` through `dotenv` and falls back to `''` so `prisma generate` still works without a database. `lib/prisma.ts` must pass a driver adapter (`@prisma/adapter-pg`) — Prisma 7 no longer opens its own connection.
+Prisma 7 moved the connection out of `prisma/schema.prisma` (the datasource block declares only `provider`): the CLI reads `url` from `prisma.config.ts`, which resolves `DIRECT_URL || DATABASE_URL` through `dotenv` and falls back to `''` so `prisma generate` still works without a database. `lib/prisma.ts` must pass a driver adapter (`@prisma/adapter-pg`) — Prisma 7 no longer opens its own connection. The `client` generator stays on `prisma-client-js`: the newer `prisma-client` generator requires an `output` path and would rewrite every Prisma import in the tree, so upgrading it is a bigger blast radius than the gain.
 
 Environment variables: `DATABASE_URL` (client connection, used by the pg adapter), `DIRECT_URL` (Prisma CLI/migrations), `CLERK_SECRET_KEY` (auth), `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (client auth key). Prisma 7 does not auto-load `.env*`; Next.js still does for the app itself.
 
@@ -348,7 +348,7 @@ TypeScript 5.9.3 (pinned below 6.x because `typescript-eslint` requires `>=4.8.4
 
 - Settings: `strict: true` (so `strictNullChecks`, `strictFunctionTypes`, `strictPropertyInitialization`), `noEmit`, `incremental`, `skipLibCheck`, `isolatedModules`, `esModuleInterop`, `resolveJsonModule`, `moduleResolution: bundler`, `jsx: react-jsx`, `baseUrl: "."` with the `@/*` path alias.
 - `include` is the whole tree: `next-env.d.ts`, Next 16's generated route types (`.next/types/**/*.ts` **and** `.next/dev/types/**/*.ts`), then `**/*.ts` and `**/*.tsx`. `exclude` is `node_modules` and `.delta` (the git-excluded worktree/clone copies of this repo). Verified program: 81 source files + 8 generated files, via `npx tsc --noEmit --incremental false --listFilesOnly`.
-- **Two flags stay off on purpose; Plan B flips them:** `noImplicitAny: false` and `useUnknownInCatchVariables: false`. With `noImplicitAny` off, an unannotated parameter or destructured prop is silently `any`, so untyped boundaries hide errors instead of reporting them; the 16 `catch (error)` sites keep `error` as `any`.
+- **Two flags stay off on purpose; Plan B flips them:** `noImplicitAny: false` and `useUnknownInCatchVariables: false`. With `noImplicitAny` off, an unannotated parameter or destructured prop is silently `any`, so untyped boundaries hide errors instead of reporting them; the 15 catch bindings (14 `catch (error)` plus `catch (parseError)` at `actions/transaction.ts:67`) keep `error` as `any`. The 16th block is binding-less and load-bearing: `actions/accounts.ts:62`'s `catch {}` swallows the error and returns `undefined`, which is what lets `app/(main)/account/[id]/page.tsx:37`'s `if (!accountData) return notFound();` fire.
 - Gates: `pnpm typecheck` (`next typegen && tsc --noEmit`) reports **0 errors**, and because `next.config.mjs` no longer carries the `typescript.ignoreBuildErrors` key, `pnpm build` runs the same check — it prints `Running TypeScript ...` / `Finished TypeScript in ~1.9s` instead of `Skipping validation of types`. The build is a real type gate as of Plan A Task 12.
 - Known structural gap the flags leave open: `lib/serialized-transaction.ts` takes an unannotated parameter, so its return is `any`, so every serialized account/transaction row in `actions/**` and `app/(main)/**` is `any` and the `Decimal`→number seam is unchecked by the compiler. Typing it can only add errors or be neutral, so it is deferred to Plan B alongside the `parseInput` boundary decision.
 - Type-checking still proves nothing about runtime: the money path has never executed here (no `DATABASE_URL`).
@@ -460,6 +460,8 @@ Protected paths: `lib/checkUser.ts`, `lib/prisma.ts`, `prisma/schema.prisma` —
 - `tests/platform/unit/instruction-layer.test.ts` checks this file and the skills, not the app. A green
   `pnpm test` therefore proves the instruction layer is self-consistent; it proves nothing about runtime
   behaviour, which still has no coverage.
+- Vitest rather than `node:test`, decided 2026-10-12: `node:test` needs Node 22 or newer for type stripping and
+  does not resolve the `@/` alias this repo's imports use.
 
 Structure for tests that come later (`/testing` skill):
 - `tests/{feature}/{tier}/` — unit tier is the only one populated
@@ -707,9 +709,9 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
   step the template's `### Review gate` requires ("CI runs the same commands"). Options: autofix as a standalone
   commit, fix the one hook error (a behaviour change), downgrade `import/order` to `warn`, or keep this repo's
   written exception under that heading.
-- **Rotting literals are still in this file.** The template forbids counts in docs; §13, § Verification and §
-  Language strictness quote test, error and file counts because a baseline has to live somewhere. Deciding where
-  (a generated census file? the CI log?) is its own unit.
+- **Rotting literals are still in this file.** This plan forbids writing new counts into the docs; §13,
+  § Verification, § Testing and § Language strictness quote test, error and file counts because a baseline has to
+  live somewhere. Deciding where (a generated census file? the CI log?) is its own unit.
 - **`engines.node` is undeclared** while Next 16 and Clerk 7 both need `>=20.9.0` and CI pins Node 20 by hand.
   Blocks: a reproducible "which runtime" answer for a new clone.
 - **The seed endpoint is an unauthenticated `GET` that writes rows.** Blocks: any deploy that is not local.
@@ -721,16 +723,11 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
 - **Page changes never suppressed scrolling:** `components/pagination.tsx:31` calls `router.push(url)` with no
   options after Plan A deleted a dead argument. Whether to pass `{ scroll: false }` for real is a behaviour
   decision.
-- **`components/header.tsx` props and helpers are unannotated** — it belonged to no Plan A task. Plan B Phase 3.
+- **`components/header.tsx` was owned by no Plan A task.** It takes no props (`const Header` at
+  `components/header.tsx:8`), so what stays unannotated there is its component signature — Plan B Phase 3.
 - **The env vars read through `as string` assertions** (`lib/arcjet.ts:4`, `proxy.ts:14`,
   `actions/transaction.ts:12`, `lib/inngest/functions.ts:217`, `actions/seed.ts:8-9`) are a type-lie;
   `experimental.typedEnv` or a Zod env schema is the honest fix. Blocks: trusting the config surface.
-- **`jsdom` and `@testing-library/react` are not installed,** so `hooks/use-fetch.ts` has no test. Blocks: any
-  claim about the client fetch wrapper.
-- **Recurring processing has never executed.** Inngest serves the four functions at `/api/inngest`; no schedule
-  has fired here, so nothing is applied automatically. Blocks: the "recurring transactions" promise in Core Flow.
-- **`receiptUrl` is never populated.** Gemini OCR is reachable from the add-transaction form but returns no file
-  URL and there is no upload endpoint or bucket. Blocks: "upload a receipt".
 - **The checker does not pin its own doc.** `AGENTS.md` carries the health-check command in two places, and
   nothing asserts they still equal the template's literal one-liner, so a bracket-free `grep -v` exemption could
   return without failing the slot check. Blocks: the health check staying honest without a human reading it.
@@ -739,6 +736,8 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
   Together with the slot check that forbids angle brackets, the only placeholder form this file can use is
   lowercase snake_case (`--name migration_name`). Blocks: any future placeholder in `AGENTS.md`, and any task
   that wants a normal shell metavariable.
+- **Where the Inngest job should run is undecided** — local dev, an external worker, or a serverless function.
+  Blocks: giving `lib/inngest/functions.ts` an environment where a schedule can actually fire.
 
 ---
 

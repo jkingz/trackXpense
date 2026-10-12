@@ -37,8 +37,8 @@ swaps to the pinned version once the right Node is on `PATH`; it does not touch 
      sealed runner. Prove it cold: `NODE_USE_ENV_PROXY=1 HTTPS_PROXY=http://127.0.0.1:9 pnpm build`.
 
 4. **Lint** — `pnpm lint` (`eslint .`, flat config)
-   - Exits 1 on errors, and the tree is **already red** on pre-existing debt listed in § Progress
-     Tracker. The gate is "the census does not grow", not "green".
+   - Exits 1 on errors, and the tree is **already red** on pre-existing debt recorded in AGENTS.md §13
+     (Verification gates) and § Verification. The gate is "the census does not grow", not "green".
    - Report the error/warning totals your run printed and compare them to the recorded census.
    - Prove a path filter reaches the runner before quoting it: `pnpm lint -- --debug nonexistent.ts`
      must say the file matches no pattern.
