@@ -109,12 +109,12 @@ function pathCitations(md: string, resolve: Resolve): string[] {
       const isDir = sep === -1 && tok.endsWith('/');
       const ext = file.includes('.') ? file.split('.').pop()!.toLowerCase() : '';
       if (!isDir && !CITABLE_EXT.has(ext)) continue;
-      if (range && !LINE_RANGE.test(range)) continue;
       const res = resolve(file);
       if (!res.exists) {
         defects.push(`line ${i + 1}: \`${tok}\` does not resolve`);
         continue;
       }
+      if (!LINE_RANGE.test(range)) continue;
       if (range && res.lineCount !== undefined) {
         const hi = Number(range.split('-').pop());
         if (hi > res.lineCount) defects.push(`line ${i + 1}: \`${tok}\` cites line ${hi}, file has ${res.lineCount}`);
@@ -128,7 +128,8 @@ const resolveInRepo: Resolve = (p) => {
   const abs = path.join(ROOT, p);
   if (!fs.existsSync(abs)) return { exists: false };
   if (fs.statSync(abs).isDirectory()) return { exists: true };
-  return { exists: true, lineCount: fs.readFileSync(abs, 'utf8').split('\n').length };
+  const text = fs.readFileSync(abs, 'utf8');
+  return { exists: true, lineCount: text.split('\n').length - (text.endsWith('\n') ? 1 : 0) };
 };
 
 describe('instruction-layer checker harness', () => {
@@ -195,11 +196,16 @@ describe('every path citation resolves', () => {
       'Says `lib/real.ts:99` — past the end.',
       'Says `import/order` and `randomuser.me` and `origin/main` and `app/api/[...]/route.ts` — all skipped.',
       'Says `app/(main)/` — a directory, and the fake resolver says no.',
+      'Says `lib/ghost.ts:helper()` — symbol-addressed and the file is missing.',
+      'Says `lib/real.ts:checkUser()` — symbol-addressed and the file exists, so no defect.',
+      'Says `lib/nope2.ts:1-2-3` — a malformed range on a missing file still checks the file.',
     ].join('\n');
     expect(pathCitations(doc, fake)).toEqual([
       'line 1: `lib/nope.ts` does not resolve',
       'line 3: `lib/real.ts:99` cites line 99, file has 10',
       'line 5: `app/(main)/` does not resolve',
+      'line 6: `lib/ghost.ts:helper()` does not resolve',
+      'line 8: `lib/nope2.ts:1-2-3` does not resolve',
     ]);
   });
 
