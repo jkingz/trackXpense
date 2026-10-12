@@ -93,7 +93,7 @@ The exact chain that must be green before work is reported complete:
 1. `pnpm typecheck` — `next typegen && tsc --noEmit` over the whole tree. Baseline: **0 errors**. Do not let it regress; `npx tsc --noEmit --incremental false` is the non-stale re-check.
 2. `pnpm test` — `TZ=UTC vitest run`. Baseline: 19 passed in 3 files (all characterisation).
 3. `pnpm build` — Next.js production build (Turbopack). It now **is** a type gate (no `typescript.ignoreBuildErrors` in `next.config.mjs`) and still never lints.
-4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. It is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings**. The gate is "the census does not grow", not "green" — see Progress Tracker.
+4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. It is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings**. The gate is "the census does not grow", not "green" — the census is quoted in § Verification.
 5. Manual verification when touching auth, database, or email flows — currently impossible here (no `DATABASE_URL`, no `ARCJET_KEY`, `@react-email/ui` missing).
 
 CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). The workflow itself has not run yet — its first push is its first execution, and its YAML is unvalidated locally (no YAML parser in `node_modules`, none in `python3`).
@@ -101,7 +101,7 @@ CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — 
 See `/verification-gates` skill for the full chain and how to report each gate.
 
 ### 14. Application building order
-Read these sections in order: `STANDING RULES` → `PROJECT OVERVIEW` → `ARCHITECTURE CONTEXT` → `UI CONTEXT` → `CODE STANDARDS` → `DEVELOPMENT WORKFLOW` → `PM CONVENTIONS` → `PROGRESS TRACKER`. Then `AGENTS.md` → SERVICE ARCHITECTURE section.
+Read these sections in order: `STANDING RULES` → `PROJECT OVERVIEW` → `ARCHITECTURE CONTEXT` → `UI CONTEXT` → `CODE STANDARDS` → `DEVELOPMENT WORKFLOW` → `PM CONVENTIONS`. Then `AGENTS.md` → SERVICE ARCHITECTURE section.
 
 ### 15. Cross-cutting authority — one authority per rule
 - **Auth gate:** two functions, not one: `lib/checkUser.ts` (reads the Clerk session, **redirects** — pages and layouts) and `actions/lib/checkUser.ts` (reads the Clerk session, **throws** `Unauthorized` — server actions). Both are used; neither is the other's wrapper. Plan B §2c consolidates them.
@@ -127,17 +127,24 @@ Environment variables: `DATABASE_URL` (client connection, used by the pg adapter
 
 # APPLICATION BUILDING CONTEXT
 
-Read these sections in the order listed above (rule 14). Update the section your change invalidates, plus PROGRESS TRACKER, before continuing.
+Read these sections in the order listed above (rule 14). Update the section your change invalidates, and TARGET STATE if the change lands design intent, before continuing.
 
 ## Project Overview
 
 ### Status
 
-**Built** — User sign-up/sign-in (Clerk), dashboard page, account creation, transaction logging, budget tracking UI.
+**Built** — User sign-up/sign-in (Clerk), dashboard page, account creation, transaction logging, budget tracking
+UI; the whole tree in TypeScript under `strict` (Plan A); the agent instruction layer, its repo skills, and the
+instruction-layer checker in `tests/platform/unit/`.
 
-**Not built** — Recurring transaction processing, email alerts, analytics, receipt OCR, multi-user sharing, mobile app.
+**Not built** — Recurring transaction processing run against a database, delivered email alerts, receipt upload,
+transaction export, analytics, multi-user sharing, mobile app. Each is a bullet in TARGET STATE.
 
-Verified: 2026-10-13, against `a22c0ff` on `feat/ts-zod-plan-a-bridge` (committed and pushed), which carries the TypeScript migration (Plan A) and the dependency upgrade.
+**Next unit** — Plan B: the server-side `parseInput` boundary, then the two strict-flag flips. BLOCKERS in
+DEVELOPMENT WORKFLOW lists what cannot be verified until credentials exist.
+
+Verified: 2026-10-13, against the working tree on `feat/ts-zod-plan-a-bridge`. `git log --oneline` is the
+authority on what shipped and when; this file does not duplicate it.
 
 ### Overview
 
@@ -280,8 +287,15 @@ Cache headers: no `no-store` or `revalidate` export appears anywhere in the tree
 2. **One budget per user** — Budget table has a UNIQUE index on `userId`.
 3. **User owns all their data** — No transaction, account, or budget row may reference a `userId` different from the session user without explicit privilege (none exist).
 4. **Recurring transactions are never auto-applied in practice** — `isRecurring=true`, `recurringInterval` and `nextRecurringDate` are written and the Inngest processor that would apply them exists and is served (`lib/inngest/functions.ts:150`, `app/api/inngest/route.ts`), but it has never run against a database, so no occurrence is created or applied automatically today.
+5. **`createTransaction` is handed a string amount** —
+   `app/(main)/transaction/_components/add-transaction-form.tsx:99-101` builds
+   `{ amount: parseFloat(data.amount), ...data }`, so the spread re-overwrites the parsed number with the raw
+   form string. `actions/transaction.ts:120-122` then adds it to a `Decimal`: the INCOME branch concatenates
+   (`100 + "250"` → `"100250"`) and `:143` writes that as the balance. Fresh accounts hide it
+   (`0 + "250"` → `"0250"` → 250); EXPENSE is accidentally correct via the unary minus. `updateTransaction`
+   parses (`:207-208`, commit `80aec7a`). No test pins `createTransaction`. Plan B's `parseInput` owns it.
 
-Tests for invariants: None. `pnpm test` covers the money *serialisers* and *arithmetic* (19 unit tests), not these DB-level invariants. See PROGRESS TRACKER.
+Tests for invariants: None. `pnpm test` covers the money *serialisers* and *arithmetic* (19 unit tests), not these DB-level invariants.
 
 ---
 
@@ -336,7 +350,7 @@ TypeScript 5.9.3 (pinned below 6.x because `typescript-eslint` requires `>=4.8.4
 - `include` is the whole tree: `next-env.d.ts`, Next 16's generated route types (`.next/types/**/*.ts` **and** `.next/dev/types/**/*.ts`), then `**/*.ts` and `**/*.tsx`. `exclude` is `node_modules` and `.delta` (the git-excluded worktree/clone copies of this repo). Verified program: 81 source files + 8 generated files, via `npx tsc --noEmit --incremental false --listFilesOnly`.
 - **Two flags stay off on purpose; Plan B flips them:** `noImplicitAny: false` and `useUnknownInCatchVariables: false`. With `noImplicitAny` off, an unannotated parameter or destructured prop is silently `any`, so untyped boundaries hide errors instead of reporting them; the 16 `catch (error)` sites keep `error` as `any`.
 - Gates: `pnpm typecheck` (`next typegen && tsc --noEmit`) reports **0 errors**, and because `next.config.mjs` no longer carries the `typescript.ignoreBuildErrors` key, `pnpm build` runs the same check — it prints `Running TypeScript ...` / `Finished TypeScript in ~1.9s` instead of `Skipping validation of types`. The build is a real type gate as of Plan A Task 12.
-- Known structural gap the flags leave open: `lib/serialized-transaction.ts` takes an unannotated parameter, so its return is `any`, so every serialized account/transaction row in `actions/**` and `app/(main)/**` is `any` and the `Decimal`→number seam is unchecked by the compiler. Typing it can only add errors or be neutral, so it is deferred to Plan B alongside the `parseInput` boundary decision (see Progress Tracker).
+- Known structural gap the flags leave open: `lib/serialized-transaction.ts` takes an unannotated parameter, so its return is `any`, so every serialized account/transaction row in `actions/**` and `app/(main)/**` is `any` and the `Decimal`→number seam is unchecked by the compiler. Typing it can only add errors or be neutral, so it is deferred to Plan B alongside the `parseInput` boundary decision.
 - Type-checking still proves nothing about runtime: the money path has never executed here (no `DATABASE_URL`).
 
 ### Framework rules
@@ -443,6 +457,9 @@ Protected paths: `lib/checkUser.ts`, `lib/prisma.ts`, `prisma/schema.prisma` —
 - `TZ=UTC` is part of the script, not a suggestion: the recurrence tests are timezone-sensitive and fail under other local zones.
 - Nothing is mocked, because nothing needs mocking at the unit tier. No integration or e2e tier exists: `hooks/use-fetch.ts` has no test — that would need the `jsdom` and `@testing-library/react` devDependencies, which are **not installed** (an open question, not a decision).
 - Server actions still have zero coverage: they need Postgres credentials that this environment does not have.
+- `tests/platform/unit/instruction-layer.test.ts` checks this file and the skills, not the app. A green
+  `pnpm test` therefore proves the instruction layer is self-consistent; it proves nothing about runtime
+  behaviour, which still has no coverage.
 
 Structure for tests that come later (`/testing` skill):
 - `tests/{feature}/{tier}/` — unit tier is the only one populated
@@ -470,7 +487,7 @@ Quick reference:
 
 ### Read order before implementing
 
-`STANDING RULES` → `PROJECT OVERVIEW` → `ARCHITECTURE CONTEXT` → `UI CONTEXT` → `CODE STANDARDS` → `DEVELOPMENT WORKFLOW` (portable) → `PM CONVENTIONS` → `PROGRESS TRACKER`. Then `AGENTS.md` → SERVICE ARCHITECTURE section.
+`STANDING RULES` → `PROJECT OVERVIEW` → `ARCHITECTURE CONTEXT` → `UI CONTEXT` → `CODE STANDARDS` → `DEVELOPMENT WORKFLOW` (portable) → `PM CONVENTIONS`. Then `AGENTS.md` → SERVICE ARCHITECTURE section.
 
 ### Commands
 
@@ -530,7 +547,7 @@ Dashboard data is seeded via `app/api/seed/route.ts` (dev only). Run `curl http:
 
 1. The unit works end-to-end inside the scope you stated at the start.
 2. No invariant in ARCHITECTURE CONTEXT was violated.
-3. PROGRESS TRACKER reflects what actually happened.
+3. The spec in `specs/` reflects what actually happened.
 4. The full gate chain is green: `pnpm typecheck` ✓ (0 errors), `pnpm test` ✓, `pnpm build` ✓ (type-checks, does not lint), `pnpm lint` at the recorded census, manual smoke test ✓ where credentials allow.
 
 ---
@@ -563,89 +580,8 @@ The chain from `/verification-gates` skill and STANDING RULES (Rule 13):
 1. `pnpm typecheck` → 0 errors
 2. `pnpm test` → 19 passed
 3. `pnpm build` → succeeds (it type-checks; it does not lint)
-4. `pnpm lint` → no **new** error class; the tree stays red on pre-existing debt (see Progress Tracker for the census), so "green lint" is not the gate
+4. `pnpm lint` → no **new** error class; the tree stays red on pre-existing debt (the census is quoted in § Verification), so "green lint" is not the gate
 5. Manual verification (smoke test in browser, database state, etc.) — impossible for auth/DB/email flows here, see the credential blockers
-
----
-
-## Progress Tracker
-
-### Current phase
-
-**TypeScript Plan A landed and committed; Plan B (Zod enforcement) pending** — migration built 2026-10-12, committed and pushed 2026-10-13. All 79 JavaScript files are `.ts`/`.tsx`, `pnpm typecheck` is at **0 errors project-wide** (down from 194 the moment the tree was renamed), and `pnpm build` type-checks for the first time. Dependency baseline had already been raised to Next 16.4.0 / Prisma 7.10.0 / Clerk 7 / Zod 4 / Inngest 4. `b25dd3f` (this instruction layer) and `a22c0ff` (the migration) are on `origin/feat/ts-zod-plan-a-bridge`, working tree clean. `060c105` rode along: committed locally on 2026-10-11, never pushed until now. No PR opened yet.
-
-### Current goal
-
-Hand over to Plan B (the validation boundary + the strict-flag flips). What Plan B inherits:
-
-- `noImplicitAny: false` and `useUnknownInCatchVariables: false` are still off by design. Measured cost of flipping them: `globalThis.prisma` at `lib/prisma.ts:9` is an accepted implicit any, and **7 of the 10 `error.message` reads sit on a catch binding** (`actions/seed.ts:109`, `actions/dashboard.ts:62`, `actions/budget.ts:101`, `actions/accounts.ts:31`, `actions/accounts.ts:116`, `app/api/seed/route.ts:8`, `hooks/use-fetch.ts:28`) — those are the ones `useUnknownInCatchVariables: true` rejects. The other 3 read `useFetch`'s `error` state, already typed `Error | null`.
-- **15 catch bindings** (`14 catch (error)` + 1 `catch (parseError)` at `actions/transaction.ts:67`) await Phase-2 narrowing. The 16th catch block is binding-less: `actions/accounts.ts:62` is `catch {}` — an empty catch that swallows the error and returns `undefined` from `getAccountsWithTransactions`. It is load-bearing, because that `undefined` is what lets `app/(main)/account/[id]/page.tsx:37`'s `if (!accountData) return notFound();` fire.
-- **The last structural gap:** `lib/serialized-transaction.ts:1` takes an unannotated parameter, so every serialized account/transaction row in `actions/**` and `app/(main)/**` is `any` and the `Decimal`→number seam is invisible to the compiler. Deliberately deferred rather than fixed on the last task: typing it can only add errors or be neutral, so it cannot improve the gate, and its correct shape depends on Plan B's `parseInput` boundary decision. It also hides `[id]/page.tsx:56`'s redundant `parseFloat(account.balance)`.
-- No Zod boundary yet: 12 input-taking actions still accept unvalidated client input, and `actions/accounts.ts:160`'s `as TransactionType` is the compiler being silenced about a URL string.
-
-Blockers unchanged: no `DATABASE_URL`/`DIRECT_URL` in `.env.local`, so the money path (auth → create account → log transaction → balance) cannot be smoke-tested; `pnpm dev` returns 403 on `/`, `/sign-in`, `/dashboard` without `ARCJET_KEY`; `pnpm email` needs `@react-email/ui`.
-
-### Completed
-
-- User authentication (Clerk integration) — 2025-09-25
-- Account management (create, list, set default) — 2025-09-25
-- Transaction creation (form, validation, DB insert) — 2025-09-25
-- Dashboard skeleton (accounts, recent transactions, budget) — 2025-09-25
-- Dependency upgrade to Next 16.4.0 / Prisma 7.10.0 / Clerk 7 / Zod 4 / Inngest 4 / ESLint 9 — 2026-10-12, build-verified, runtime-unverified, committed as `a22c0ff`
-- TypeScript migration Plan A: 79 files renamed and typed under a per-directory error budget, `pnpm typecheck` 0 errors, 19 characterisation tests, `jsconfig.json` → `tsconfig.json` — 2026-10-12, committed as `a22c0ff`
-- `pnpm build` became a type gate (`typescript.ignoreBuildErrors` deleted from `next.config.mjs`) and `include` widened to the whole tree — 2026-10-12
-- Agent instruction layer (AGENTS.md, CLAUDE.md, `.claude/skills/`, Plan A spec + plan) committed as `b25dd3f` — 2026-10-13
-- Instruction-layer integration from `../agent-ready-template` — 2026-10-13, **uncommitted**: `.claude/skills/{babysitting-a-pr,leaving-pr-comment}/SKILL.md` added (STANDING RULES §8 named them and the repo did not have them); `.env.example` added with the code-cited name inventory and a `!.env.example` allow-list in `.gitignore`; `tests/README.md` added; `.github/workflows/ci.yml` added (gates 1–3, no lint, no secrets — proven credential-free); and the three repo skills that had gone untrue rewritten (`testing.md` said "Tests do not yet exist"; `verification-gates.md` listed a 3-gate chain and claimed `pnpm lint` exits 0; `development-workflow.md` pointed at a `specs/` folder and at `lib/checkUser.js` / `lib/prisma.js`). No source file changed.
-
-### In progress
-
-- None. Plan A is closed; the next unit is Plan B. The 2026-10-13 instruction-layer integration above is complete but not committed — committing needs the user's word (STANDING RULES §7).
-
-### Recent work
-
-- `a22c0ff` — refactor: Convert the tree to TypeScript under strict mode — 2026-10-13
-- `b25dd3f` — docs: Add agent instruction layer, repo skills and Plan A specs — 2026-10-13
-- `060c105` — refactor: Remove fabricated landing content and dead hero modules — 2026-10-11
-- `a7f9224` — feat: Add more dummy data on landing page — 2026-10-11
-- `80aec7a` — fix: Fix update transaction account balance amount not properly parsed — 2026-10-11
-
-### Open questions
-
-- Recurring transaction cadence: Auto-create next occurrence or manual trigger only?
-- Should budget alerts be email, in-app toast, or both?
-- Currency support: USD-only MVP or multi-currency from day one?
-- Where should the Inngest job run? (Local dev, external worker, serverless?)
-- Should the seed endpoint be gated by a secret header in all environments?
-- **Lint census: 87 errors and 3 warnings** from `pnpm lint` (`eslint .`). The errors are 86 pre-existing `import/order` violations plus 1 `react-hooks/set-state-in-effect`; the warnings are 2 `react-hooks/incompatible-library` (react-compiler noise) and 1 `react-hooks/exhaustive-deps`. 86 of them autofix with `--fix`. Autofix as a standalone commit, downgrade `import/order` to `warn`, or keep lint red and gate on build only? (AGENTS.md earlier said "92 pre-existing `import/order` errors" — the flat config's `import/order` count is 86.) **Interim consequence, 2026-10-13:** CI ships without a lint step, so the census now gates only local work — decide whether that is acceptable or whether CI should gate on "census does not grow" via a before/after count.
-- `@react-email/components` is deprecated on npm at every published version ("Package no longer supported"), and `@react-email/ui` is not installed so `pnpm email` cannot run. Which replacement covers `emails/template.tsx`?
-- Should `jsdom` + `@testing-library/react` be installed so `hooks/use-fetch.ts` can have a real `renderHook` test? (Deferred: no package installs were in Plan A's scope.)
-- The `as string` env assertions in `lib/arcjet.ts:4`, `proxy.ts:14`, `actions/transaction.ts:12`, `lib/inngest/functions.ts:217` and `actions/seed.ts:8-9` are a type-lie: they tell `tsc` a possibly-absent var is a `string`. `experimental.typedEnv` (or a Zod env schema) is the honest fix.
-- Scroll suppression on `components/pagination.tsx` has never worked. Task 12 deleted the dead `{ scroll: false }` argument (React's `TransitionStartFunction` takes one parameter) and tightened the lying prop signature at `:23` to match, so the call site no longer type-checks a no-op; `:31` now calls `router.push(url)` with no options. Should page changes suppress scrolling for real, via `router.push(url, { scroll: false })`, which Next.js does honour? Behaviour change, so it waits for a decision.
-- **The account chart groups by a date label that loses the year, so it merges rows and mis-sorts:** `app/(main)/account/_components/account-chart.tsx:67` keys the accumulator with `format(new Date(transaction.date), 'MMM dd')` and `:83-84` re-parses that label to order the bars. So a "Dec 31" from 2025 and a "Dec 31" from 2026 merge into one bar, and a window spanning December into January orders the December bars *after* the January ones (the missing year defaults). Pre-existing — Task 11 typed the accumulator and the comparator without changing either — and fixing it means keying by an ISO day and formatting only at render, which changes chart output. Spec item 13; Plan B/Phase 3.
-- Is the money bug below fixed by Plan B or by a standalone hotfix first? (`add-transaction-form.tsx:99-101` + `actions/transaction.ts:120-122`.)
-- `components/header.tsx` was owned by no Plan A task and its props/helpers stay unannotated — is that Plan B Phase 3 work?
-- Should `engines.node` (`>=20.9.0`) be declared now that Next 16 and Clerk 7 both require it? Sharpened 2026-10-13: Rule 11's Node-26 failure mode is the concrete cost of not declaring it — CI pins `node-version: "20"` in `.github/workflows/ci.yml`, so the manifest and CI now disagree about who enforces the runtime.
-
-### Architecture decisions
-
-- **Auth: Clerk over custom** — Reduces complexity, handles MFA and social login.
-- **Database: PostgreSQL + Prisma** — Type-safe ORM, migrations, good Next.js integration.
-- **Background jobs: Inngest over Bull/Redis** — Managed service, no infra overhead.
-- **UI: Radix UI + Tailwind** — Accessible components, fast iteration.
-- **Prisma 7 generator stays on `prisma-client-js`** — The newer `prisma-client` generator requires an `output` path and would rewrite every Prisma import; `prisma-client-js` still generates cleanly, so the blast radius stayed on the protected client/datasource files.
-- **TypeScript ramp: bridge then tighten** — `strict: true` immediately, `noImplicitAny`/`useUnknownInCatchVariables` deferred to Plan B, because the measured cost of the two flags was the whole tree and a big-bang flip has no per-file budget.
-- **Annotate only where a diagnostic demands** — Plan A's per-file rule: no prophylactic types, no casts to silence, no unused-code polish inside a typing task. It is what kept 11 reviewed diffs reviewable; the leftovers are listed in Current goal / Open questions rather than hidden.
-- **Tests before the rename (characterisation)** — Vitest over `node:test` because `node:test` needs Node 22+ for type stripping and does not resolve the `@/` alias.
-
-### Session notes
-
-- ESLint is a real gate: `eslint.config.mjs` is a flat config consuming `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript` directly (FlatCompat crashes on it), `pnpm lint` is `eslint .`, and Next 16 has no `eslint` key in `next.config.mjs` so the build never lints. `.delta/**` (git-excluded worktree/clone copies) and `next-env.d.ts` are eslint-ignored, and `.delta` is also in `tsconfig.json`'s `exclude`.
-- `next.config.mjs` now carries no `typescript` key: `pnpm build` prints `Running TypeScript ...` / `Finished TypeScript in ~1.9s` and fails on a type error. Verified 2026-10-12 with a clean build (exit 0, 9 routes compiled).
-- **Money bug Plan A could not fix (highest severity found):** `app/(main)/transaction/_components/add-transaction-form.tsx:99-101` builds `{ amount: parseFloat(data.amount), ...data }` — the spread lands after `amount`, so the parsed number is overwritten by the raw form string and `createTransaction` receives `amount: string`. `actions/transaction.ts:120-122` then computes `account.balance.toNumber() + balanceChange`, which on the INCOME branch concatenates (`100 + "250"` → `"100250"`) and `:143` writes it as a `Decimal`. Fresh accounts hide it (`0 + "250"` → `"0250"` → 250); EXPENSE is accidentally correct via the unary minus. `updateTransaction` already parses (`:207-208`, commit `80aec7a`). **No test pins `createTransaction`.** Recorded as item 10 of the spec's "Reported, not fixed"; Plan B's `parseInput` owns it.
-- Recurring transaction columns are wired in `lib/inngest/functions.ts` (`triggerRecurringTransactions` cron → `transaction.recurring.process` event → `processRecurringTransaction`, which writes `balance: { increment: ... }` inside `db.$transaction`), and `app/api/inngest/route.ts` serves all four functions. This is live money-path code, not metadata only — but it has never been run against a database in this environment.
-- Email: `actions/send-email.ts` calls Resend and is invoked by the Inngest budget-alert and monthly-report functions. `RESEND_API_KEY` is not present in `.env.local`, and the preview CLI is unrunnable, so both email paths are unverified. The budget-alert payload also sends strings into an arithmetic slot (`lib/inngest/functions.ts:77-78`, `emails/template.tsx` "Remaining" row) — spec item 8.
-- `components/ui/{animated-group,progressive-blur,text-effect,infinite-slider}.jsx` were deleted in Plan A Task 5 after proving zero importers, so nothing imports `motion` now; `motion@^14.1.0` remains at `package.json:41` as an unused dependency (`pnpm remove motion` awaits the user's word).
-- `app/(main)/dashboard/_components/budget-progress.tsx:60` shows `toast.error('Failed asdasdto update budget')` on a failed budget update — a stray paste in user-visible text, left because Plan A forbids runtime-visible changes (spec item 11).
 
 ---
 
@@ -766,6 +702,43 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
 - **Tests beyond the unit tier:** 19 Vitest unit tests exist (`tests/`, `pnpm test`). Integration and e2e tests do not exist, and no page, server action, API route, `proxy.ts` or Inngest function is covered — coverage of the app's behaviour is effectively 0%. See CODE STANDARDS (Testing section).
 - **Multi-user sharing:** No shared budgets or collaborative features.
 - **Mobile app:** Web-only for MVP.
+- **Lint census decides CI's fourth gate:** `pnpm lint` reports pre-existing `import/order` and
+  `react-hooks/set-state-in-effect` errors. Until that is decided, `.github/workflows/ci.yml` cannot add the lint
+  step the template's `### Review gate` requires ("CI runs the same commands"). Options: autofix as a standalone
+  commit, fix the one hook error (a behaviour change), downgrade `import/order` to `warn`, or keep this repo's
+  written exception under that heading.
+- **Rotting literals are still in this file.** The template forbids counts in docs; §13, § Verification and §
+  Language strictness quote test, error and file counts because a baseline has to live somewhere. Deciding where
+  (a generated census file? the CI log?) is its own unit.
+- **`engines.node` is undeclared** while Next 16 and Clerk 7 both need `>=20.9.0` and CI pins Node 20 by hand.
+  Blocks: a reproducible "which runtime" answer for a new clone.
+- **The seed endpoint is an unauthenticated `GET` that writes rows.** Blocks: any deploy that is not local.
+- **`@react-email/components` is deprecated upstream and `@react-email/ui` is absent,** so `pnpm email` cannot
+  run. Blocks: proving `emails/template.tsx` renders; needs a replacement decision.
+- **The account chart groups by a date label that drops the year**
+  (`app/(main)/account/_components/account-chart.tsx:67`, re-parsed at `:83-84`), so a Dec 31 from two years
+  merges into one bar and a December-to-January window mis-orders it. Fixing it changes chart output.
+- **Page changes never suppressed scrolling:** `components/pagination.tsx:31` calls `router.push(url)` with no
+  options after Plan A deleted a dead argument. Whether to pass `{ scroll: false }` for real is a behaviour
+  decision.
+- **`components/header.tsx` props and helpers are unannotated** — it belonged to no Plan A task. Plan B Phase 3.
+- **The env vars read through `as string` assertions** (`lib/arcjet.ts:4`, `proxy.ts:14`,
+  `actions/transaction.ts:12`, `lib/inngest/functions.ts:217`, `actions/seed.ts:8-9`) are a type-lie;
+  `experimental.typedEnv` or a Zod env schema is the honest fix. Blocks: trusting the config surface.
+- **`jsdom` and `@testing-library/react` are not installed,** so `hooks/use-fetch.ts` has no test. Blocks: any
+  claim about the client fetch wrapper.
+- **Recurring processing has never executed.** Inngest serves the four functions at `/api/inngest`; no schedule
+  has fired here, so nothing is applied automatically. Blocks: the "recurring transactions" promise in Core Flow.
+- **`receiptUrl` is never populated.** Gemini OCR is reachable from the add-transaction form but returns no file
+  URL and there is no upload endpoint or bucket. Blocks: "upload a receipt".
+- **The checker does not pin its own doc.** `AGENTS.md` carries the health-check command in two places, and
+  nothing asserts they still equal the template's literal one-liner, so a bracket-free `grep -v` exemption could
+  return without failing the slot check. Blocks: the health check staying honest without a human reading it.
+- **The env-inventory assertion scans the whole file, not §16 and the file-organization tree as the design scoped
+  it,** so it claims every upper-case-with-underscore token in prose as a variable `.env.example` must inventory.
+  Together with the slot check that forbids angle brackets, the only placeholder form this file can use is
+  lowercase snake_case (`--name migration_name`). Blocks: any future placeholder in `AGENTS.md`, and any task
+  that wants a normal shell metavariable.
 
 ---
 
@@ -796,12 +769,11 @@ structure and `specs/00-template.md` for the template.
 
 ## When to fill sections
 
-1. **STANDING RULES (Rules 11–17)** — day one when you learn the first fact (package manager, runtime, gates). ✓
-2. **PROJECT OVERVIEW through PM CONVENTIONS** — as you build, one section per decision. ✓
-3. **SERVICE ARCHITECTURE** — after your first real commit, listing only implemented code. ✓
-4. **TARGET STATE** — whenever design intent outpaces implementation. ✓
-5. **PROGRESS TRACKER** — after every meaningful change. ✓
-6. **FEATURE SPECS** — one per unit of work. ✓
+1. **STANDING RULES (Rules 11–17)** — day one when you learn the first fact (package manager, runtime, gates).
+2. **PROJECT OVERVIEW through PM CONVENTIONS** — as you build, one section per decision.
+3. **SERVICE ARCHITECTURE** — after your first real commit, listing only implemented code.
+4. **TARGET STATE** — whenever design intent outpaces implementation.
+5. **FEATURE SPECS** (`specs/`) — one per unit of work.
 
 ## Health check
 
