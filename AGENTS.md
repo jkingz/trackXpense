@@ -581,7 +581,7 @@ The chain from `/verification-gates` skill and STANDING RULES (Rule 13):
 2. `pnpm test` → 19 passed
 3. `pnpm build` → succeeds (it type-checks; it does not lint)
 4. `pnpm lint` → no **new** error class; the tree stays red on pre-existing debt (the census is quoted in § Verification), so "green lint" is not the gate
-5. Manual verification (smoke test in browser, database state, etc.) — impossible for auth/DB/email flows here, see the credential blockers
+5. Manual verification (smoke test in browser, database state, etc.) — impossible for auth/DB/email flows here; the missing credentials are named in §13 Verification gates, gate 5
 
 ---
 

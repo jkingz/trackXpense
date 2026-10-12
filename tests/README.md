@@ -56,4 +56,4 @@ Run it alone with `pnpm check:docs`.
 
 `DATABASE_URL`/`DIRECT_URL` are absent, so nothing touching `lib/prisma.ts` executes. The money
 path — auth → create account → log transaction → balance — has zero coverage and cannot get any in
-this environment. See AGENTS.md § Progress Tracker → Blockers.
+this environment. See AGENTS.md → STANDING RULES §13 (Verification gates), gate 5.
