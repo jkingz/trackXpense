@@ -11,7 +11,7 @@ when: "user starts a new task, needs to scope work, or asks about development pr
 2. **Say the scope in one sentence** — what changes, and what explicitly does NOT.
 3. **Implement the smallest increment** that can be verified on its own.
 4. **Verify with a command** — never with a claim. Use `/verification-gates` skill.
-5. **Update the docs** the change made untrue — in the same change (AGENTS.md, the relevant spec, inline comments).
+5. **Update the docs** the change made untrue — in the same change (AGENTS.md, the feature's spec under specs/, inline comments).
 6. **Report** — what changed, what was verified, what is still unknown.
 
 ## Scoping rules
@@ -26,7 +26,7 @@ when: "user starts a new task, needs to scope work, or asks about development pr
 
 - Do not invent behavior that is not in AGENTS.md context sections.
 - Ambiguous? Resolve it in the relevant section first, then implement.
-- Missing? Record it in AGENTS.md § FEATURE SPECS → Deferred / open questions and stop that branch of work.
+- Missing? Record it in the feature's spec under specs/ (copy specs/00-template.md) and stop that branch of work.
 
 ## Docs and truth
 
@@ -46,7 +46,7 @@ when: "user starts a new task, needs to scope work, or asks about development pr
 
 1. The unit works end to end inside the scope you stated at the start.
 2. No invariant in ARCHITECTURE CONTEXT was violated.
-3. The unit's spec reflects what actually happened — a feature unit in AGENTS.md § FEATURE SPECS, a conversion/migration plan in `docs/superpowers/{specs,plans}/`.
+3. The spec in specs/ reflects what actually happened for a feature unit; a conversion or migration keeps its plan under docs/superpowers/plans/.
 4. The full gate chain is reported (use `/verification-gates`). "Green" is not assumed: lint is red on recorded pre-existing debt, so report the census instead.
 
 ## Reference
