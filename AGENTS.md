@@ -133,7 +133,7 @@ Read these sections in the order listed above (rule 14). Update the section your
 
 **Not built** — Recurring transaction processing, email alerts, analytics, receipt OCR, multi-user sharing, mobile app.
 
-Verified: 2026-10-12, against the working tree at `060c105` + the uncommitted TypeScript migration (Plan A) and dependency upgrade.
+Verified: 2026-10-13, against `a22c0ff` on `feat/ts-zod-plan-a-bridge` (committed and pushed), which carries the TypeScript migration (Plan A) and the dependency upgrade.
 
 ### Overview
 
@@ -566,7 +566,7 @@ The chain from `/verification-gates` skill and STANDING RULES (Rule 13):
 
 ### Current phase
 
-**TypeScript Plan A landed; Plan B (Zod enforcement) pending** — 2026-10-12. All 79 JavaScript files are `.ts`/`.tsx`, `pnpm typecheck` is at **0 errors project-wide** (down from 194 the moment the tree was renamed), and `pnpm build` type-checks for the first time. Dependency baseline had already been raised to Next 16.4.0 / Prisma 7.10.0 / Clerk 7 / Zod 4 / Inngest 4. **Nothing is committed**: the branch has zero commits and the whole migration sits in the index plus the working tree, awaiting the user's commit/PR decision.
+**TypeScript Plan A landed and committed; Plan B (Zod enforcement) pending** — migration built 2026-10-12, committed and pushed 2026-10-13. All 79 JavaScript files are `.ts`/`.tsx`, `pnpm typecheck` is at **0 errors project-wide** (down from 194 the moment the tree was renamed), and `pnpm build` type-checks for the first time. Dependency baseline had already been raised to Next 16.4.0 / Prisma 7.10.0 / Clerk 7 / Zod 4 / Inngest 4. `b25dd3f` (this instruction layer) and `a22c0ff` (the migration) are on `origin/feat/ts-zod-plan-a-bridge`, working tree clean. `060c105` rode along: committed locally on 2026-10-11, never pushed until now. No PR opened yet.
 
 ### Current goal
 
@@ -585,9 +585,10 @@ Blockers unchanged: no `DATABASE_URL`/`DIRECT_URL` in `.env.local`, so the money
 - Account management (create, list, set default) — 2025-09-25
 - Transaction creation (form, validation, DB insert) — 2025-09-25
 - Dashboard skeleton (accounts, recent transactions, budget) — 2025-09-25
-- Dependency upgrade to Next 16.4.0 / Prisma 7.10.0 / Clerk 7 / Zod 4 / Inngest 4 / ESLint 9 — 2026-10-12, build-verified, runtime-unverified, uncommitted
-- TypeScript migration Plan A: 79 files renamed and typed under a per-directory error budget, `pnpm typecheck` 0 errors, 19 characterisation tests, `jsconfig.json` → `tsconfig.json` — 2026-10-12, uncommitted
+- Dependency upgrade to Next 16.4.0 / Prisma 7.10.0 / Clerk 7 / Zod 4 / Inngest 4 / ESLint 9 — 2026-10-12, build-verified, runtime-unverified, committed as `a22c0ff`
+- TypeScript migration Plan A: 79 files renamed and typed under a per-directory error budget, `pnpm typecheck` 0 errors, 19 characterisation tests, `jsconfig.json` → `tsconfig.json` — 2026-10-12, committed as `a22c0ff`
 - `pnpm build` became a type gate (`typescript.ignoreBuildErrors` deleted from `next.config.mjs`) and `include` widened to the whole tree — 2026-10-12
+- Agent instruction layer (AGENTS.md, CLAUDE.md, `.claude/skills/`, Plan A spec + plan) committed as `b25dd3f` — 2026-10-13
 
 ### In progress
 
@@ -595,11 +596,11 @@ Blockers unchanged: no `DATABASE_URL`/`DIRECT_URL` in `.env.local`, so the money
 
 ### Recent work
 
+- `a22c0ff` — refactor: Convert the tree to TypeScript under strict mode — 2026-10-13
+- `b25dd3f` — docs: Add agent instruction layer, repo skills and Plan A specs — 2026-10-13
 - `060c105` — refactor: Remove fabricated landing content and dead hero modules — 2026-10-11
 - `a7f9224` — feat: Add more dummy data on landing page — 2026-10-11
 - `80aec7a` — fix: Fix update transaction account balance amount not properly parsed — 2026-10-11
-- `b6b05e2` — fix: Fix loader2 missing imports — 2026-10-11
-- `d9c669f` — chore: Add eslint ignore — 2026-10-11
 
 ### Open questions
 
