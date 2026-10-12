@@ -27,8 +27,9 @@ swaps to the pinned version once the right Node is on `PATH`; it does not touch 
 2. **Tests** — `pnpm test` (`TZ=UTC vitest run`)
    - Name the tier it collected. `TZ=UTC` is in the script and is load-bearing.
    - Gate 2 also collects `tests/platform/unit/instruction-layer.test.ts` — the instruction-layer checker,
-     the tier `pnpm check:docs` runs alone — so every gate-2 run checks AGENTS.md, these skills, `specs/`
-     and `.env.example`. When it fails, the fix is in the doc or in the fixture, never in the assertion.
+     the tier `pnpm check:docs` runs alone — so every gate-2 run re-checks AGENTS.md, `.claude/skills/` and
+     `.env.example` against each other, plus the vendored heading fixture. When it fails, the fix is in the
+     doc or in the fixture, never in the assertion.
    - Most tests are characterisation — they pin behaviour including recorded defects, so green is not an
      endorsement. The instruction-layer checker is the exception: it reads docs, not app behaviour.
      See `/testing`.
