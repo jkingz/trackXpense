@@ -83,6 +83,8 @@ These rules hold in every repo.
 ### 11. Package manager and runtime
 `pnpm 10.6.5` (locked in `package.json` `packageManager` field); `Node.js 20+` (inferred, not explicitly declared). Next 16 and Clerk 7 both require Node `>=20.9.0`; `engines` is still not declared in `package.json`.
 
+Measured failure mode, 2026-10-13: corepack can only activate the pinned pnpm on a supported runtime. On Node 20.19.5 `pnpm --version` prints `10.6.5`; on Node 26 it prints `12.11.2` with `[WARN] Cannot use the pnpm version this project pins: no @pnpm/exe.darwin-arm64 native binary was found for this host`, and every `pnpm` script then dies on that warning — which looks like a broken project, not a broken shell. Check `node --version` before trusting a red gate. Recovery on this machine was `PATH="$HOME/.nvm/versions/node/v20.19.5/bin:$PATH" pnpm install --frozen-lockfile --ignore-scripts`, which activates the pin without touching `node_modules` or running `prisma generate`.
+
 ### 12. Framework version drift
 `Next.js 16.4.0` pinned exactly in `package.json`; `TypeScript 5.9.3` is the source language (`tsconfig.json`, `strict: true`, whole-tree `include`, 0 errors). Breaking changes from Next.js App Router documented at `node_modules/next/dist/docs/` (version-16 guide: `01-app/02-guides/upgrading/version-16.md`). Check that path before touching server components, layouts, API routes, or metadata. Next 16 defaults: Turbopack for `dev` and `build`, request-time APIs (`params`, `searchParams`, `cookies`, `headers`) are async-only, the root middleware file is `proxy.ts` (not `middleware.js`), `next lint` no longer exists, and `next build` type-checks unless `typescript.ignoreBuildErrors` is set — which it is **not**, as of Plan A Task 12.
 
@@ -93,6 +95,8 @@ The exact chain that must be green before work is reported complete:
 3. `pnpm build` — Next.js production build (Turbopack). It now **is** a type gate (no `typescript.ignoreBuildErrors` in `next.config.mjs`) and still never lints.
 4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. It is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings**. The gate is "the census does not grow", not "green" — see Progress Tracker.
 5. Manual verification when touching auth, database, or email flows — currently impossible here (no `DATABASE_URL`, no `ARCJET_KEY`, `@react-email/ui` missing).
+
+CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). The workflow itself has not run yet — its first push is its first execution, and its YAML is unvalidated locally (no YAML parser in `node_modules`, none in `python3`).
 
 See `/verification-gates` skill for the full chain and how to report each gate.
 
@@ -412,7 +416,7 @@ lib/                    — Utilities and shared logic
   schema.ts             — Validation schemas (Zod)
   serialized-transaction.ts — Decimal→number row serializer (implicit-`any` boundary; see Language strictness)
   utils.ts              — Misc utilities (cn)
-tests/                  — Vitest unit tier: tests/{feature}/unit/*.test.ts
+tests/                  — Vitest unit tier: tests/{feature}/unit/*.test.ts, tests/README.md for tiers
 tsconfig.json           — Project TS config (strict, whole-tree include; no jsconfig.json)
 next-env.d.ts           — Next-generated ambient types (git-ignored, in .gitignore)
 vitest.config.ts        — Test runner config (maps the @/ alias, TZ-pinned via the npm script)
@@ -423,6 +427,8 @@ prisma.config.ts        — Prisma CLI config (datasource url, env loading)
 proxy.ts                — Root request hook (ArcJet then Clerk); Next 16 name for middleware, in TypeScript
 public/                 — Static assets
 .env.local              — Local environment variables (git-ignored)
+.env.example            — Committed name inventory, values empty (STANDING RULES §6); each name cites its read site
+.github/workflows/ci.yml — CI: install + gates 1–3, no lint, no secrets (see Rule 13)
 ```
 
 Protected paths: `lib/checkUser.ts`, `lib/prisma.ts`, `prisma/schema.prisma` — do not edit without understanding auth, data access, and schema implications.
@@ -589,10 +595,11 @@ Blockers unchanged: no `DATABASE_URL`/`DIRECT_URL` in `.env.local`, so the money
 - TypeScript migration Plan A: 79 files renamed and typed under a per-directory error budget, `pnpm typecheck` 0 errors, 19 characterisation tests, `jsconfig.json` → `tsconfig.json` — 2026-10-12, committed as `a22c0ff`
 - `pnpm build` became a type gate (`typescript.ignoreBuildErrors` deleted from `next.config.mjs`) and `include` widened to the whole tree — 2026-10-12
 - Agent instruction layer (AGENTS.md, CLAUDE.md, `.claude/skills/`, Plan A spec + plan) committed as `b25dd3f` — 2026-10-13
+- Instruction-layer integration from `../agent-ready-template` — 2026-10-13, **uncommitted**: `.claude/skills/{babysitting-a-pr,leaving-pr-comment}/SKILL.md` added (STANDING RULES §8 named them and the repo did not have them); `.env.example` added with the code-cited name inventory and a `!.env.example` allow-list in `.gitignore`; `tests/README.md` added; `.github/workflows/ci.yml` added (gates 1–3, no lint, no secrets — proven credential-free); and the three repo skills that had gone untrue rewritten (`testing.md` said "Tests do not yet exist"; `verification-gates.md` listed a 3-gate chain and claimed `pnpm lint` exits 0; `development-workflow.md` pointed at a `specs/` folder and at `lib/checkUser.js` / `lib/prisma.js`). No source file changed.
 
 ### In progress
 
-- None. Plan A is closed; the next unit is Plan B.
+- None. Plan A is closed; the next unit is Plan B. The 2026-10-13 instruction-layer integration above is complete but not committed — committing needs the user's word (STANDING RULES §7).
 
 ### Recent work
 
@@ -609,7 +616,7 @@ Blockers unchanged: no `DATABASE_URL`/`DIRECT_URL` in `.env.local`, so the money
 - Currency support: USD-only MVP or multi-currency from day one?
 - Where should the Inngest job run? (Local dev, external worker, serverless?)
 - Should the seed endpoint be gated by a secret header in all environments?
-- **Lint census: 87 errors and 3 warnings** from `pnpm lint` (`eslint .`). The errors are 86 pre-existing `import/order` violations plus 1 `react-hooks/set-state-in-effect`; the warnings are 2 `react-hooks/incompatible-library` (react-compiler noise) and 1 `react-hooks/exhaustive-deps`. 86 of them autofix with `--fix`. Autofix as a standalone commit, downgrade `import/order` to `warn`, or keep lint red and gate on build only? (AGENTS.md earlier said "92 pre-existing `import/order` errors" — the flat config's `import/order` count is 86.)
+- **Lint census: 87 errors and 3 warnings** from `pnpm lint` (`eslint .`). The errors are 86 pre-existing `import/order` violations plus 1 `react-hooks/set-state-in-effect`; the warnings are 2 `react-hooks/incompatible-library` (react-compiler noise) and 1 `react-hooks/exhaustive-deps`. 86 of them autofix with `--fix`. Autofix as a standalone commit, downgrade `import/order` to `warn`, or keep lint red and gate on build only? (AGENTS.md earlier said "92 pre-existing `import/order` errors" — the flat config's `import/order` count is 86.) **Interim consequence, 2026-10-13:** CI ships without a lint step, so the census now gates only local work — decide whether that is acceptable or whether CI should gate on "census does not grow" via a before/after count.
 - `@react-email/components` is deprecated on npm at every published version ("Package no longer supported"), and `@react-email/ui` is not installed so `pnpm email` cannot run. Which replacement covers `emails/template.tsx`?
 - Should `jsdom` + `@testing-library/react` be installed so `hooks/use-fetch.ts` can have a real `renderHook` test? (Deferred: no package installs were in Plan A's scope.)
 - The `as string` env assertions in `lib/arcjet.ts:4`, `proxy.ts:14`, `actions/transaction.ts:12`, `lib/inngest/functions.ts:217` and `actions/seed.ts:8-9` are a type-lie: they tell `tsc` a possibly-absent var is a `string`. `experimental.typedEnv` (or a Zod env schema) is the honest fix.
@@ -617,7 +624,7 @@ Blockers unchanged: no `DATABASE_URL`/`DIRECT_URL` in `.env.local`, so the money
 - **The account chart groups by a date label that loses the year, so it merges rows and mis-sorts:** `app/(main)/account/_components/account-chart.tsx:67` keys the accumulator with `format(new Date(transaction.date), 'MMM dd')` and `:83-84` re-parses that label to order the bars. So a "Dec 31" from 2025 and a "Dec 31" from 2026 merge into one bar, and a window spanning December into January orders the December bars *after* the January ones (the missing year defaults). Pre-existing — Task 11 typed the accumulator and the comparator without changing either — and fixing it means keying by an ISO day and formatting only at render, which changes chart output. Spec item 13; Plan B/Phase 3.
 - Is the money bug below fixed by Plan B or by a standalone hotfix first? (`add-transaction-form.tsx:99-101` + `actions/transaction.ts:120-122`.)
 - `components/header.tsx` was owned by no Plan A task and its props/helpers stay unannotated — is that Plan B Phase 3 work?
-- Should `engines.node` (`>=20.9.0`) be declared now that Next 16 and Clerk 7 both require it?
+- Should `engines.node` (`>=20.9.0`) be declared now that Next 16 and Clerk 7 both require it? Sharpened 2026-10-13: Rule 11's Node-26 failure mode is the concrete cost of not declaring it — CI pins `node-version: "20"` in `.github/workflows/ci.yml`, so the manifest and CI now disagree about who enforces the runtime.
 
 ### Architecture decisions
 
@@ -727,6 +734,8 @@ pnpm typecheck # next typegen && tsc --noEmit — 0 errors over 81 source files
 pnpm test      # TZ=UTC vitest run — 19 passed (3 files)
 pnpm build     # next build — compiles AND type-checks (9 routes, exit 0)
 pnpm lint      # eslint . — exit 1: 87 errors, 3 warnings (pre-existing debt, see Rule 13)
+# CI: .github/workflows/ci.yml runs install + typecheck + test + build on push to main|feat/**.
+#     No lint step (gate 4 is red on the census above), no secrets. Never executed on a runner yet.
 # Manual: sign in, create account, log transaction, verify dashboard — impossible here, no DATABASE_URL
 ```
 
@@ -740,6 +749,8 @@ Test coverage of the app: effectively 0% — the 19 tests cover the money serial
 - `/verification-gates` — the chain that must pass before work is complete; how to verify and report
 - `/development-workflow` — the work loop, scoping rules, and requirements discipline
 - `/git-workflow` — commit conventions, push discipline, and PR workflow
+- `/babysitting-a-pr` (`.claude/skills/babysitting-a-pr/SKILL.md`) — STANDING RULES §8: recency gate, verify-before-fix, exit states
+- `/leaving-pr-comment` (`.claude/skills/leaving-pr-comment/SKILL.md`) — STANDING RULES §8: comment triggers, body contract, mandatory AI-authorship disclaimer
 
 ---
 
