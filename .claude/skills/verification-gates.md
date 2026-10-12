@@ -26,8 +26,12 @@ swaps to the pinned version once the right Node is on `PATH`; it does not touch 
 
 2. **Tests** — `pnpm test` (`TZ=UTC vitest run`)
    - Name the tier it collected. `TZ=UTC` is in the script and is load-bearing.
-   - All tests are characterisation — they pin behaviour including recorded defects, so green is not
-     an endorsement. See `/testing`.
+   - Gate 2 also collects `tests/platform/unit/instruction-layer.test.ts` — the instruction-layer checker,
+     the tier `pnpm check:docs` runs alone — so every gate-2 run checks AGENTS.md, these skills, `specs/`
+     and `.env.example`. When it fails, the fix is in the doc or in the fixture, never in the assertion.
+   - Most tests are characterisation — they pin behaviour including recorded defects, so green is not an
+     endorsement. The instruction-layer checker is the exception: it reads docs, not app behaviour.
+     See `/testing`.
 
 3. **Build** — `pnpm build` (Next 16, Turbopack)
    - A real type gate since Plan A Task 12: `next.config.mjs` carries no `typescript` key, so it
@@ -51,8 +55,9 @@ swaps to the pinned version once the right Node is on `PATH`; it does not touch 
 
 ## Reporting
 
-For each gate: the command, the output it printed, pass or fail. Counts go in the reply, never into
-this file or AGENTS.md — a number typed in a doc is wrong the day someone adds a test.
+For each gate: the command, the output it printed, pass or fail. Counts belong in the reply; the only
+counts this repo keeps in AGENTS.md are the §13 gate 2 and § Verification baselines, refreshed from
+command output whenever they move.
 
 ```
 Typecheck: pnpm typecheck → <tsc output>

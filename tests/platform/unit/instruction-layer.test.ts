@@ -241,11 +241,11 @@ describe('every path citation resolves', () => {
 
 describe('AGENTS.md heading skeleton equals the template skeleton', () => {
   it('reports both directions of a drift', () => {
-    // A symmetric set difference in both directions: `## B` is in `actual` and not in `expected`, so it is an
-    // extra too, and `## Gone` is the only missing heading. `# A` sits on both sides and is reported by neither.
-    expect(diffHeadings(['# A', '## B', '## Extra'], ['# A', '## Gone'])).toEqual({
-      extra: ['## B', '## Extra'],
-      missing: ['## Gone'],
+    // Both inputs are deliberately unsorted, so the sorted expectations below only hold because diffHeadings
+    // sorts each side; `# A` sits on both sides and is reported by neither.
+    expect(diffHeadings(['## Zeta', '# A', '## B'], ['# A', '## Gone', '## Alpha'])).toEqual({
+      extra: ['## B', '## Zeta'],
+      missing: ['## Alpha', '## Gone'],
     });
   });
 

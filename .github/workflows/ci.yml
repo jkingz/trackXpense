@@ -4,6 +4,11 @@ name: CI
 # executes the subset of it that can run without credentials, and says below why each omission is
 # deliberate. If §13 changes, change this file in the same commit.
 #
+# GATES EXECUTED (the §13 chain minus the omissions below):
+#   gate 1: pnpm typecheck
+#   gate 2: pnpm test — app unit tests + the instruction-layer checker (no credentials needed)
+#   gate 3: pnpm build
+#
 # OMISSIONS (deliberate, not oversights):
 #   * `pnpm lint` — the tree is red on a recorded pre-existing ESLint census (AGENTS.md § TARGET STATE,
 #     "Lint census decides CI's fourth gate"). Adding a step that fails on every push teaches nobody to read CI.

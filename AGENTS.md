@@ -91,12 +91,12 @@ Measured failure mode, 2026-10-13: corepack can only activate the pinned pnpm on
 ### 13. Verification gates
 The exact chain that must be green before work is reported complete:
 1. `pnpm typecheck` — `next typegen && tsc --noEmit` over the whole tree. Baseline: **0 errors**. Do not let it regress; `npx tsc --noEmit --incremental false` is the non-stale re-check.
-2. `pnpm test` — `TZ=UTC vitest run`. Baseline: 19 passed in 3 files (all characterisation).
+2. `pnpm test` — `TZ=UTC vitest run`. Baseline: **32 passed in 4 files** — 19 app-tier characterisation tests in `tests/money` and `tests/validation`, plus 13 instruction-layer checks in `tests/platform` that read this repo's docs, not app behaviour.
 3. `pnpm build` — Next.js production build (Turbopack). It now **is** a type gate (no `typescript.ignoreBuildErrors` in `next.config.mjs`) and still never lints.
-4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. The config consumes `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript` directly; wrapping them in `FlatCompat` crashes. It is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings**. The gate is "the census does not grow", not "green" — the census is quoted in § Verification.
+4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. The config consumes `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript` directly; wrapping them in `FlatCompat` crashes. `pnpm lint` is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings**. The gate is "the census does not grow", not "green" — the census is quoted in § Verification.
 5. Manual verification when touching auth, database, or email flows — currently impossible here (no `DATABASE_URL`, no `ARCJET_KEY`, `@react-email/ui` missing); and with no `ARCJET_KEY`, `pnpm dev` answers **403** on `/`, `/sign-in` and `/dashboard`, so there is no page to smoke-test either.
 
-CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). The workflow itself has not run yet — its first push is its first execution, and its YAML is unvalidated locally (no YAML parser in `node_modules`, none in `python3`).
+CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). The workflow itself has not run yet — its first push is its first execution, and its YAML is unvalidated locally (no YAML parser in `node_modules`, none in `python3`). Gate 2 is where the instruction-layer checker runs, so every push checks this file, the skills, `specs/` and `.env.example`.
 
 See `/verification-gates` skill for the full chain and how to report each gate.
 
@@ -295,7 +295,7 @@ Cache headers: no `no-store` or `revalidate` export appears anywhere in the tree
    (`0 + "250"` → `"0250"` → 250); EXPENSE is accidentally correct via the unary minus. `updateTransaction`
    parses (`:207-208`, commit `80aec7a`). No test pins `createTransaction`. Plan B's `parseInput` owns it.
 
-Tests for invariants: None. `pnpm test` covers the money *serialisers* and *arithmetic* (19 unit tests), not these DB-level invariants.
+Tests for invariants: None. `pnpm test` collects the app tier under `tests/money` and `tests/validation` — the money serialisers, the recurrence arithmetic and the two Zod schemas — and nothing there opens a database, so these DB-level invariants have no coverage at all.
 
 ---
 
@@ -303,7 +303,7 @@ Tests for invariants: None. `pnpm test` covers the money *serialisers* and *arit
 
 ### Design tokens
 
-Tailwind 4.3.3 (`package.json:73`; the `4.0.14` previously quoted here was the pre-upgrade pin). Colors, spacing, and type scale are in `app/globals.css` (default Tailwind tokens, no custom overrides yet).
+Tailwind 4.3.3 (`package.json:75`; the `4.0.14` previously quoted here was the pre-upgrade pin). Colors, spacing, and type scale are in `app/globals.css` (default Tailwind tokens, no custom overrides yet).
 
 Common utilities:
 - `bg-surface`, `bg-surface-secondary` — background layers
@@ -315,7 +315,7 @@ Common utilities:
 ### Per-component conventions
 
 - Server Components as default; Client Components only for form interactivity, state, and real-time updates.
-- Every source file is `.ts`/`.tsx` now, but props are annotated only where a `tsc` diagnostic demanded it (Plan A's rule). Component props in the files Tasks 9–10 left alone (`transaction-overview.tsx`, `budget-progress.tsx`, `transaction-table.tsx`, `header.tsx`, the `app/(main)/transaction/_components/*` forms) are still inferred, and rows that pass through `serializeTransaction` are `any` — so a shape mismatch at those boundaries is still not caught by the compiler.
+- Every source file is `.ts`/`.tsx` now, but props are annotated only where a `tsc` diagnostic demanded it (Plan A's rule). Component props in the files Tasks 9–10 left alone (`transaction-overview.tsx`, `budget-progress.tsx`, `transaction-table.tsx`, the `app/(main)/transaction/_components/*` forms) are still inferred, and rows that pass through `serializeTransaction` are `any` — so a shape mismatch at those boundaries is still not caught by the compiler.
 - Event handlers: `onChange`, `onSubmit`, `onDelete` — standard React names.
 - Form state: Managed with React Hook Form + Zod. Submit handlers are Server Actions.
 
@@ -431,6 +431,10 @@ lib/                    — Utilities and shared logic
   serialized-transaction.ts — Decimal→number row serializer (implicit-`any` boundary; see Language strictness)
   utils.ts              — Misc utilities (cn)
 tests/                  — Vitest unit tier: tests/{feature}/unit/*.test.ts, tests/README.md for tiers
+  platform/fixtures/    — agents-md-skeleton.txt: the vendored template heading skeleton the checker compares
+                          AGENTS.md against on every pnpm test (CI gate 2); it changes only via
+                          pnpm skeleton:refresh, never by hand
+  platform/scripts/     — refresh-skeleton.mjs: regenerates that fixture from the sibling template checkout
 tsconfig.json           — Project TS config (strict, whole-tree include; no jsconfig.json)
 next-env.d.ts           — Next-generated ambient types (git-ignored, in .gitignore)
 vitest.config.ts        — Test runner config (maps the @/ alias, TZ-pinned via the npm script)
@@ -445,11 +449,11 @@ public/                 — Static assets
 .github/workflows/ci.yml — CI: install + gates 1–3, no lint, no secrets (see Rule 13)
 ```
 
-Protected paths: `lib/checkUser.ts`, `lib/prisma.ts`, `prisma/schema.prisma` — do not edit without understanding auth, data access, and schema implications.
+Protected paths: the seven in STANDING RULES §17 — one authority; this line defers to it.
 
 ### Testing
 
-**Current status:** Vitest exists and `pnpm test` (which is `TZ=UTC vitest run`) passes **19 tests in 3 files**. All 19 are characterisation tests — they pin what the code does today, including two known defects, so a green run is not an endorsement of that behaviour.
+**Current status:** Vitest exists and `pnpm test` (which is `TZ=UTC vitest run`) is green across the `tests/money`, `tests/validation` and `tests/platform` tiers; the baseline totals live in §13 gate 2 and § Verification, the only two places this file is allowed to state them. Most of the suite is characterisation — it pins what the code does today, including two known defects, so a green run is not an endorsement of that behaviour. The instruction-layer checker in `tests/platform/unit/` is the exception: it reads this repo's own guidance files off disk and asserts they agree, so it pins no application behaviour and needs no database.
 
 - `tests/money/unit/serialize-amount.test.ts` (6) — `serializeAmount` / `serializeTransaction` on `Decimal`-shaped stubs. Pins the shallow-spread contract, i.e. **a nested `Decimal` stays a `Decimal`** and crosses the server/client boundary unconverted.
 - `tests/money/unit/calculate-next-recurring.test.ts` (4) — the four intervals plus month-end/leap carry (`2026-01-31` + 1 month → `2026-03-03`), recorded as-is.
@@ -495,9 +499,9 @@ Quick reference:
 
 | Need | Command |
 |------|---------|
-| Dev server | `pnpm dev` — Turbopack, opens http://localhost:3000 |
+| Dev server | `pnpm dev` — Turbopack, opens http://localhost:3000 — but with no `ARCJET_KEY` every page answers 403, so there is nothing to view here (gate 5) |
 | Typecheck | `pnpm typecheck` — `next typegen && tsc --noEmit`, whole tree; currently **0 errors** |
-| Test | `pnpm test` — `TZ=UTC vitest run`; 19 unit tests. The `TZ` is load-bearing (recurrence tests fail in other zones) |
+| Test | `pnpm test` — `TZ=UTC vitest run`; the unit tier, and with it the instruction-layer checker. The `TZ` is load-bearing (recurrence tests fail in other zones) |
 | Build | `pnpm build` — production build (Turbopack). Since Plan A Task 12 it also type-checks (`Running TypeScript ...` in the output); it still does **not** lint |
 | Lint | `pnpm lint` — `eslint .`, flat config, exits 1 on errors |
 | Prisma | `pnpm exec prisma generate`; `pnpm exec prisma migrate dev --name migration_name` (snake_case description); `pnpm exec prisma studio` |
@@ -516,7 +520,7 @@ Prove "run one file" by testing: `pnpm lint -- --debug nonexistent.ts` should re
 - `lib/schema.ts` — Zod validation schemas for forms and API input.
 - `proxy.ts` — root request hook: ArcJet (`shield`, `detectBot`) then `clerkMiddleware`. Next 16 renamed this file from `middleware.js`; Plan A converted it to TypeScript.
 
-Protected paths: `lib/checkUser.ts`, `lib/prisma.ts`, `prisma/schema.prisma`, `prisma.config.ts`.
+Protected paths: the seven in STANDING RULES §17 — one authority; this line defers to it.
 
 ### Framework version drift
 
@@ -580,10 +584,14 @@ See `/git-workflow` skill for complete commit conventions, push discipline, and 
 
 The chain from `/verification-gates` skill and STANDING RULES (Rule 13):
 1. `pnpm typecheck` → 0 errors
-2. `pnpm test` → 19 passed
+2. `pnpm test` → green; the baseline lives in §13 gate 2
 3. `pnpm build` → succeeds (it type-checks; it does not lint)
 4. `pnpm lint` → no **new** error class; the tree stays red on pre-existing debt (the census is quoted in § Verification), so "green lint" is not the gate
 5. Manual verification (smoke test in browser, database state, etc.) — impossible for auth/DB/email flows here; the missing credentials are named in §13 Verification gates, gate 5
+
+Deviation, on the books: the template sentence "CI runs the same commands" is not yet true here, because CI has
+no lint step while gate 4 is red on a recorded census. Either the census gets decided (TARGET STATE) or this
+sentence becomes the repo's written exception.
 
 ---
 
@@ -621,7 +629,7 @@ Browser (Clerk session)
 | `app/(main)/` | Implemented: Protected layout, reads `checkUser()`. Contains dashboard, accounts, transactions pages. |
 | `app/api/seed/` | Implemented: Creates test data (users, accounts, transactions). Unauthenticated `GET`; should gate in prod. |
 | `app/api/inngest/` | Implemented: `serve()` exposing GET/POST/PUT for the 4 functions above. Not connected to a running Inngest account. |
-| `tests/` | Implemented: 19 Vitest unit tests (3 files), all characterisation. No integration, no e2e. |
+| `tests/` | Implemented: the unit tier — `money`, `validation`, `platform` (the instruction-layer checker). No integration, no e2e. |
 
 Anything not built does not get a row.
 
@@ -669,15 +677,17 @@ All dynamic pages use Next.js default ISR (cache when possible, revalidate on re
 
 ```bash
 pnpm typecheck # next typegen && tsc --noEmit — 0 errors over 81 source files
-pnpm test      # TZ=UTC vitest run — 19 passed (3 files)
+pnpm test      # TZ=UTC vitest run — 32 passed (4 files)
+pnpm check:docs # TZ=UTC vitest run tests/platform — the instruction layer checks itself
 pnpm build     # next build — compiles AND type-checks (9 routes, exit 0)
 pnpm lint      # eslint . — exit 1: 87 errors, 3 warnings (pre-existing debt, see Rule 13)
 # CI: .github/workflows/ci.yml runs install + typecheck + test + build on push to main|feat/**.
 #     No lint step (gate 4 is red on the census above), no secrets. Never executed on a runner yet.
+# CI: gate 2 now also runs the instruction-layer checker.
 # Manual: sign in, create account, log transaction, verify dashboard — impossible here, no DATABASE_URL
 ```
 
-Test coverage of the app: effectively 0% — the 19 tests cover the money serialisers, the recurrence helper and the two Zod schemas, not any page, action or route. See CODE STANDARDS → Testing.
+Test coverage of the app: effectively 0% — the app-tier tests cover the money serialisers, the recurrence helper and the two Zod schemas, not any page, action or route, and the platform tier checks these docs rather than the app. See CODE STANDARDS → Testing.
 
 ## Repo skills
 
@@ -701,7 +711,7 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
 - **Receipt upload (storing the file):** Gemini OCR is built and user-reachable (`scanReceipt` → `scan-receipt.tsx`, rendered at `add-transaction-form.tsx:136`), but the receipt itself is never stored: `receiptUrl` stays `null` on scanned transactions, no upload endpoint or bucket exists, and the OCR call has never succeeded (`GEMINI_API_KEY` absent). See SERVICE ARCHITECTURE → HTTP surface.
 - **Transaction export:** `GET /api/transactions?from=X&to=Y&format=csv` — export date range as CSV. Not built.
 - **Analytics dashboard:** Charts for spending by category, trends over time. Currently only "recent transactions" are shown.
-- **Tests beyond the unit tier:** 19 Vitest unit tests exist (`tests/`, `pnpm test`). Integration and e2e tests do not exist, and no page, server action, API route, `proxy.ts` or Inngest function is covered — coverage of the app's behaviour is effectively 0%. See CODE STANDARDS (Testing section).
+- **Tests beyond the unit tier:** the unit tier exists (`tests/`, `pnpm test`). Integration and e2e tests do not exist, and no page, server action, API route, `proxy.ts` or Inngest function is covered — coverage of the app's behaviour is effectively 0%. See CODE STANDARDS (Testing section).
 - **Multi-user sharing:** No shared budgets or collaborative features.
 - **Mobile app:** Web-only for MVP.
 - **Lint census decides CI's fourth gate:** `pnpm lint` reports pre-existing `import/order` and

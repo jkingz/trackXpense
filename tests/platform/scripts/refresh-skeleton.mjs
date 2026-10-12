@@ -16,6 +16,7 @@ if (!fs.existsSync(TEMPLATE)) {
 
 let inFence = false;
 const headings = [];
+// Keep this extraction in sync with headingsOutsideFences in tests/platform/unit/instruction-layer.test.ts; drift is loud, because the fixture is compared to both sides.
 for (const line of fs.readFileSync(TEMPLATE, 'utf8').split('\n')) {
   if (line.startsWith('```')) {
     inFence = !inFence;

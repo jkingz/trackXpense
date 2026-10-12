@@ -40,7 +40,7 @@ when: "user starts a new task, needs to scope work, or asks about development pr
 
 - Never patch a vendored component, framework file, or third-party internals to make a feature work.
 - If a foundation file seems to need editing, the real problem is upstream of it.
-- Protected paths for trackXpense: STANDING RULES §17 — `lib/checkUser.ts`, `actions/lib/checkUser.ts`, `lib/prisma.ts`, `prisma/schema.prisma`, `prisma.config.ts`, `tsconfig.json`, `app/(auth)/`
+- **Protected foundations:** STANDING RULES §17 is the single list. Do not re-type it here; read it there.
 
 ## Before moving to the next unit
 
