@@ -132,6 +132,23 @@ const resolveInRepo: Resolve = (p) => {
   return { exists: true, lineCount: text.split('\n').length - (text.endsWith('\n') ? 1 : 0) };
 };
 
+const HEADING = /^(#{1,3}) (.+)$/;
+
+const headingsOutsideFences = (md: string): string[] =>
+  linesOutsideFences(md).flatMap((l) => {
+    const m = l.match(HEADING);
+    return m ? [`${'#'.repeat(m[1].length)} ${m[2].trim()}`] : [];
+  });
+
+function diffHeadings(actual: string[], expected: string[]): { extra: string[]; missing: string[] } {
+  const want = new Set(expected);
+  const have = new Set(actual);
+  return {
+    extra: [...new Set(actual)].filter((h) => !want.has(h)).sort(),
+    missing: [...new Set(expected)].filter((h) => !have.has(h)).sort(),
+  };
+}
+
 describe('instruction-layer checker harness', () => {
   it('reads the files it claims to check', () => {
     expect(fs.existsSync(path.join(ROOT, 'AGENTS.md'))).toBe(true);
@@ -219,5 +236,35 @@ describe('every path citation resolves', () => {
       pathCitations(read(path.join('.claude/skills', f)), resolveInRepo).map((d) => `${f}: ${d}`),
     );
     expect(defects).toEqual([]);
+  });
+});
+
+describe('AGENTS.md heading skeleton equals the template skeleton', () => {
+  it('reports both directions of a drift', () => {
+    // A symmetric set difference in both directions: `## B` is in `actual` and not in `expected`, so it is an
+    // extra too, and `## Gone` is the only missing heading. `# A` sits on both sides and is reported by neither.
+    expect(diffHeadings(['# A', '## B', '## Extra'], ['# A', '## Gone'])).toEqual({
+      extra: ['## B', '## Extra'],
+      missing: ['## Gone'],
+    });
+  });
+
+  it('the vendored skeleton equals AGENTS.md, heading for heading, in order', () => {
+    const fixture = read('tests/platform/fixtures/agents-md-skeleton.txt').split('\n').filter((l) => l.length > 0);
+    const actual = headingsOutsideFences(read('AGENTS.md'));
+    const diff = diffHeadings(actual, fixture);
+    expect(diff).toEqual({ extra: [], missing: [] });
+    expect(actual).toEqual(fixture);
+  });
+
+  it('the vendored skeleton still equals the live template when this machine has the sibling checkout', () => {
+    const sibling = path.join(ROOT, '..', 'agent-ready-template', 'AGENTS.md');
+    // Deliberately conditional, and deliberately not a skip: the assertion above always runs, so this one can
+    // only add a failure, never subtract coverage. In CI the sibling does not exist and nothing is green-by-
+    // emptiness — which is the exact failure mode the template's own table names.
+    if (!fs.existsSync(sibling)) return;
+    expect(headingsOutsideFences(fs.readFileSync(sibling, 'utf8'))).toEqual(
+      read('tests/platform/fixtures/agents-md-skeleton.txt').split('\n').filter((l) => l.length > 0),
+    );
   });
 });

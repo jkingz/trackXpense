@@ -78,7 +78,7 @@ These rules hold in every repo.
 - State assumptions plus the step that would verify them.
 - When implementation and docs disagree, code is truth and the doc is a defect.
 
-## Project-specific rules — Rules 11–17
+## Project-specific rules — Fill these slots day one
 
 ### 11. Package manager and runtime
 `pnpm 10.6.5` (locked in `package.json` `packageManager` field); `Node.js 20+` (inferred, not explicitly declared). Next 16 and Clerk 7 both require Node `>=20.9.0`; `engines` is still not declared in `package.json`.
@@ -103,7 +103,7 @@ See `/verification-gates` skill for the full chain and how to report each gate.
 ### 14. Application building order
 Read these sections in order: `STANDING RULES` → `PROJECT OVERVIEW` → `ARCHITECTURE CONTEXT` → `UI CONTEXT` → `CODE STANDARDS` → `DEVELOPMENT WORKFLOW` → `PM CONVENTIONS`. Then `AGENTS.md` → SERVICE ARCHITECTURE section.
 
-### 15. Cross-cutting authority — one authority per rule
+### 15. Cross-cutting authority — one authority per rule, enforced once
 - **Auth gate:** two functions, not one: `lib/checkUser.ts` (reads the Clerk session, **redirects** — pages and layouts) and `actions/lib/checkUser.ts` (reads the Clerk session, **throws** `Unauthorized` — server actions). Both are used; neither is the other's wrapper. Plan B §2c consolidates them.
 - **Database access:** `lib/prisma.ts` — singleton client (pg driver adapter). All data reads/writes go through Prisma.
 - **Errors:** Thrown errors in Server Components/Actions surface as generic toast via Sonner. No internal messages to client.
@@ -576,7 +576,7 @@ See `/git-workflow` skill for complete commit conventions, push discipline, and 
 - Draft until gate is green; request review after.
 - Merge style: Squash-merge for small features, rebase-merge for larger features
 
-### Review gate (must be green to merge)
+### Review gate
 
 The chain from `/verification-gates` skill and STANDING RULES (Rule 13):
 1. `pnpm typecheck` → 0 errors
