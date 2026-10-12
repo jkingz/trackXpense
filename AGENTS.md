@@ -110,7 +110,7 @@ Read these sections in order: `STANDING RULES` → `PROJECT OVERVIEW` → `ARCHI
 - **Validation:** `lib/schema.ts` — Zod schemas for form input. They run **client-side only**, through `zodResolver` in the two forms; no server action parses its input (`parseInput` is Plan B).
 
 ### 16. Datastore / external service
-PostgreSQL via Prisma 7. `postinstall` runs `prisma generate` only — it does **not** apply migrations. Migrations live in `prisma/migrations/`; never edit applied migrations. New migrations: run `npx prisma migrate dev --name NAME` with a snake_case description, then commit the generated file.
+PostgreSQL via Prisma 7. `postinstall` runs `prisma generate` only — it does **not** apply migrations. Migrations live in `prisma/migrations/`; never edit applied migrations. New migrations: run `npx prisma migrate dev --name migration_name` with a snake_case description, then commit the generated file.
 
 Prisma 7 moved the connection out of `prisma/schema.prisma` (the datasource block declares only `provider`): the CLI reads `url` from `prisma.config.ts`, which resolves `DIRECT_URL || DATABASE_URL` through `dotenv` and falls back to `''` so `prisma generate` still works without a database. `lib/prisma.ts` must pass a driver adapter (`@prisma/adapter-pg`) — Prisma 7 no longer opens its own connection.
 
@@ -481,7 +481,7 @@ Quick reference:
 | Test | `pnpm test` — `TZ=UTC vitest run`; 19 unit tests. The `TZ` is load-bearing (recurrence tests fail in other zones) |
 | Build | `pnpm build` — production build (Turbopack). Since Plan A Task 12 it also type-checks (`Running TypeScript ...` in the output); it still does **not** lint |
 | Lint | `pnpm lint` — `eslint .`, flat config, exits 1 on errors |
-| Prisma | `pnpm exec prisma generate`; `pnpm exec prisma migrate dev --name NAME` (snake_case description); `pnpm exec prisma studio` |
+| Prisma | `pnpm exec prisma generate`; `pnpm exec prisma migrate dev --name migration_name` (snake_case description); `pnpm exec prisma studio` |
 | Email dev | `pnpm email` — **not runnable.** `@react-email/ui` is not installed, so `email dev` stops on an interactive "must be installed / Would you like to install it?" prompt. `emails/template.tsx` is proven only by `tsc` and module resolution, never by the preview renderer |
 
 `pnpm@10.6.5` only (pinned in `package.json`); Node.js 20+ (`>=20.9.0` for Next 16 / Clerk 7).
@@ -517,7 +517,7 @@ Read `node_modules/next/dist/docs/` before touching frameworks APIs.
 
 To add a column:
 1. Edit `prisma/schema.prisma`.
-2. Run `pnpm exec prisma migrate dev --name NAME` with a snake_case description — generates and applies the migration.
+2. Run `pnpm exec prisma migrate dev --name migration_name` with a snake_case description — generates and applies the migration.
 3. Commit the generated file in `prisma/migrations/`.
 
 Do not edit applied migrations. If a migration has errors, create a new one that fixes it.
