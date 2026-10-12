@@ -265,11 +265,18 @@ describe('every path citation resolves', () => {
 describe('feature spec citations resolve', () => {
   it('every repo path cited in the files under specs/ exists', () => {
     const dir = path.join(ROOT, 'specs');
-    const defects = fs
+    const files = fs
       .readdirSync(dir)
       .filter((f) => f.endsWith('.md'))
-      .sort()
-      .flatMap((f) => pathCitations(read(path.join('specs', f)), resolveInRepo).map((d) => `${f}: ${d}`));
+      .sort();
+    // Trip-wire, not content: the defects list below is empty today because none of these files carries a
+    // path-shaped backtick token the narrow citation rule accepts, so without this the walk could break
+    // (a renamed directory, a filter that matches nothing) and the run would stay green. A fourth spec file
+    // means updating this number.
+    expect(files).toHaveLength(3);
+    const defects = files.flatMap((f) =>
+      pathCitations(read(path.join('specs', f)), resolveInRepo).map((d) => `${f}: ${d}`),
+    );
     expect(defects).toEqual([]);
   });
 });

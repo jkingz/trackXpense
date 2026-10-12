@@ -96,7 +96,17 @@ The exact chain that must be green before work is reported complete:
 4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. The config consumes `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript` directly; wrapping them in `FlatCompat` crashes. `pnpm lint` is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings (2 `react-hooks/incompatible-library` react-compiler noise + 1 `react-hooks/exhaustive-deps`)**, re-measured 2026-10-13. The gate is "the census does not grow", not "green" — the census is quoted in § Verification.
 5. Manual verification when touching auth, database, or email flows — currently impossible here (no `DATABASE_URL`, no `ARCJET_KEY`, `@react-email/ui` missing). The no-`ARCJET_KEY` 403 is now measured rather than asserted: with `pnpm dev` up and no key in the environment, `curl -i` on `/`, `/sign-in` and `/dashboard` each returned **403** with Arcjet's own body `{"code":403,"message":"Forbidden"}`, and a browser User-Agent gets the same 403, so it is the LIVE `shield`/`detectBot` rules in `proxy.ts` denying before a page renders rather than curl being flagged as a bot. There is therefore no page to smoke-test.
 
-CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). The workflow itself has not run yet — its first push is its first execution, and its YAML is unvalidated locally (no YAML parser in `node_modules`, none in `python3`). Gate 2 is where the instruction-layer checker runs, so every push re-checks this file, `.claude/skills/`, `.env.example` and the vendored heading fixture `tests/platform/fixtures/agents-md-skeleton.txt` against each other; and because the same assertion resolves every repo path cited outside a fence — and only outside a fence, which is why the fenced file-organization tree in § File organization is the doc's own unpolicied path index, and why it once went stale on `specs/` — a dangling pointer into `specs/` fails a push too. What the checker cannot see: fenced blocks of any kind, including that tree; the bodies under `docs/superpowers/` (whose historical plan files legitimately carry the angle-bracket template slots this file may not); the free-text quotes of `AGENTS.md` sections inside `specs/*.md`, which have no machine-checkable form without inventing a quote syntax; and any heading form the rule does not match — `####`, `#Nospace` and indented headings drop out of both sides identically, are pinned to an empty extraction by their own assertion, and grep confirms none in `AGENTS.md`, the fixture or the template. Widening either rule is therefore a deliberate edit, not a silent drift.
+CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). The workflow itself has not run yet — its first push is its first execution, and its YAML is unvalidated locally (no YAML parser in `node_modules`, none in `python3`).
+
+Gate 2 is where the instruction-layer checker runs, so every push re-checks this file, `.claude/skills/`, `.env.example` and the vendored heading fixture `tests/platform/fixtures/agents-md-skeleton.txt` against each other; and because the same assertion resolves every repo path cited outside a fence — and only outside a fence, which is why the fenced file-organization tree in § File organization is the doc's own unpolicied path index, and why it once went stale on `specs/` — a dangling pointer into `specs/` fails a push too. What the checker cannot see:
+
+- Fenced blocks of any kind, including that file-organization tree.
+- The bodies under `docs/superpowers/` — historical plan files there legitimately carry the angle-bracket template slots this file may not.
+- `.claude/skills/` as slot targets: the slot rule reads `AGENTS.md` whole-file and nothing else, so a skill may carry bracketed placeholders of its own. Their citations are still checked.
+- The free-text quotes of `AGENTS.md` sections inside `specs/*.md`, which have no machine-checkable form without inventing a quote syntax.
+- Any heading form the heading rule does not match — `####`, `#Nospace` and indented headings drop out of both sides identically, are pinned to an empty extraction by their own assertion, and grep confirms none in `AGENTS.md`, the fixture or the template.
+
+Widening any of those is therefore a deliberate edit, not a silent drift.
 
 See `/verification-gates` skill for the full chain and how to report each gate.
 
@@ -435,9 +445,10 @@ tests/                  — Vitest unit tier: tests/{feature}/unit/*.test.ts, te
                           AGENTS.md against on every pnpm test (CI gate 2); it changes only via
                           pnpm skeleton:refresh, never by hand
   platform/scripts/     — refresh-skeleton.mjs: regenerates that fixture from the sibling template checkout
-specs/                  — Feature specs, one file per deliverable unit: README.md, 00-template.md,
-                          01-dashboard-transaction-filtering.md (the index § FEATURE SPECS points at; unpolicied here
-                          because a fence hides it from the citation assertion — see STANDING RULES §13)
+specs/                  — Feature specs: one file per deliverable unit, plus the template and index that
+                          § FEATURE SPECS points at. Which files are there is not listed here on purpose —
+                          this tree is unpolicied (a fence hides it from the citation assertion, see STANDING
+                          RULES §13), so an enumeration would be the stale copy a new spec never updates.
 docs/superpowers/       — plans/ and specs/ for conversion and migration units: Plan A's and this instruction layer's
                           own design docs and plans live here, not under specs/ (see § FEATURE SPECS)
 tsconfig.json           — Project TS config (strict, whole-tree include; no jsconfig.json)
@@ -747,7 +758,7 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
 - **A stray paste sits in user-visible copy:** `app/(main)/dashboard/_components/budget-progress.tsx:60` toasts
   `error.message || 'Failed asdasdto update budget'`, so the string `Failed asdasdto update budget` is what a user
   reads on a failed budget update whenever `error.message` is empty. It is still open because the component is one
-  of the props-inferred dashboard files (see § Code Standards → Language strictness) that no app-tier test covers,
+  of the props-inferred dashboard files (see § UI Context → Per-component conventions) that no app-tier test covers,
   so editing its copy has no gate; and because `useFetch` already toasts `error.message` itself
   (`hooks/use-fetch.ts:26-28`), which means this effect fires a second toast for the same failure — whether to
   drop the effect or keep it as the only toast is a behaviour decision, not a string edit. Blocks: claiming the
