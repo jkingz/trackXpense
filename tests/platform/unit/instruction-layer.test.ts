@@ -73,6 +73,64 @@ function envMismatch(docText: string, exampleText: string): { undocumented: stri
   };
 }
 
+type Resolve = (p: string) => { exists: boolean; lineCount?: number };
+
+const CITABLE_EXT = new Set([
+  'ts', 'tsx', 'js', 'jsx', 'mjs', 'cjs', 'json', 'prisma', 'css', 'md', 'mdx', 'yml', 'yaml', 'sql', 'sh',
+]);
+const TICK = /`([^`\n]+)`/g;
+// `:` is in the shape on purpose: `actions/transaction.ts:119-143` is the citation form this assertion exists
+// to police, and a class without it would skip every line-bearing citation in the doc instead of checking it.
+const PATH_SHAPE = /^[A-Za-z0-9_().\/:-]+$/;
+const LINE_RANGE = /^\d+(-\d+)?$/;
+
+function pathCitations(md: string, resolve: Resolve): string[] {
+  const defects: string[] = [];
+  let inFence = false;
+  const lines = md.split('\n');
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith('```')) {
+      inFence = !inFence;
+      continue;
+    }
+    if (inFence) continue;
+    for (const m of lines[i].matchAll(TICK)) {
+      const tok = m[1].trim();
+      // Narrow on purpose: repo-relative, must carry a slash, must end in a real extension (or be a
+      // trailing-slash directory). That excludes eslint rule names (import/order), npm specifiers
+      // (eslint-config-next/typescript), domains, branch names and bare files (middleware.js) — every one of
+      // which is legitimately named in this doc and none of which is a path in this repo.
+      if (!tok.includes('/') || !PATH_SHAPE.test(tok)) continue;
+      if (/[*[\]?{}<>|]/.test(tok) || tok.startsWith('/') || tok.includes('://')) continue;
+      const sep = tok.indexOf(':');
+      const file = (sep === -1 ? tok : tok.slice(0, sep)).replace(/\/+$/, '');
+      const range = sep === -1 ? '' : tok.slice(sep + 1);
+      if (!file) continue;
+      const isDir = sep === -1 && tok.endsWith('/');
+      const ext = file.includes('.') ? file.split('.').pop()!.toLowerCase() : '';
+      if (!isDir && !CITABLE_EXT.has(ext)) continue;
+      if (range && !LINE_RANGE.test(range)) continue;
+      const res = resolve(file);
+      if (!res.exists) {
+        defects.push(`line ${i + 1}: \`${tok}\` does not resolve`);
+        continue;
+      }
+      if (range && res.lineCount !== undefined) {
+        const hi = Number(range.split('-').pop());
+        if (hi > res.lineCount) defects.push(`line ${i + 1}: \`${tok}\` cites line ${hi}, file has ${res.lineCount}`);
+      }
+    }
+  }
+  return defects;
+}
+
+const resolveInRepo: Resolve = (p) => {
+  const abs = path.join(ROOT, p);
+  if (!fs.existsSync(abs)) return { exists: false };
+  if (fs.statSync(abs).isDirectory()) return { exists: true };
+  return { exists: true, lineCount: fs.readFileSync(abs, 'utf8').split('\n').length };
+};
+
 describe('instruction-layer checker harness', () => {
   it('reads the files it claims to check', () => {
     expect(fs.existsSync(path.join(ROOT, 'AGENTS.md'))).toBe(true);
@@ -125,5 +183,35 @@ describe('health check reports no unfilled slot', () => {
 
   it('AGENTS.md has zero hits — the template command with no grep -v exemptions', () => {
     expect(slotLines(read('AGENTS.md'))).toEqual([]);
+  });
+});
+
+describe('every path citation resolves', () => {
+  it('reports a missing file, a line past the end, and ignores non-paths', () => {
+    const fake: Resolve = (p) => (p === 'lib/real.ts' ? { exists: true, lineCount: 10 } : { exists: false });
+    const doc = [
+      'Says `lib/nope.ts` — broken.',
+      'Says `lib/real.ts:9` — fine.',
+      'Says `lib/real.ts:99` — past the end.',
+      'Says `import/order` and `randomuser.me` and `origin/main` and `app/api/[...]/route.ts` — all skipped.',
+      'Says `app/(main)/` — a directory, and the fake resolver says no.',
+    ].join('\n');
+    expect(pathCitations(doc, fake)).toEqual([
+      'line 1: `lib/nope.ts` does not resolve',
+      'line 3: `lib/real.ts:99` cites line 99, file has 10',
+      'line 5: `app/(main)/` does not resolve',
+    ]);
+  });
+
+  it('AGENTS.md cites only paths that exist', () => {
+    expect(pathCitations(read('AGENTS.md'), resolveInRepo)).toEqual([]);
+  });
+
+  it('every repo skill cites only paths that exist', () => {
+    const dir = path.join(ROOT, '.claude/skills');
+    const defects = skillFilesUnder(dir, dir).flatMap((f) =>
+      pathCitations(read(path.join('.claude/skills', f)), resolveInRepo).map((d) => `${f}: ${d}`),
+    );
+    expect(defects).toEqual([]);
   });
 });
