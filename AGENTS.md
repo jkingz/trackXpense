@@ -91,12 +91,12 @@ Measured failure mode, 2026-10-13: corepack can only activate the pinned pnpm on
 ### 13. Verification gates
 The exact chain that must be green before work is reported complete:
 1. `pnpm typecheck` — `next typegen && tsc --noEmit` over the whole tree. Baseline: **0 errors**. Do not let it regress; `npx tsc --noEmit --incremental false` is the non-stale re-check.
-2. `pnpm test` — `TZ=UTC vitest run`. Baseline: **32 passed in 4 files** — 19 app-tier characterisation tests in `tests/money` and `tests/validation`, plus 13 instruction-layer checks in `tests/platform` that read this repo's docs, not app behaviour.
+2. `pnpm test` — `TZ=UTC vitest run`. Baseline: **36 passed in 4 files** — 19 app-tier characterisation tests in `tests/money` and `tests/validation`, plus 17 instruction-layer checks in `tests/platform` that read this repo's docs, not app behaviour.
 3. `pnpm build` — Next.js production build (Turbopack). It now **is** a type gate (no `typescript.ignoreBuildErrors` in `next.config.mjs`) and still never lints.
-4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. The config consumes `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript` directly; wrapping them in `FlatCompat` crashes. `pnpm lint` is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings**. The gate is "the census does not grow", not "green" — the census is quoted in § Verification.
-5. Manual verification when touching auth, database, or email flows — currently impossible here (no `DATABASE_URL`, no `ARCJET_KEY`, `@react-email/ui` missing); and with no `ARCJET_KEY`, `pnpm dev` answers **403** on `/`, `/sign-in` and `/dashboard`, so there is no page to smoke-test either.
+4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. The config consumes `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript` directly; wrapping them in `FlatCompat` crashes. `pnpm lint` is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings (2 `react-hooks/incompatible-library` react-compiler noise + 1 `react-hooks/exhaustive-deps`)**, re-measured 2026-10-13. The gate is "the census does not grow", not "green" — the census is quoted in § Verification.
+5. Manual verification when touching auth, database, or email flows — currently impossible here (no `DATABASE_URL`, no `ARCJET_KEY`, `@react-email/ui` missing). The no-`ARCJET_KEY` 403 is now measured rather than asserted: with `pnpm dev` up and no key in the environment, `curl -i` on `/`, `/sign-in` and `/dashboard` each returned **403** with Arcjet's own body `{"code":403,"message":"Forbidden"}`, and a browser User-Agent gets the same 403, so it is the LIVE `shield`/`detectBot` rules in `proxy.ts` denying before a page renders rather than curl being flagged as a bot. There is therefore no page to smoke-test.
 
-CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). The workflow itself has not run yet — its first push is its first execution, and its YAML is unvalidated locally (no YAML parser in `node_modules`, none in `python3`). Gate 2 is where the instruction-layer checker runs, so every push re-checks this file, `.claude/skills/`, `.env.example` and the vendored heading fixture `tests/platform/fixtures/agents-md-skeleton.txt` against each other; and because the same assertion resolves every repo path cited outside a fence, a dangling pointer into `specs/` fails a push too.
+CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). The workflow itself has not run yet — its first push is its first execution, and its YAML is unvalidated locally (no YAML parser in `node_modules`, none in `python3`). Gate 2 is where the instruction-layer checker runs, so every push re-checks this file, `.claude/skills/`, `.env.example` and the vendored heading fixture `tests/platform/fixtures/agents-md-skeleton.txt` against each other; and because the same assertion resolves every repo path cited outside a fence — and only outside a fence, which is why the fenced file-organization tree in § File organization is the doc's own unpolicied path index, and why it once went stale on `specs/` — a dangling pointer into `specs/` fails a push too. What the checker cannot see: fenced blocks of any kind, including that tree; the bodies under `docs/superpowers/` (whose historical plan files legitimately carry the angle-bracket template slots this file may not); the free-text quotes of `AGENTS.md` sections inside `specs/*.md`, which have no machine-checkable form without inventing a quote syntax; and any heading form the rule does not match — `####`, `#Nospace` and indented headings drop out of both sides identically, are pinned to an empty extraction by their own assertion, and grep confirms none in `AGENTS.md`, the fixture or the template. Widening either rule is therefore a deliberate edit, not a silent drift.
 
 See `/verification-gates` skill for the full chain and how to report each gate.
 
@@ -110,7 +110,7 @@ Read these sections in order: `STANDING RULES` → `PROJECT OVERVIEW` → `ARCHI
 - **Validation:** `lib/schema.ts` — Zod schemas for form input. They run **client-side only**, through `zodResolver` in the two forms; no server action parses its input (`parseInput` is Plan B).
 
 ### 16. Datastore / external service
-PostgreSQL via Prisma 7. `postinstall` runs `prisma generate` only — it does **not** apply migrations. Migrations live in `prisma/migrations/`; never edit applied migrations. New migrations: run `npx prisma migrate dev --name migration_name` with a snake_case description, then commit the generated file.
+PostgreSQL via Prisma 7. `postinstall` runs `prisma generate` only — it does **not** apply migrations. Migrations live in `prisma/migrations/`; never edit applied migrations. New migrations: run `pnpm exec prisma migrate dev --name migration_name` with a snake_case description, then commit the generated file.
 
 Prisma 7 moved the connection out of `prisma/schema.prisma` (the datasource block declares only `provider`): the CLI reads `url` from `prisma.config.ts`, which resolves `DIRECT_URL || DATABASE_URL` through `dotenv` and falls back to `''` so `prisma generate` still works without a database. `lib/prisma.ts` must pass a driver adapter (`@prisma/adapter-pg`) — Prisma 7 no longer opens its own connection. The `client` generator stays on `prisma-client-js`: the newer `prisma-client` generator requires an `output` path and would rewrite every Prisma import in the tree, so upgrading it is a bigger blast radius than the gain.
 
@@ -173,7 +173,7 @@ TrackXpense is a personal finance dashboard. Users sign up with Clerk, create ac
 **Out of scope:**
 - Webhook processing for recurring transactions: the Inngest functions are written and served, but no schedule has ever fired in this environment (see SERVICE ARCHITECTURE, Background work)
 - Email alerts delivered to a user: `actions/send-email.ts` exists and is called by `lib/inngest/functions.ts`; `RESEND_API_KEY` is absent, so nothing has been sent
-- Receipt upload and OCR (UI placeholder, no backend)
+- Receipt **storage**: the OCR half is built and user-reachable (`scanReceipt` in `actions/transaction.ts`, rendered by `app/(main)/transaction/_components/scan-receipt.tsx`), so this is no longer a UI placeholder without a backend; what is out of scope is persisting the file — `receiptUrl` is never written and no upload endpoint exists. See SERVICE ARCHITECTURE → HTTP surface and TARGET STATE
 - Social features / multi-user sharing
 - Mobile app
 
@@ -348,7 +348,7 @@ TypeScript 5.9.3 (pinned below 6.x because `typescript-eslint` requires `>=4.8.4
 
 - Settings: `strict: true` (so `strictNullChecks`, `strictFunctionTypes`, `strictPropertyInitialization`), `noEmit`, `incremental`, `skipLibCheck`, `isolatedModules`, `esModuleInterop`, `resolveJsonModule`, `moduleResolution: bundler`, `jsx: react-jsx`, `baseUrl: "."` with the `@/*` path alias.
 - `include` is the whole tree: `next-env.d.ts`, Next 16's generated route types (`.next/types/**/*.ts` **and** `.next/dev/types/**/*.ts`), then `**/*.ts` and `**/*.tsx`. `exclude` is `node_modules` and `.delta` (the git-excluded worktree/clone copies of this repo). Verified program: 81 source files + 8 generated files, via `npx tsc --noEmit --incremental false --listFilesOnly`.
-- **Two flags stay off on purpose; Plan B flips them:** `noImplicitAny: false` and `useUnknownInCatchVariables: false`. With `noImplicitAny` off, an unannotated parameter or destructured prop is silently `any`, so untyped boundaries hide errors instead of reporting them; the 15 catch bindings (14 `catch (error)` plus `catch (parseError)` at `actions/transaction.ts:67`) keep `error` as `any`. The 16th block is binding-less and load-bearing: `actions/accounts.ts:62`'s `catch {}` swallows the error and returns `undefined`, which is what lets `app/(main)/account/[id]/page.tsx:37`'s `if (!accountData) return notFound();` fire.
+- **Two flags stay off on purpose; Plan B flips them:** `noImplicitAny: false` and `useUnknownInCatchVariables: false`. With `noImplicitAny` off, an unannotated parameter or destructured prop is silently `any`, so untyped boundaries hide errors instead of reporting them; the 15 catch bindings (14 `catch (error)` plus `catch (parseError)` at `actions/transaction.ts:67`) keep `error` as `any`. The 16th block is binding-less and load-bearing: `actions/accounts.ts:62`'s `catch {}` swallows the error and returns `undefined`, which is what lets `app/(main)/account/[id]/page.tsx:37`'s `if (!accountData) return notFound();` fire. Plan B's budget for flipping them is measured, not remembered: `globalThis.prisma` at `lib/prisma.ts:9` is the **one accepted implicit `any`** the migration signed off, so it is the named exception the flip has to keep or fix. And `grep -rn --include='*.ts' --include='*.tsx' --exclude-dir=node_modules --exclude-dir=.delta --exclude-dir=docs error.message .` prints 10 sites, 7 of them reading a catch binding — `app/api/seed/route.ts:8`, `hooks/use-fetch.ts:28`, `actions/seed.ts:109`, `actions/dashboard.ts:62`, `actions/budget.ts:101`, `actions/accounts.ts:31`, `actions/accounts.ts:116` — which is exactly what `useUnknownInCatchVariables: true` rejects; the other 3 read `useFetch`'s `error` state, already typed `Error | null` at `hooks/use-fetch.ts:10`. The third member of the family is `actions/accounts.ts:160`'s `where.type = typeFilter as TransactionType`: a cast that silences the compiler about a URL string, so it is a strictness gap rather than a data bug, and it is in this bullet rather than in the schema section because that is what it is.
 - Gates: `pnpm typecheck` (`next typegen && tsc --noEmit`) reports **0 errors**, and because `next.config.mjs` no longer carries the `typescript.ignoreBuildErrors` key, `pnpm build` runs the same check — it prints `Running TypeScript ...` / `Finished TypeScript in ~1.9s` instead of `Skipping validation of types`. The build is a real type gate as of Plan A Task 12.
 - Known structural gap the flags leave open: `lib/serialized-transaction.ts` takes an unannotated parameter, so its return is `any`, so every serialized account/transaction row in `actions/**` and `app/(main)/**` is `any` and the `Decimal`→number seam is unchecked by the compiler. Typing it can only add errors or be neutral, so it is deferred to Plan B alongside the `parseInput` boundary decision.
 - Type-checking still proves nothing about runtime: the money path has never executed here (no `DATABASE_URL`).
@@ -435,6 +435,11 @@ tests/                  — Vitest unit tier: tests/{feature}/unit/*.test.ts, te
                           AGENTS.md against on every pnpm test (CI gate 2); it changes only via
                           pnpm skeleton:refresh, never by hand
   platform/scripts/     — refresh-skeleton.mjs: regenerates that fixture from the sibling template checkout
+specs/                  — Feature specs, one file per deliverable unit: README.md, 00-template.md,
+                          01-dashboard-transaction-filtering.md (the index § FEATURE SPECS points at; unpolicied here
+                          because a fence hides it from the citation assertion — see STANDING RULES §13)
+docs/superpowers/       — plans/ and specs/ for conversion and migration units: Plan A's and this instruction layer's
+                          own design docs and plans live here, not under specs/ (see § FEATURE SPECS)
 tsconfig.json           — Project TS config (strict, whole-tree include; no jsconfig.json)
 next-env.d.ts           — Next-generated ambient types (git-ignored, in .gitignore)
 vitest.config.ts        — Test runner config (maps the @/ alias, TZ-pinned via the npm script)
@@ -499,7 +504,7 @@ Quick reference:
 
 | Need | Command |
 |------|---------|
-| Dev server | `pnpm dev` — Turbopack, opens http://localhost:3000 — but with no `ARCJET_KEY` `pnpm dev` answers 403 on `/`, `/sign-in` and `/dashboard` (gate 5), so there is nothing to view here |
+| Dev server | `pnpm dev` — Turbopack, opens http://localhost:3000 — but with no `ARCJET_KEY` the proxy's LIVE rules answer 403 (measured 2026-10-13 with `curl -i`: `/`, `/sign-in` and `/dashboard` all return Arcjet's `{"code":403,"message":"Forbidden"}`; gate 5), so there is nothing to view here |
 | Typecheck | `pnpm typecheck` — `next typegen && tsc --noEmit`, whole tree; currently **0 errors** |
 | Test | `pnpm test` — `TZ=UTC vitest run`; the unit tier, and with it the instruction-layer checker. The `TZ` is load-bearing (recurrence tests fail in other zones) |
 | Build | `pnpm build` — production build (Turbopack). Since Plan A Task 12 it also type-checks (`Running TypeScript ...` in the output); it still does **not** lint |
@@ -677,7 +682,7 @@ All dynamic pages use Next.js default ISR (cache when possible, revalidate on re
 
 ```bash
 pnpm typecheck # next typegen && tsc --noEmit — 0 errors over 81 source files
-pnpm test      # TZ=UTC vitest run — 32 passed (4 files)
+pnpm test      # TZ=UTC vitest run — 36 passed (4 files)
 pnpm check:docs # TZ=UTC vitest run tests/platform — the instruction layer checks itself
 pnpm build     # next build — compiles AND type-checks (9 routes, exit 0)
 pnpm lint      # eslint . — exit 1: 87 errors, 3 warnings (pre-existing debt, see Rule 13)
@@ -718,10 +723,16 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
   `react-hooks/set-state-in-effect` errors. Until that is decided, `.github/workflows/ci.yml` cannot add the lint
   step the template's `### Review gate` requires ("CI runs the same commands"). Options: autofix as a standalone
   commit, fix the one hook error (a behaviour change), downgrade `import/order` to `warn`, or keep this repo's
-  written exception under that heading.
-- **Rotting literals are still in this file.** This plan forbids writing new counts into the docs; §13,
-  § Verification, § Testing and § Language strictness quote test, error and file counts because a baseline has to
-  live somewhere. Deciding where (a generated census file? the CI log?) is its own unit.
+  written exception under that heading. How far the autofix option actually gets is measured, not assumed: the run
+  prints `86 errors and 0 warnings potentially fixable with the --fix option`, so the whole `import/order` half of
+  the census would clear and the `react-hooks/set-state-in-effect` error would not — which is why "autofix" and
+  "fix the one hook error" are two different commits. Running `--fix` is not this round's scope: it rewrites
+  source files.
+- **Rotting literals are still in this file.** The no-new-counts rule that governs them was written by this unit
+  into `/testing` and `/verification-gates`, while the counts still sitting here came from the Plan A Progress
+  Tracker that the tracker cut deleted — two owners, neither of them this file — and §13, § Verification, § Testing
+  and § Language strictness quote test, error and file counts because a baseline has to live somewhere. Deciding
+  where (a generated census file? the CI log?) is its own unit.
 - **`engines.node` is undeclared** while Next 16 and Clerk 7 both need `>=20.9.0` and CI pins Node 20 by hand.
   Blocks: a reproducible "which runtime" answer for a new clone.
 - **The seed endpoint is an unauthenticated `GET` that writes rows.** Blocks: any deploy that is not local.
@@ -733,6 +744,19 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
 - **Page changes never suppressed scrolling:** `components/pagination.tsx:31` calls `router.push(url)` with no
   options after Plan A deleted a dead argument. Whether to pass `{ scroll: false }` for real is a behaviour
   decision.
+- **A stray paste sits in user-visible copy:** `app/(main)/dashboard/_components/budget-progress.tsx:60` toasts
+  `error.message || 'Failed asdasdto update budget'`, so the string `Failed asdasdto update budget` is what a user
+  reads on a failed budget update whenever `error.message` is empty. It is still open because the component is one
+  of the props-inferred dashboard files (see § Code Standards → Language strictness) that no app-tier test covers,
+  so editing its copy has no gate; and because `useFetch` already toasts `error.message` itself
+  (`hooks/use-fetch.ts:26-28`), which means this effect fires a second toast for the same failure — whether to
+  drop the effect or keep it as the only toast is a behaviour decision, not a string edit. Blocks: claiming the
+  dashboard's failure copy is verified.
+- **`motion@^14.1.0` is an unused dependency:** listed in `package.json`, and a `git grep` for imports from
+  `motion` across the tracked `.ts`/`.tsx` tree returns nothing, so no module imports it. It stays because dropping
+  a dependency edits `package.json` and the lockfile, which is the user's call (`pnpm remove motion`), not a docs
+  round's. Blocks: an accurate dependency inventory — every install, build and lockfile diff still carries a
+  package nothing uses.
 - **`components/header.tsx` was owned by no Plan A task.** It takes no props (`const Header` at
   `components/header.tsx:8`), so what stays unannotated there is its component signature — Plan B Phase 3.
 - **The env vars read through `as string` assertions** (`lib/arcjet.ts:4`, `proxy.ts:14`,
@@ -746,6 +770,15 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
   Together with the slot check that forbids angle brackets, the only placeholder form this file can use is
   lowercase snake_case (`--name migration_name`). Blocks: any future placeholder in `AGENTS.md`, and any task
   that wants a normal shell metavariable.
+- **The structure gate compares this repo to a snapshot of the template, not to the template:** the fixture is
+  committed, so what CI polices is `AGENTS.md` against that copy. The one assertion that does read the sibling
+  template is conditional on the checkout being present on the machine running the test, so on CI it returns
+  before comparing anything and the template can be edited freely with nothing failing here. Provenance measured
+  2026-10-13 rather than retyped from the design note — the template is not a git checkout at all, so its identity
+  is a content hash rather than a commit: `git -C ../agent-ready-template rev-parse` reports not a repository, and
+  that directory's AGENTS.md is 517 lines, 21,607 bytes, sha256 prefix ccc3027465a95481, modified 2026-10-12.
+  Refreshing the snapshot is `pnpm skeleton:refresh`, which regenerates the fixture from that same sibling.
+  Blocks: any claim that CI checks conformance to the template as the template evolves.
 - **Where the Inngest job should run is undecided** — local dev, an external worker, or a serverless function.
   Blocks: giving `lib/inngest/functions.ts` an environment where a schedule can actually fire.
 
@@ -770,7 +803,9 @@ A sentence earns its place only if its author read the thing this session.
 # FEATURE SPECS
 
 Feature specifications live in `specs/`. One file per deliverable unit of work. See `specs/README.md` for
-structure and `specs/00-template.md` for the template.
+structure and `specs/00-template.md` for the template. Not every unit of work lands here: a conversion or
+migration keeps its design doc under `docs/superpowers/specs/` and its plan under `docs/superpowers/plans/`, as
+`.claude/skills/development-workflow.md:49` states, so `specs/` stays a feature-spec directory.
 
 ---
 

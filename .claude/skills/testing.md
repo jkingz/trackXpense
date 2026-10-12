@@ -18,9 +18,11 @@ instruction-layer checker in `tests/platform/unit/` is the exception — it read
 (`AGENTS.md`, `.claude/skills/`, `.env.example`) off disk and asserts they agree, so it pins no application
 behaviour and needs no database.
 
-Never write a test count into this file, and add none to `AGENTS.md` outside its two recorded baselines —
-§13 gate 2 and § Verification, which are refreshed from command output whenever the suite moves. A number
-typed anywhere else is wrong the day the next test lands. Run the command and quote its output in the reply.
+Never write a **suite total** into this file, and add none to `AGENTS.md` outside its two recorded baselines —
+§13 gate 2 and § Verification, which are refreshed from command output whenever the suite moves. A total typed
+anywhere else is wrong the day the next test lands. Per-file counts — the `(6)`, `(4)`, `(9)` labels in
+AGENTS.md § Testing — name one file, not the suite, so they are outside this rule. Run the command and quote
+its output in the reply.
 
 ## `TZ=UTC` is load-bearing
 

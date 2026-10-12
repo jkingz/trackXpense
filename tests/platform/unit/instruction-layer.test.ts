@@ -11,7 +11,7 @@ function linesOutsideFences(md: string): string[] {
   const out: string[] = [];
   let inFence = false;
   for (const line of md.split('\n')) {
-    if (line.startsWith('```')) {
+    if (isFenceLine(line)) {
       inFence = !inFence;
       continue;
     }
@@ -19,6 +19,11 @@ function linesOutsideFences(md: string): string[] {
   }
   return out;
 }
+
+// One literal for the fence delimiter, so the assertion that pins refresh-skeleton.mjs to this file's rule has a
+// single source: change FENCE here and the generator check goes red with it instead of drifting silently.
+const FENCE = '```';
+const isFenceLine = (line: string): boolean => line.startsWith(FENCE);
 
 const SLOT = /<[a-zA-Z_/]/;
 const slotLines = (md: string): number[] =>
@@ -89,7 +94,7 @@ function pathCitations(md: string, resolve: Resolve): string[] {
   let inFence = false;
   const lines = md.split('\n');
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].startsWith('```')) {
+    if (isFenceLine(lines[i])) {
       inFence = !inFence;
       continue;
     }
@@ -97,7 +102,8 @@ function pathCitations(md: string, resolve: Resolve): string[] {
     for (const m of lines[i].matchAll(TICK)) {
       const tok = m[1].trim();
       // Narrow on purpose: repo-relative, must carry a slash, must end in a real extension (or be a
-      // trailing-slash directory). That excludes eslint rule names (import/order), npm specifiers
+      // trailing-slash directory) UNLESS it carries a line range, which is checked against the target below even
+      // when the target has no extension. That excludes eslint rule names (import/order), npm specifiers
       // (eslint-config-next/typescript), domains, branch names and bare files (middleware.js) — every one of
       // which is legitimately named in this doc and none of which is a path in this repo.
       if (!tok.includes('/') || !PATH_SHAPE.test(tok)) continue;
@@ -108,13 +114,19 @@ function pathCitations(md: string, resolve: Resolve): string[] {
       if (!file) continue;
       const isDir = sep === -1 && tok.endsWith('/');
       const ext = file.includes('.') ? file.split('.').pop()!.toLowerCase() : '';
-      if (!isDir && !CITABLE_EXT.has(ext)) continue;
+      if (!isDir && !range && !CITABLE_EXT.has(ext)) continue;
       const res = resolve(file);
       if (!res.exists) {
         defects.push(`line ${i + 1}: \`${tok}\` does not resolve`);
         continue;
       }
       if (!LINE_RANGE.test(range)) continue;
+      // A range on something with no line count (a directory) is a defect, not a pass: resolveInRepo only reports
+      // lineCount for files, so this is where `some/dir/:42` stops being dropped before resolve().
+      if (range && res.lineCount === undefined) {
+        defects.push(`line ${i + 1}: \`${tok}\` cites a line range on \`${file}\`, which has no line count`);
+        continue;
+      }
       if (range && res.lineCount !== undefined) {
         const hi = Number(range.split('-').pop());
         if (hi > res.lineCount) defects.push(`line ${i + 1}: \`${tok}\` cites line ${hi}, file has ${res.lineCount}`);
@@ -154,6 +166,8 @@ describe('instruction-layer checker harness', () => {
   it('reads the files it claims to check', () => {
     expect(fs.existsSync(path.join(ROOT, 'AGENTS.md'))).toBe(true);
     expect(fs.existsSync(path.join(ROOT, '.env.example'))).toBe(true);
+    // Its only job is proving skillFilesUnder walked .claude/skills and found the files; the two-way listing check
+    // in the next describe is what polices AGENTS.md § Repo skills. A seventh skill means updating this number.
     expect(skillFilesUnder(path.join(ROOT, '.claude/skills'), path.join(ROOT, '.claude/skills'))).toHaveLength(6);
   });
 });
@@ -238,6 +252,26 @@ describe('every path citation resolves', () => {
     );
     expect(defects).toEqual([]);
   });
+
+  it('a line range on a directory is reported instead of dropped before resolve()', () => {
+    const fake: Resolve = (p) => (p === 'some/dir' ? { exists: true } : { exists: false });
+    // Before this rule was written the extension gate dropped `some/dir/:42` and the run stayed green.
+    expect(pathCitations('Says `some/dir/:42` — a range on a directory.', fake)).toEqual([
+      'line 1: `some/dir/:42` cites a line range on `some/dir`, which has no line count',
+    ]);
+  });
+});
+
+describe('feature spec citations resolve', () => {
+  it('every repo path cited in the files under specs/ exists', () => {
+    const dir = path.join(ROOT, 'specs');
+    const defects = fs
+      .readdirSync(dir)
+      .filter((f) => f.endsWith('.md'))
+      .sort()
+      .flatMap((f) => pathCitations(read(path.join('specs', f)), resolveInRepo).map((d) => `${f}: ${d}`));
+    expect(defects).toEqual([]);
+  });
 });
 
 describe('AGENTS.md heading skeleton equals the template skeleton', () => {
@@ -256,6 +290,20 @@ describe('AGENTS.md heading skeleton equals the template skeleton', () => {
     const diff = diffHeadings(actual, fixture);
     expect(diff).toEqual({ extra: [], missing: [] });
     expect(actual).toEqual(fixture);
+  });
+
+  it('the heading rule sees #, ## and ### only, so H4, no-space and indented forms drop on both sides', () => {
+    // Widening HEADING later is a deliberate edit, not a silent drift: this pins what the parity check cannot see.
+    // Never add setext detection — AGENTS.md uses bare --- separators and would grow phantom H2s on both sides.
+    expect(headingsOutsideFences('#### Fourth\n#Nospace\n\t ## Tab-indented\n')).toEqual([]);
+    expect(headingsOutsideFences('# One\n#### Fourth\n#Nospace\n   ## Indented\n')).toEqual(['# One']);
+  });
+
+  it('the generator extracts with this file\'s rule, not with a copy of it in prose', () => {
+    // refresh-skeleton.mjs runs at the top level, so this reads it as text instead of importing it.
+    const src = read('tests/platform/scripts/refresh-skeleton.mjs');
+    expect(src).toContain(HEADING.source);
+    expect(src).toContain(`startsWith('${FENCE}')`);
   });
 
   it('the vendored skeleton still equals the live template when this machine has the sibling checkout', () => {

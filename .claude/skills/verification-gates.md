@@ -50,15 +50,19 @@ swaps to the pinned version once the right Node is on `PATH`; it does not touch 
 
 5. **Live exercise** — impossible for the money path in this environment
    - Auth, database and email flows cannot be smoke-tested here: `DATABASE_URL`/`DIRECT_URL` absent,
-     `ARCJET_KEY` absent (so `pnpm dev` answers 403), `RESEND_API_KEY` absent, and `pnpm email` stops
+     `ARCJET_KEY` absent so `proxy.ts`'s LIVE rules answer 403 before a page renders (measured 2026-10-13: with
+     `pnpm dev` up and no key, `/`, `/sign-in` and `/dashboard` each returned 403 with Arcjet's own
+     `{"code":403,"message":"Forbidden"}` body, on a curl and a browser User-Agent alike — AGENTS.md §13 gate 5),
+     `RESEND_API_KEY` absent, and `pnpm email` stops
      on an interactive prompt because `@react-email/ui` is not installed.
    - Say "not verified" and name the missing variable. Never upgrade that to "should work".
 
 ## Reporting
 
-For each gate: the command, the output it printed, pass or fail. Counts belong in the reply; the only **test**
-counts this repo keeps in `AGENTS.md` are the §13 gate 2 and § Verification baselines, refreshed from
-command output whenever they move.
+For each gate: the command, the output it printed, pass or fail. Counts belong in the reply; the only **suite
+totals** this repo keeps in `AGENTS.md` are the §13 gate 2 and § Verification baselines, refreshed from
+command output whenever they move. Per-file test counts are labels on one file, not suite totals, and are not
+what this exception scopes.
 
 ```
 Typecheck: pnpm typecheck → <tsc output>
