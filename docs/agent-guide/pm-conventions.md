@@ -24,10 +24,10 @@ See `/git-workflow` skill for complete commit conventions, push discipline, and 
 
 The chain from `/verification-gates` skill and STANDING RULES (Rule 13):
 1. `pnpm typecheck` → 0 errors
-2. `pnpm test` → green; the baseline lives in §13 gate 2
+2. `pnpm test` → green; the baseline lives in `docs/standing-rules/13-verification-gates.md` gate 2
 3. `pnpm build` → succeeds (it type-checks; it does not lint)
 4. `pnpm lint` → no **new** error class; the tree stays red on pre-existing debt (the census is quoted in § Verification), so "green lint" is not the gate
-5. Manual verification (smoke test in browser, database state, etc.) — impossible for auth/DB/email flows here; the missing credentials are named in §13 Verification gates, gate 5
+5. Manual verification (smoke test in browser, database state, etc.) — impossible for auth/DB/email flows here; the missing credentials are named in `docs/standing-rules/13-verification-gates.md` gate 5
 
 Deviation, on the books: the template sentence "CI runs the same commands" is not yet true here, because CI has
 no lint step while gate 4 is red on a recorded census. Either the census gets decided (TARGET STATE) or this

@@ -102,11 +102,14 @@ tests/                  — Vitest unit tier: tests/{feature}/unit/*.test.ts, te
   platform/scripts/     — refresh-skeleton.mjs: regenerates that fixture from the sibling template checkout
 specs/                  — Feature specs: one file per deliverable unit, plus the template and index that
                           § FEATURE SPECS points at. Which files are there is not listed here on purpose —
-                          this tree is unpolicied (a fence hides it from the citation assertion, see STANDING
-                          RULES §13), so an enumeration would be the stale copy a new spec never updates.
+                          this tree is unpolicied (a fence hides it from the citation assertion, see Rule 13's
+                          body), so an enumeration would be the stale copy a new spec never updates.
 docs/agent-guide/       — the bodies AGENTS.md's stubs point at: one file per section, in the read order
                           its README.md states. Policed by the same slot and citation assertions as AGENTS.md, so a
-                          dangling path here fails a push; the fenced tree this line sits in is the exception (§13)
+                          dangling path here fails a push; the fenced tree this line sits in is the exception
+                          (Rule 13's body)
+docs/standing-rules/    — the bodies behind STANDING RULES 11–17: one file per rule, indexed by its README.md,
+                          policed the same way. AGENTS.md keeps each heading and its one constraining fact
 docs/superpowers/       — plans/ and specs/ for conversion and migration units: Plan A's and this instruction layer's
                           own design docs and plans live here, not under specs/ (see § FEATURE SPECS)
 tsconfig.json           — Project TS config (strict, whole-tree include; no jsconfig.json)
@@ -127,7 +130,7 @@ Protected paths: the seven in STANDING RULES §17 — one authority; this line d
 
 ### Testing
 
-**Current status:** Vitest exists and `pnpm test` (which is `TZ=UTC vitest run`) is green across the `tests/money`, `tests/validation` and `tests/platform` tiers; the baseline totals live in `AGENTS.md` §13 gate 2 and `docs/agent-guide/service-architecture.md` § Verification — the only two places that state suite totals, and neither is here. Most of the suite is characterisation — it pins what the code does today, including two known defects, so a green run is not an endorsement of that behaviour. The instruction-layer checker in `tests/platform/unit/` is the exception: it reads this repo's own guidance files off disk — `AGENTS.md`, this directory, `.claude/skills/`, `.env.example` and the heading fixture — and asserts they agree, so it pins no application behaviour and needs no database.
+**Current status:** Vitest exists and `pnpm test` (which is `TZ=UTC vitest run`) is green across the `tests/money`, `tests/validation` and `tests/platform` tiers; the baseline totals live in `docs/standing-rules/13-verification-gates.md` gate 2 and `docs/agent-guide/service-architecture.md` § Verification — the only two places that state suite totals, and neither is here. Most of the suite is characterisation — it pins what the code does today, including two known defects, so a green run is not an endorsement of that behaviour. The instruction-layer checker in `tests/platform/unit/` is the exception: it reads this repo's own guidance files off disk — `AGENTS.md`, this directory, `docs/standing-rules/`, `.claude/skills/`, `.env.example` and the heading fixture — and asserts they agree, so it pins no application behaviour and needs no database.
 
 - `tests/money/unit/serialize-amount.test.ts` (6) — `serializeAmount` / `serializeTransaction` on `Decimal`-shaped stubs. Pins the shallow-spread contract, i.e. **a nested `Decimal` stays a `Decimal`** and crosses the server/client boundary unconverted.
 - `tests/money/unit/calculate-next-recurring.test.ts` (4) — the four intervals plus month-end/leap carry (`2026-01-31` + 1 month → `2026-03-03`), recorded as-is.

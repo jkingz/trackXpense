@@ -34,5 +34,5 @@ UI"), so nothing below has been run. These are the checks that would verify it, 
 - `pnpm build` → compiles and type-checks once the filter exists; run today it says nothing about this spec.
 - `pnpm test` → stays green while the feature is built (unit tier plus the instruction-layer checker).
 - Manual/live: sign in, open the dashboard, select a category, confirm the list narrows to that category and
-  only to the session user's rows — not run here: no `DATABASE_URL`, no `ARCJET_KEY` (AGENTS.md §13 gate 5).
+  only to the session user's rows — not run here: no `DATABASE_URL`, no `ARCJET_KEY` (`docs/standing-rules/13-verification-gates.md` gate 5).
 - Not verified at all yet: category persistence across sessions, bulk filtering performance.

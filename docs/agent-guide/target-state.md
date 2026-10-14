@@ -21,8 +21,9 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
   source files.
 - **Rotting literals are still in the instruction layer.** The no-new-counts rule that governs them was written by
   this unit into `/testing` and `/verification-gates`, while the counts still sitting in these bodies came from the
-  Plan A Progress Tracker that the tracker cut deleted — two owners, neither of them this body — and `AGENTS.md`
-  §13, `docs/agent-guide/service-architecture.md` § Verification, `docs/agent-guide/code-standards.md` § Testing and
+  Plan A Progress Tracker that the tracker cut deleted — two owners, neither of them this body — and
+  `docs/standing-rules/13-verification-gates.md` gate 2, `docs/agent-guide/service-architecture.md` § Verification,
+  `docs/agent-guide/code-standards.md` § Testing and
   § Language strictness there quote test, error and file counts because a baseline has to live somewhere. Deciding
   where (a generated census file? the CI log?) is its own unit.
 - **The two majors that are on npm and not installed: ESLint 10 and TypeScript 7.** Under this repo's flat config,
@@ -62,12 +63,13 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
 - **The env vars read through `as string` assertions** (`lib/arcjet.ts:4`, `proxy.ts:14`,
   `actions/transaction.ts:12`, `lib/inngest/functions.ts:217`, `actions/seed.ts:8-9`) are a type-lie;
   `experimental.typedEnv` or a Zod env schema is the honest fix. Blocks: trusting the config surface.
-- **The checker does not pin its own doc.** The health-check grep is a literal in three places across the two
-  homes — `AGENTS.md` twice (the header block and the `## Health check` stub) and `docs/agent-guide/editing.md`
+- **The checker does not pin its own doc.** The health-check grep is a literal in three places across the homes —
+  `AGENTS.md` twice (the header block and the `## Health check` stub) and `docs/agent-guide/editing.md`
   once — and nothing asserts they still equal the template's literal one-liner, so a bracket-free `grep -v`
   exemption could return without failing the slot check. Blocks: the health check staying honest without a human
   reading it.
-- **The env-inventory assertion scans both whole homes — `AGENTS.md` and every body in `docs/agent-guide/` — not
+- **The env-inventory assertion scans all three whole homes — `AGENTS.md`, every body in `docs/agent-guide/` and
+  every body in `docs/standing-rules/` — not
   §16 and the file-organization tree as the design scoped it,** so it claims every upper-case-with-underscore token
   in prose as a variable `.env.example` must inventory.
   Together with the slot check that forbids angle brackets, the only placeholder form the instruction layer can use is

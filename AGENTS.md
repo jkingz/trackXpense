@@ -12,9 +12,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 # AGENT-READY PROJECT INSTRUCTION LAYER
 
-This file is the instruction layer's **contract**: the standing rules, a stub for every section, and the two sections kept whole. The bodies those stubs point at live in `docs/agent-guide/`, and `docs/agent-guide/README.md`'s order is the read order. **Read STANDING RULES before every task.** Then read APPLICATION BUILDING CONTEXT in order when making architectural decisions. SERVICE ARCHITECTURE describes what is built; TARGET STATE describes what is not.
+This file is the instruction layer's **contract**: the standing rules, a stub for every section, and the two sections kept whole. Rules 1–10 are here in full; the bodies the other stubs point at live in `docs/agent-guide/` — and for Rules 11–17 in `docs/standing-rules/` — and `docs/agent-guide/README.md`'s order is the read order. **Read STANDING RULES before every task.** Then read APPLICATION BUILDING CONTEXT in order when making architectural decisions. SERVICE ARCHITECTURE describes what is built; TARGET STATE describes what is not.
 
-**Health check (fills slots, zero hits means done; `pnpm check:docs` runs the same check over `docs/agent-guide/`):**
+**Health check (fills slots, zero hits means done; `pnpm check:docs` runs the same check over `docs/agent-guide/` and `docs/standing-rules/`):**
 ```bash
 grep -n '<[a-zA-Z_/]' AGENTS.md
 ```
@@ -23,7 +23,7 @@ grep -n '<[a-zA-Z_/]' AGENTS.md
 
 # STANDING RULES — Read first, before any task
 
-Constraints that apply to every change. Read these **in full** before every taskable request. Skip nothing.
+Constraints that apply to every change. Read Rules 1–10 **in full** before every taskable request; read the Rule 11–17 body your change touches. Skip nothing.
 
 ## Portable core — Rules 1–10
 
@@ -80,59 +80,29 @@ These rules hold in every repo.
 
 ## Project-specific rules — Fill these slots day one
 
-### 11. Package manager and runtime
-`pnpm` is whatever the host resolves — `10.18.3` on this machine, measured on Node 20.19.5, 22.15.0, 24.15.0 and 26.8.2 — because `package.json` carries **no** `packageManager` field. It does carry `engines.node: ">=22.21.0"`, which is the highest floor among the installed dependencies' own `engines` (measured 2026-10-14: `@arcjet/next` `>=22.21.0 <23 || >=24.5.0`, `vitest` `^22.12.0 || ^24.0.0 || >=26.0.0`, `prisma` and `@prisma/client` `^20.19 || ^22.12 || >=24.0`, `react-email` `>=20.19.0`, `next` and `@clerk/nextjs` `>=20.9.0`). Nothing enforces it — there is no `.npmrc`, so pnpm never runs `engine-strict`.
+Rules 11–17 are this repo's own facts. Each heading keeps the one fact that constrains work; the evidence for it is
+the body in `docs/standing-rules/`, whose index is in rule order. Read the body your change touches.
 
-What removing the pin bought: the recorded 2026-10-13 failure mode is gone. With a `packageManager` field, the version was auto-activated on the host runtime, and on Node 26 that died on `no @pnpm/exe.darwin-arm64 native binary was found for this host` — a red gate that looked like a broken project rather than a broken shell. Check `pnpm --version` and `node --version` before trusting either. The version CI installs is now written in `.github/workflows/ci.yml`, so that file and this rule move together.
+### 11. Package manager and runtime
+`pnpm` is whatever the host resolves — `package.json` carries no `packageManager` field — and the Node floor is declared in `engines.node` but enforced by nothing, so measure both before trusting a gate. → `docs/standing-rules/11-package-manager-and-runtime.md`
 
 ### 12. Framework version drift
-`Next.js 16.4.0` pinned exactly in `package.json`; `TypeScript 5.9.3` is the source language (`tsconfig.json`, `strict: true`, whole-tree `include`, 0 errors). Breaking changes from Next.js App Router documented at `node_modules/next/dist/docs/` (version-16 guide: `node_modules/next/dist/docs/01-app/02-guides/upgrading/version-16.md`). Check that path before touching server components, layouts, API routes, or metadata. Next 16 defaults: Turbopack for `dev` and `build`, request-time APIs (`params`, `searchParams`, `cookies`, `headers`) are async-only, the root middleware file is `proxy.ts` (not `middleware.js`), `next lint` no longer exists, and `next build` type-checks unless `typescript.ignoreBuildErrors` is set — which it is **not**, as of Plan A Task 12.
+Next 16 renamed the root middleware file to `proxy.ts`, removed `next lint`, made the request-time APIs async, and type-checks inside `next build`; `node_modules/next/dist/docs/` is the authority, not training data. → `docs/standing-rules/12-framework-version-drift.md`
 
 ### 13. Verification gates
-The exact chain that must be green before work is reported complete:
-1. `pnpm typecheck` — `next typegen && tsc --noEmit` over the whole tree. Baseline: **0 errors**. Do not let it regress; `npx tsc --noEmit --incremental false` is the non-stale re-check.
-2. `pnpm test` — `TZ=UTC vitest run`. Baseline: **40 passed in 4 files** — 19 app-tier characterisation tests in `tests/money` and `tests/validation`, plus 21 instruction-layer checks in `tests/platform` that read this repo's docs, not app behaviour.
-3. `pnpm build` — Next.js production build (Turbopack). It now **is** a type gate (no `typescript.ignoreBuildErrors` in `next.config.mjs`) and still never lints.
-4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. The config consumes `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript` directly; wrapping them in `FlatCompat` crashes. `pnpm lint` is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings (2 `react-hooks/incompatible-library` react-compiler noise + 1 `react-hooks/exhaustive-deps`)**, re-measured 2026-10-13. The gate is "the census does not grow", not "green" — the census is quoted in `docs/agent-guide/service-architecture.md` § Verification.
-5. Manual verification when touching auth, database, or email flows — currently impossible here (no `DATABASE_URL`, no `ARCJET_KEY`, `@react-email/ui` missing). The no-`ARCJET_KEY` 403 is now measured rather than asserted: with `pnpm dev` up and no key in the environment, `curl -i` on `/`, `/sign-in` and `/dashboard` each returned **403** with Arcjet's own body `{"code":403,"message":"Forbidden"}`, and a browser User-Agent gets the same 403, so it is the LIVE `shield`/`detectBot` rules in `proxy.ts` denying before a page renders rather than curl being flagged as a bot. There is therefore no page to smoke-test.
-
-CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`, and on **every** `pull_request` regardless of branch name; a branch outside that push filter therefore still gets the three gates, but only from its PR. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). It has since run on a runner — first execution 2026-10-14, a PR head off this branch, `typecheck / test / build` **pass** in 1m0s printing `Tests 40 passed (40)`, the same totals gate 2 prints locally. Two runner annotations came with that run: `node-version: "20"` made `actions/checkout@v4` and `actions/setup-node@v4` warn they target Node 20 while forced onto 24, and `ubuntu-latest` migrates to Ubuntu 26 on 2026-10-19. The first is now closed by naming `24` outright, which is also what `engines.node` requires; the second is still open. Because `package.json` carries no `packageManager`, the workflow states the pnpm version in its own `with:` input — that input and §11 are the two places the pnpm version is written, and the lockfile stays `lockfileVersion: 9.0`.
-
-Gate 2 is where the instruction-layer checker runs, so every push re-checks this file, the bodies in `docs/agent-guide/`, `.claude/skills/`, `.env.example` and the vendored heading fixture `tests/platform/fixtures/agents-md-skeleton.txt` against each other; and because the same assertion resolves every repo path cited outside a fence — and only outside a fence, which is why the fenced file-organization tree in `docs/agent-guide/code-standards.md` is the doc's own unpolicied path index, and why it once went stale on `specs/` — a dangling pointer into `specs/` fails a push too. What the checker cannot see:
-
-- Fenced blocks of any kind, including that file-organization tree.
-- The bodies under `docs/superpowers/` — historical plan files there legitimately carry the angle-bracket template slots this file may not.
-- `.claude/skills/` as slot targets: the slot rule reads `AGENTS.md` and every file under `docs/agent-guide/` whole-file, and no skill, so a skill may carry bracketed placeholders of its own. Their citations are still checked.
-- Whether a stub still describes its body. The pointer is checked, the heading skeleton is checked, and nothing checks the one line between them.
-- The free-text quotes of `AGENTS.md` sections inside `specs/*.md`, which have no machine-checkable form without inventing a quote syntax.
-- Any heading form the heading rule does not match — `####`, `#Nospace` and indented headings drop out of both sides identically, are pinned to an empty extraction by their own assertion, and grep confirms none in `AGENTS.md`, the fixture or the template.
-
-Widening any of those is therefore a deliberate edit, not a silent drift.
-
-See `/verification-gates` skill for the full chain and how to report each gate.
+Five gates in order — typecheck, test, build, lint at "the census does not grow", then manual smoke where credentials allow — and CI runs only the first three. The baselines, what each gate does not prove, and what the checker cannot see are in `docs/standing-rules/13-verification-gates.md`.
 
 ### 14. Application building order
-Read these sections in order: `STANDING RULES` → `PROJECT OVERVIEW` → `ARCHITECTURE CONTEXT` → `UI CONTEXT` → `CODE STANDARDS` → `DEVELOPMENT WORKFLOW` → `PM CONVENTIONS`. Then `AGENTS.md` → SERVICE ARCHITECTURE section. The section names are headings in this file; their bodies are `docs/agent-guide/README.md`'s order, same sequence.
+`STANDING RULES` → overview → architecture → UI → code standards → workflow → PM conventions → SERVICE ARCHITECTURE; the section bodies are `docs/agent-guide/README.md`'s order. → `docs/standing-rules/14-application-building-order.md`
 
 ### 15. Cross-cutting authority — one authority per rule, enforced once
-- **Auth gate:** `proxy.ts` is the only thing that turns an anonymous request away. `lib/checkUser.ts` reads `currentUser()`, resolves it to a `users` row and creates that row on first sight; it returns `null` when there is no session and swallows a failed read or write to `null` too, so it is provisioning, not a gate — both of its callers discard the value. `actions/lib/checkUser.ts` reads `auth()` and **throws** `Unauthorized`, and is the only gate that runs inside a server action. Both are used; neither is the other's wrapper. Plan B §2c consolidates them.
-- **Database access:** `lib/prisma.ts` — singleton client (pg driver adapter). All data reads/writes go through Prisma.
-- **Errors:** Thrown errors in Server Components/Actions surface as generic toast via Sonner. No internal messages to client.
-- **Validation:** `lib/schema.ts` — Zod schemas for form input. They run **client-side only**, through `zodResolver` in the two forms; no server action parses its input (`parseInput` is Plan B).
+`proxy.ts` keeps anonymous traffic out of a route, `actions/lib/checkUser.ts` is the only gate that throws inside a server action, `lib/prisma.ts` is the only Prisma client, and `lib/schema.ts` runs client-side only. → `docs/standing-rules/15-cross-cutting-authority.md`
 
 ### 16. Datastore / external service
-PostgreSQL via Prisma 7. `postinstall` runs `prisma generate` only — it does **not** apply migrations. Migrations live in `prisma/migrations/`; never edit applied migrations. New migrations: run `pnpm exec prisma migrate dev --name migration_name` with a snake_case description, then commit the generated file.
-
-Prisma 7 moved the connection out of `prisma/schema.prisma` (the datasource block declares only `provider`): the CLI reads `url` from `prisma.config.ts`, which resolves `DIRECT_URL || DATABASE_URL` through `dotenv` and falls back to `''` so `prisma generate` still works without a database. `lib/prisma.ts` must pass a driver adapter (`@prisma/adapter-pg`) — Prisma 7 no longer opens its own connection. The `client` generator stays on `prisma-client-js`: the newer `prisma-client` generator requires an `output` path and would rewrite every Prisma import in the tree, so upgrading it is a bigger blast radius than the gain.
-
-Environment variables: `DATABASE_URL` (client connection, used by the pg adapter), `DIRECT_URL` (Prisma CLI/migrations), `CLERK_SECRET_KEY` (auth), `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (client auth key). Prisma 7 does not auto-load `.env*`; Next.js still does for the app itself.
+Prisma 7: `postinstall` generates but never migrates, the CLI's URL comes from `prisma.config.ts`, and every variable name is inventoried in `.env.example`. → `docs/standing-rules/16-datastore-and-external-service.md`
 
 ### 17. Protected foundations
-- `lib/checkUser.ts` (provisions the `users` row during page render; returns `null`, never redirects) and `actions/lib/checkUser.ts` (the gate that throws inside server actions) — do not bypass either, and do not quietly make the first behave like the second: that consolidation is Plan B §2c.
-- `lib/prisma.ts` — singleton, do not instantiate Prisma elsewhere.
-- `prisma/schema.prisma` — schema is single source of truth for data shape.
-- `tsconfig.json` — the compiler settings and `include` are the type gate; do not narrow `include`, re-add `typescript.ignoreBuildErrors`, or flip `noImplicitAny` / `useUnknownInCatchVariables` without Plan B's budget.
-- Clerk integration in `app/(auth)/` — do not move or modify without understanding auth flow end-to-end.
+`lib/checkUser.ts`, `actions/lib/checkUser.ts`, `lib/prisma.ts`, `prisma/schema.prisma`, `tsconfig.json` and the Clerk pages in `app/(auth)/` carry the auth gate, the data shape and the type contract. → `docs/standing-rules/17-protected-foundations.md`
 
 ---
 
@@ -154,7 +124,7 @@ instruction-layer checker in `tests/platform/unit/`.
 transaction export, analytics, multi-user sharing, mobile app. Each is a bullet in TARGET STATE.
 
 **Next unit** — Plan B: the server-side `parseInput` boundary, then the two strict-flag flips. STANDING
-RULES → Rule 13 gate 5 lists what cannot be verified until credentials exist.
+RULES → Rule 13's body, gate 5, lists what cannot be verified until credentials exist.
 
 Verified: 2026-10-13, against the working tree on `feat/ts-zod-plan-a-bridge`. `git log --oneline` is the
 authority on what shipped and when; this file does not duplicate it.
@@ -329,7 +299,7 @@ Title `type(scope): imperative summary`; body = what changed, how it was verifie
 
 ### Review gate
 
-The Rule 13 chain: typecheck 0 errors, test green at the §13 baseline, build (it type-checks, never lints), lint at "no new error class", manual smoke where credentials allow. The written deviation stays in `docs/agent-guide/pm-conventions.md`: CI has no lint step, so "CI runs the same commands" is not yet true here.
+The Rule 13 chain: typecheck 0 errors, test green at the baseline in its body (`docs/standing-rules/13-verification-gates.md`), build (it type-checks, never lints), lint at "no new error class", manual smoke where credentials allow. The written deviation stays in `docs/agent-guide/pm-conventions.md`: CI has no lint step, so "CI runs the same commands" is not yet true here.
 
 # SERVICE ARCHITECTURE — Implemented surface
 
@@ -361,7 +331,7 @@ Public landing plus the Clerk and protected pages, all dynamic; no `no-store` or
 
 ## Verification
 
-The command list with what each printed last time and the app-coverage statement are in `docs/agent-guide/service-architecture.md` § Verification. That heading and `AGENTS.md` §13 gate 2 are the only two homes for suite totals.
+The command list with what each printed last time and the app-coverage statement are in `docs/agent-guide/service-architecture.md` § Verification. That heading and Rule 13's gate 2 (`docs/standing-rules/13-verification-gates.md`) are the only two homes for suite totals.
 
 ## Repo skills
 
@@ -403,7 +373,7 @@ Rules 11–17 day one; overview through PM conventions one section per decision;
 
 ## Health check
 
-`grep -n '<[a-zA-Z_/]' AGENTS.md`, quoted at the top of this file, and zero hits means the file describes only this project. Add no exemptions — reword the prose. `pnpm check:docs` runs the same check over every body in `docs/agent-guide/`; the rule, its scope across both homes, and why the checker re-runs it are in `docs/agent-guide/editing.md`.
+`grep -n '<[a-zA-Z_/]' AGENTS.md`, quoted at the top of this file, and zero hits means the file describes only this project. Add no exemptions — reword the prose. `pnpm check:docs` runs the same check over every body in `docs/agent-guide/` and `docs/standing-rules/`; the rule, its scope across all three homes, and why the checker re-runs it are in `docs/agent-guide/editing.md`.
 
 ## One rule that organizes everything else
 

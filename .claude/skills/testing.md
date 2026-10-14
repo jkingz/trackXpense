@@ -15,11 +15,12 @@ when: "user needs to write, run, or update tests; asks about test structure, cov
 Most tests present are **characterisation**: they pin what the code does today, including two recorded
 defects (see `docs/agent-guide/code-standards.md` § Testing), so a green run is not an endorsement of that behaviour. The
 instruction-layer checker in `tests/platform/unit/` is the exception — it reads this repo's own guidance files
-(`AGENTS.md`, `docs/agent-guide/`, `.claude/skills/`, `.env.example`) off disk and asserts they agree, so it pins no application
+(`AGENTS.md`, `docs/agent-guide/`, `docs/standing-rules/`, `.claude/skills/`, `.env.example`) off disk and asserts they agree, so it pins no application
 behaviour and needs no database.
 
 Never write a **suite total** into this file, and add none to the instruction layer outside its two recorded
-baselines — `AGENTS.md` §13 gate 2 and `docs/agent-guide/service-architecture.md` § Verification, which are refreshed
+baselines — `docs/standing-rules/13-verification-gates.md` gate 2 and
+`docs/agent-guide/service-architecture.md` § Verification, which are refreshed
 from command output whenever the suite moves. A total typed
 anywhere else is wrong the day the next test lands. Per-file counts — the `(6)`, `(4)`, `(9)` labels in
 `docs/agent-guide/code-standards.md` § Testing — name one file, not the suite, so they are outside this rule. Run the command and quote
@@ -79,7 +80,7 @@ Every route/action covering `401` (unauthenticated), `403` (ownership), `400` (b
 fixture that proves a foreign account cannot be read.
 
 Server actions have zero coverage and cannot get it here: they need Postgres credentials this
-environment does not have (AGENTS.md § STANDING RULES → Rule 13 gate 5).
+environment does not have (`docs/standing-rules/13-verification-gates.md`, gate 5).
 
 ## Reference
 
