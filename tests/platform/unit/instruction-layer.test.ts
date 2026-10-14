@@ -162,6 +162,17 @@ function diffHeadings(actual: string[], expected: string[]): { extra: string[]; 
   };
 }
 
+// The instruction layer has two homes: AGENTS.md (contract + stubs + the two sections kept whole) and
+// docs/agent-guide/ (the moved bodies). Everything below polices both as one unit, because a rule that reads only
+// AGENTS.md would go quiet on the day its content moved — which is exactly the drift this directory creates.
+const GUIDE_DIR = 'docs/agent-guide';
+const guideBodies = (): string[] => skillFilesUnder(path.join(ROOT, GUIDE_DIR), ROOT);
+const GUIDE_POINTER = /docs\/agent-guide\/([a-z0-9][a-z0-9-]*\.md)/g;
+// Fence-aware on purpose: the file-organization tree names the directory without naming a body, and a pointer
+// inside a fence is an example, not a promise.
+const guidePointers = (md: string): string[] =>
+  [...linesOutsideFences(md).join('\n').matchAll(GUIDE_POINTER)].map((m) => m[1]);
+
 describe('instruction-layer checker harness', () => {
   it('reads the files it claims to check', () => {
     expect(fs.existsSync(path.join(ROOT, 'AGENTS.md'))).toBe(true);
@@ -201,8 +212,11 @@ describe('env inventory matches', () => {
     expect(envMismatch(doc, example)).toEqual({ undocumented: ['STRIPE_SECRET_KEY'], unmentioned: ['NEW_API_KEY'] });
   });
 
-  it('AGENTS.md names exactly the variables .env.example inventories', () => {
-    expect(envMismatch(read('AGENTS.md'), read('.env.example'))).toEqual({ undocumented: [], unmentioned: [] });
+  it('the instruction layer names exactly the variables .env.example inventories', () => {
+    // Both homes are one doc now: names like DIRECT_URL live in the moved bodies, so scanning AGENTS.md alone
+    // would report them as unmentioned the moment the bodies split out.
+    const layer = [read('AGENTS.md'), ...guideBodies().map(read)].join('\n');
+    expect(envMismatch(layer, read('.env.example'))).toEqual({ undocumented: [], unmentioned: [] });
   });
 });
 
@@ -276,6 +290,35 @@ describe('feature spec citations resolve', () => {
     expect(files).toHaveLength(3);
     const defects = files.flatMap((f) =>
       pathCitations(read(path.join('specs', f)), resolveInRepo).map((d) => `${f}: ${d}`),
+    );
+    expect(defects).toEqual([]);
+  });
+});
+
+describe('agent-guide bodies are policed like AGENTS.md', () => {
+  it('the index lists every body and the directory holds nothing the index omits', () => {
+    const names = guideBodies().map((f) => f.split('/').pop()!);
+    // Trip-wire, same job as the specs/ and skills ones: README plus ten section bodies. An eleventh body means
+    // a new file nobody updated the count for — and without this line the set equality below could pass on [].
+    expect(names).toHaveLength(11);
+    const listed = [...new Set(guidePointers(read(`${GUIDE_DIR}/README.md`)))].sort();
+    expect(listed).toEqual(names.filter((n) => n !== 'README.md').sort());
+  });
+
+  it('every AGENTS.md stub pointer resolves, and every body is pointed at', () => {
+    const names = guideBodies().map((f) => f.split('/').pop()!);
+    const pointed = [...new Set(guidePointers(read('AGENTS.md')))];
+    expect(pointed.filter((p) => !names.includes(p))).toEqual([]);
+    expect(names.filter((n) => n !== 'README.md' && !pointed.includes(n))).toEqual([]);
+  });
+
+  it('no body carries an unfilled template slot', () => {
+    expect(guideBodies().flatMap((f) => slotLines(read(f)).map((l) => `${f}:${l}`))).toEqual([]);
+  });
+
+  it('every repo path cited outside a fence in a body resolves', () => {
+    const defects = guideBodies().flatMap((f) =>
+      pathCitations(read(f), resolveInRepo).map((d) => `${f}: ${d}`),
     );
     expect(defects).toEqual([]);
   });
