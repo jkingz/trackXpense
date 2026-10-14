@@ -9,8 +9,9 @@ Update this body in the same change that alters the surface described here. Move
 ```
 Browser (Clerk session)
     → proxy.ts (Arcjet shield/detectBot, then clerkMiddleware; redirects unauthenticated hits on /dashboard, /account, /transaction)
-    → App Router page/layout
-    → checkUser() (lib/checkUser.ts redirects for pages; actions/lib/checkUser.ts throws for actions)
+    → App Router page/layout (app/(main)/layout.tsx does no auth)
+    → checkUser() (lib/checkUser.ts provisions the users row and returns null — it never redirects;
+       actions/lib/checkUser.ts throws for server actions)
     → Prisma queries (scoped to userId)
     → PostgreSQL
     → Response (JSON or HTML)
@@ -20,7 +21,7 @@ Browser (Clerk session)
 
 | Module | Status |
 | --- | --- |
-| `lib/checkUser.ts` | Implemented: `checkUser() → userId`, **redirects** to `/sign-in` when the Clerk session is empty. Used in protected layouts. |
+| `lib/checkUser.ts` | Implemented: resolves `currentUser()` to a `users` row, creating it on first sight. Returns `null` with no session and `null` again after catching a failed read or write; **it never redirects**. Both callers — `components/header.tsx`, mounted by `app/layout.tsx`, and `app/(main)/transaction/create/page.tsx` — discard the value, so this runs for provisioning, not for access. |
 | `actions/lib/checkUser.ts` | Implemented: same name, different contract — **throws** `Unauthorized`. Used by server actions. The two are consolidated by Plan B §2c. |
 | `lib/prisma.ts` | Implemented: Singleton Prisma client through the `@prisma/adapter-pg` adapter (`export const db = ...`). All data access goes through this. |
 | `lib/schema.ts` | Implemented: Zod schemas `accountSchema` and `transactionSchema` (no `userSchema`). Applied **client-side only**, through `zodResolver` in the two forms; no action validates its input. |
@@ -29,7 +30,7 @@ Browser (Clerk session)
 | `lib/inngest/` | Implemented at the source level: client + 4 functions (budget-alert cron, recurring trigger cron, per-event recurring processor, monthly-report cron). **Never executed** — no database, no key, no Inngest account in this environment. |
 | `actions/` | Implemented: 15 exported server actions (`getUserAccounts`, `getDashboardData`, `seedTransactions` take no input; 12 accept client input and validate none of it). Includes `scanReceipt`, the Gemini receipt-OCR action, which cannot run without `GEMINI_API_KEY`. |
 | `app/(auth)/` | Implemented: Clerk sign-in/sign-up pages (Clerk-managed UI). |
-| `app/(main)/` | Implemented: Protected layout, reads `checkUser()`. Contains dashboard, accounts, transactions pages. |
+| `app/(main)/` | Implemented: dashboard, account and transaction pages. Its `layout.tsx` performs no auth — the segment is protected only by `proxy.ts`'s route matcher, and the pages read through actions that call `auth()` inline. |
 | `app/api/seed/` | Implemented: Creates test data (users, accounts, transactions). Unauthenticated `GET`; should gate in prod. |
 | `app/api/inngest/` | Implemented: `serve()` exposing GET/POST/PUT for the 4 functions above. Not connected to a running Inngest account. |
 | `tests/` | Implemented: the unit tier — `money`, `validation`, `platform` (the instruction-layer checker). No integration, no e2e. |
@@ -38,7 +39,7 @@ Anything not built does not get a row.
 
 ## Cross-cutting rules — one authority, enforced once
 
-- **Auth gate:** `lib/checkUser.ts:checkUser()` — reads Clerk `auth()`, returns `userId` or throws redirect; `actions/lib/checkUser.ts` throws `Unauthorized` instead. **Two implementations until Plan B §2c.** **Enforcement:** All protected code must import and call one of these; never re-implement session checks. (9 actions still call `auth()` inline — grep `auth()` in `actions/` for the current list.)
+- **Auth gate:** the route authority is `proxy.ts` — Arcjet `shield`/`detectBot`, then `clerkMiddleware`, which calls `redirectToSignIn()` for a session-less request matching its four `isProtected` prefixes. `lib/checkUser.ts:checkUser()` provisions the `users` row and answers `null`; `actions/lib/checkUser.ts:checkUser()` throws `Unauthorized`. **Two implementations until Plan B §2c.** **Enforcement:** new server actions call the throwing one; never re-implement a session check, and never treat the page-side one as a gate. (9 sites in `actions/accounts.ts`, `actions/budget.ts`, `actions/dashboard.ts` and `actions/transaction.ts` still read `auth()` inline.)
 - **Database access:** `lib/prisma.ts` — singleton Prisma client. All reads/writes go through `db.user.findUnique()`, `db.transaction.create()`, etc. **Enforcement:** No other modules instantiate Prisma; no raw SQL.
 - **Validation:** `lib/schema.ts` — Zod schemas exist, but the claim "all form submissions and API endpoints validate input against these schemas before database access" is **not** true today: the schemas run only in the client forms via `zodResolver`, and every action trusts its arguments. Server-side enforcement is Plan B's `parseInput`.
 
@@ -84,8 +85,9 @@ pnpm test      # TZ=UTC vitest run — 40 passed (4 files)
 pnpm check:docs # TZ=UTC vitest run tests/platform — 21 passed (1 file); the instruction layer checks itself
 pnpm build     # next build — compiles AND type-checks (9 routes, exit 0)
 pnpm lint      # eslint . — exit 1: 87 errors, 3 warnings (pre-existing debt, see Rule 13)
-# CI: .github/workflows/ci.yml runs install + typecheck + test + build on push to main|feat/**.
-#     No lint step (gate 4 is red on the census above), no secrets. Never executed on a runner yet.
+# CI: .github/workflows/ci.yml runs install + typecheck + test + build on push to main|feat/** and on
+#     every pull_request. No lint step (gate 4 is red on the census above), no secrets. First runner
+#     execution 2026-10-14: typecheck / test / build pass in 1m0s, Tests 40 passed (40).
 # CI: gate 2 now also runs the instruction-layer checker.
 # Manual: sign in, create account, log transaction, verify dashboard — impossible here, no DATABASE_URL
 ```

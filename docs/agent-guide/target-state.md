@@ -28,6 +28,11 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
 - **`engines.node` is undeclared** while Next 16 and Clerk 7 both need `>=20.9.0` and CI pins Node 20 by hand.
   Blocks: a reproducible "which runtime" answer for a new clone.
 - **The seed endpoint is an unauthenticated `GET` that writes rows.** Blocks: any deploy that is not local.
+- **One auth gate, not two `checkUser` functions.** `lib/checkUser.ts` resolves-or-creates the `users` row and returns `null` —
+  including when the Prisma read or write throws, so a database failure is indistinguishable from a signed-out visitor — and
+  both of its page-side callers discard the value; `actions/lib/checkUser.ts` throws `Unauthorized`. Plan B §2c consolidates
+  them into one session source with one failure contract. Blocks: any claim that a page checks auth, and Plan B's
+  `parseInput` boundary, which needs a single place to read the `userId` from.
 - **`@react-email/components` is deprecated upstream and `@react-email/ui` is absent,** so `pnpm email` cannot
   run. Blocks: proving `emails/template.tsx` renders; needs a replacement decision.
 - **The account chart groups by a date label that drops the year**

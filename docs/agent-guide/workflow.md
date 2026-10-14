@@ -36,10 +36,10 @@ Prove "run one file" by testing: `pnpm lint -- --debug nonexistent.ts` should re
 
 ### Where logic goes
 
-- `lib/checkUser.ts` — page/layout auth gate (redirects); `actions/lib/checkUser.ts` — action auth gate (throws). Do not implement auth logic elsewhere.
+- `lib/checkUser.ts` — session→row provisioning, reached from the header that `app/layout.tsx` mounts; it returns `null` and never redirects, so it is not a gate. `actions/lib/checkUser.ts` — the action gate that throws. Do not implement auth logic elsewhere.
 - `lib/prisma.ts` — data access, all Prisma calls go through this singleton (Prisma 7 requires the `@prisma/adapter-pg` adapter here).
-- `app/(main)/` — protected pages and layouts, use `checkUser()` in layouts.
-- `app/api/` — API routes, use `checkUser()` for protected endpoints.
+- `app/(main)/` — protected pages. `proxy.ts`'s route matcher is what protects them; `app/(main)/layout.tsx` performs no auth, so do not describe it as the gate.
+- `app/api/` — API routes. `/api/seed` calls no gate at all (unauthenticated `GET` that writes) and `/api/inngest` is authenticated by Inngest's own signing, so a new protected route must state which check it runs.
 - `lib/schema.ts` — Zod validation schemas for forms and API input.
 - `proxy.ts` — root request hook: ArcJet (`shield`, `detectBot`) then `clerkMiddleware`. Next 16 renamed this file from `middleware.js`; Plan A converted it to TypeScript.
 

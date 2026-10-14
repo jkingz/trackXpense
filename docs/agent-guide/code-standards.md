@@ -24,7 +24,7 @@ TypeScript 5.9.3 (pinned below 6.x because `typescript-eslint` requires `>=4.8.4
 - App Router is the standard (not Pages Router). All routes are in `app/`.
 - Server Components are default; add `'use client'` to use browser APIs, hooks, or interactivity.
 - API routes: `app/api/[...]/route.ts` exports `GET`, `POST`, etc. as named exports (not default export).
-- Root middleware file is **`proxy.ts`**, not `middleware.js` (Next 16 renamed the convention; Plan A Task 4 also converted it to TypeScript). Auth is layered: ArcJet first, then Clerk, via `createMiddleware(aj, clerk)`. Page-level auth still goes through `checkUser()`.
+- Root middleware file is **`proxy.ts`**, not `middleware.js` (Next 16 renamed the convention; Plan A Task 4 also converted it to TypeScript). Auth is layered: ArcJet first, then Clerk, via `createMiddleware(aj, clerk)`. `proxy.ts` is the only thing that redirects a session-less request; `lib/checkUser.ts` provisions the row and answers `null`.
 - Turbopack is the default bundler for both `next dev` and `next build`; `next lint` is removed — linting is `eslint .` against the flat config, and `next build` no longer runs it.
 - `params`/`searchParams`/`cookies()`/`headers()` are async-only; `revalidateTag()` needs a second `cacheLife` argument (repo uses `revalidatePath`, not `revalidateTag`).
 - `next.config.mjs` no longer accepts the `eslint` key (`ignoreDuringBuilds` is gone), and as of Plan A Task 12 it carries no `typescript` key either: `ignoreBuildErrors` was removed, so `next build` type-checks the whole tree.
@@ -66,7 +66,7 @@ Two deviations from the rules below, both real and unfixed: it is an unauthentic
 
 - **Reads:** All through Prisma client (`lib/prisma.ts`). Scope queries to the session user.
 - **Privileged access:** None — no admin bypass. All reads are user-scoped.
-- **Gate:** `checkUser()` — `lib/checkUser.ts` for pages (redirects), `actions/lib/checkUser.ts` for actions (throws). Called once per request in protected routes.
+- **Gate:** `actions/lib/checkUser.ts` throws and is what a new server action calls. `lib/checkUser.ts` resolves-or-creates the `users` row and returns `null` — the two page-side callers discard it — so it is provisioning, not a gate. Nothing calls either on a route handler; `proxy.ts` is what keeps anonymous traffic out of a page.
 
 ### File organization
 
@@ -89,7 +89,7 @@ emails/                 — template.tsx (React Email; see Commands — the prev
 hooks/                  — use-fetch.ts (client fetch-to-server-action wrapper)
 lib/                    — Utilities and shared logic
   arcjet.ts             — Arcjet tokenBucket client (used by actions/transaction.ts); proxy.ts builds its own shield/detectBot client
-  checkUser.ts          — Auth gate for pages (reads Clerk session, redirects if missing)
+  checkUser.ts          — Resolves the Clerk session to a users row, creating it on first sight; returns null, never redirects
   inngest/              — Inngest client + 4 functions (budget alert cron, recurring trigger cron, per-event recurring processor, monthly report cron)
   prisma.ts             — Prisma singleton (Prisma 7: must pass the pg driver adapter)
   schema.ts             — Validation schemas (Zod)

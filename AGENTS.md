@@ -96,7 +96,7 @@ The exact chain that must be green before work is reported complete:
 4. `pnpm lint` — `eslint .` on the flat config in `eslint.config.mjs`. The config consumes `eslint-config-next/core-web-vitals` and `eslint-config-next/typescript` directly; wrapping them in `FlatCompat` crashes. `pnpm lint` is a **real gate** in the sense that it exits 1 on errors, but the tree is red on pre-existing debt: **87 errors (86 `import/order` + 1 `react-hooks/set-state-in-effect`) and 3 warnings (2 `react-hooks/incompatible-library` react-compiler noise + 1 `react-hooks/exhaustive-deps`)**, re-measured 2026-10-13. The gate is "the census does not grow", not "green" — the census is quoted in `docs/agent-guide/service-architecture.md` § Verification.
 5. Manual verification when touching auth, database, or email flows — currently impossible here (no `DATABASE_URL`, no `ARCJET_KEY`, `@react-email/ui` missing). The no-`ARCJET_KEY` 403 is now measured rather than asserted: with `pnpm dev` up and no key in the environment, `curl -i` on `/`, `/sign-in` and `/dashboard` each returned **403** with Arcjet's own body `{"code":403,"message":"Forbidden"}`, and a browser User-Agent gets the same 403, so it is the LIVE `shield`/`detectBot` rules in `proxy.ts` denying before a page renders rather than curl being flagged as a bot. There is therefore no page to smoke-test.
 
-CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). The workflow itself has not run yet — its first push is its first execution, and its YAML is unvalidated locally (no YAML parser in `node_modules`, none in `python3`).
+CI (`.github/workflows/ci.yml`, added 2026-10-13) runs **gates 1–3 only** — install, typecheck, test, build — on push to `main` or `feat/**`, and on **every** `pull_request` regardless of branch name; a branch outside that push filter therefore still gets the three gates, but only from its PR. It omits gate 4 because the tree is red on the census above, and needs **no secrets**: the whole step list was run locally on 2026-10-13 with `.env.local` removed from the checkout (build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes all `ƒ`). It has since run on a runner — first execution 2026-10-14, a PR head off this branch, `typecheck / test / build` **pass** in 1m0s printing `Tests 40 passed (40)`, the same totals gate 2 prints locally. Two runner annotations came with that run and are recorded, not fixed: `node-version: "20"` makes `actions/checkout@v4` and `actions/setup-node@v4` warn they target Node 20 while forced onto 24, and `ubuntu-latest` migrates to Ubuntu 26 on 2026-10-19.
 
 Gate 2 is where the instruction-layer checker runs, so every push re-checks this file, the bodies in `docs/agent-guide/`, `.claude/skills/`, `.env.example` and the vendored heading fixture `tests/platform/fixtures/agents-md-skeleton.txt` against each other; and because the same assertion resolves every repo path cited outside a fence — and only outside a fence, which is why the fenced file-organization tree in `docs/agent-guide/code-standards.md` is the doc's own unpolicied path index, and why it once went stale on `specs/` — a dangling pointer into `specs/` fails a push too. What the checker cannot see:
 
@@ -115,7 +115,7 @@ See `/verification-gates` skill for the full chain and how to report each gate.
 Read these sections in order: `STANDING RULES` → `PROJECT OVERVIEW` → `ARCHITECTURE CONTEXT` → `UI CONTEXT` → `CODE STANDARDS` → `DEVELOPMENT WORKFLOW` → `PM CONVENTIONS`. Then `AGENTS.md` → SERVICE ARCHITECTURE section. The section names are headings in this file; their bodies are `docs/agent-guide/README.md`'s order, same sequence.
 
 ### 15. Cross-cutting authority — one authority per rule, enforced once
-- **Auth gate:** two functions, not one: `lib/checkUser.ts` (reads the Clerk session, **redirects** — pages and layouts) and `actions/lib/checkUser.ts` (reads the Clerk session, **throws** `Unauthorized` — server actions). Both are used; neither is the other's wrapper. Plan B §2c consolidates them.
+- **Auth gate:** `proxy.ts` is the only thing that turns an anonymous request away. `lib/checkUser.ts` reads `currentUser()`, resolves it to a `users` row and creates that row on first sight; it returns `null` when there is no session and swallows a failed read or write to `null` too, so it is provisioning, not a gate — both of its callers discard the value. `actions/lib/checkUser.ts` reads `auth()` and **throws** `Unauthorized`, and is the only gate that runs inside a server action. Both are used; neither is the other's wrapper. Plan B §2c consolidates them.
 - **Database access:** `lib/prisma.ts` — singleton client (pg driver adapter). All data reads/writes go through Prisma.
 - **Errors:** Thrown errors in Server Components/Actions surface as generic toast via Sonner. No internal messages to client.
 - **Validation:** `lib/schema.ts` — Zod schemas for form input. They run **client-side only**, through `zodResolver` in the two forms; no server action parses its input (`parseInput` is Plan B).
@@ -128,7 +128,7 @@ Prisma 7 moved the connection out of `prisma/schema.prisma` (the datasource bloc
 Environment variables: `DATABASE_URL` (client connection, used by the pg adapter), `DIRECT_URL` (Prisma CLI/migrations), `CLERK_SECRET_KEY` (auth), `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (client auth key). Prisma 7 does not auto-load `.env*`; Next.js still does for the app itself.
 
 ### 17. Protected foundations
-- `lib/checkUser.ts` (pages) and `actions/lib/checkUser.ts` (actions) — auth gates, do not bypass.
+- `lib/checkUser.ts` (provisions the `users` row during page render; returns `null`, never redirects) and `actions/lib/checkUser.ts` (the gate that throws inside server actions) — do not bypass either, and do not quietly make the first behave like the second: that consolidation is Plan B §2c.
 - `lib/prisma.ts` — singleton, do not instantiate Prisma elsewhere.
 - `prisma/schema.prisma` — schema is single source of truth for data shape.
 - `tsconfig.json` — the compiler settings and `include` are the type gate; do not narrow `include`, re-add `typescript.ignoreBuildErrors`, or flip `noImplicitAny` / `useUnknownInCatchVariables` without Plan B's budget.
@@ -205,7 +205,7 @@ Four tables — `users`, `accounts`, `transactions`, `budgets` — with the colu
 
 ### Auth & tenancy model
 
-Identity is the Clerk session JWT; ownership is `userId`-scoped on every read, with no privileged bypass. "Is this user logged in?" has two implementations with different failure contracts — `lib/checkUser.ts` redirects, `actions/lib/checkUser.ts` throws — until Plan B §2c consolidates them.
+Identity is the Clerk session JWT; ownership is `userId`-scoped on every read, with no privileged bypass. "Is this user logged in?" has two implementations with different failure contracts — `lib/checkUser.ts` answers `null`, `actions/lib/checkUser.ts` throws — and neither of them protects a route: `proxy.ts` does. Plan B §2c consolidates them.
 
 ### HTTP surface — implemented
 
@@ -269,7 +269,7 @@ Thrown errors surface as a generic toast through Sonner; API failures return the
 
 ### Data access
 
-All reads and writes through the `lib/prisma.ts` singleton, scoped to the session `userId`; no admin path, no raw SQL; the gate is one of the two `checkUser` functions.
+All reads and writes through the `lib/prisma.ts` singleton, scoped to the session `userId`; no admin path, no raw SQL. The `userId` comes from `actions/lib/checkUser.ts` inside an action (it throws) and from the row `lib/checkUser.ts` provisions on page render; keeping anonymous traffic out of a route is `proxy.ts`, not either function.
 
 ### File organization
 
@@ -337,7 +337,7 @@ Only code that exists, module by module; update the body in the same change that
 
 ## Request path
 
-Browser with a Clerk session → `proxy.ts` (Arcjet `shield`/`detectBot`, then Clerk, which redirects unauthenticated hits) → page or layout → `checkUser()` → Prisma queries scoped to `userId` → PostgreSQL. The fenced diagram is in the body.
+Browser with a Clerk session → `proxy.ts` (Arcjet `shield`/`detectBot`, then Clerk, which redirects unauthenticated hits off its own route matcher) → the root layout's header calls `checkUser()`, which resolves-or-creates the `users` row and returns `null` instead of gating → page or action → Prisma queries scoped to `userId` → PostgreSQL. The fenced diagram is in the body.
 
 ## Modules
 
@@ -345,7 +345,7 @@ A per-module status table — implemented, implemented-but-never-executed, and w
 
 ## Cross-cutting rules — one authority, enforced once
 
-Auth gate: two `checkUser` functions, redirect vs throw, consolidated by Plan B §2c, with actions still reading `auth()` inline. Database: the `lib/prisma.ts` singleton only, no raw SQL. Validation: `lib/schema.ts` runs client-side only through `zodResolver`, and every action trusts its arguments — server-side enforcement is Plan B's `parseInput`.
+Auth gate: `proxy.ts` protects the routes; of the two `checkUser` functions only the action-side one throws, the page-side one provisions a row and answers `null` — consolidated by Plan B §2c, with 9 action sites still reading `auth()` inline. Database: the `lib/prisma.ts` singleton only, no raw SQL. Validation: `lib/schema.ts` runs client-side only through `zodResolver`, and every action trusts its arguments — server-side enforcement is Plan B's `parseInput`.
 
 ## HTTP surface (what actually exists)
 

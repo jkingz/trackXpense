@@ -57,10 +57,10 @@ External APIs
 
 ### Auth & tenancy model
 
-- **Identity:** Clerk session token (JWT) in cookies. `@clerk/nextjs` middleware reads it.
-- **Authority:** two functions share the name `checkUser` — `lib/checkUser.ts` (redirects to `/sign-in`, used by pages and layouts) and `actions/lib/checkUser.ts` (throws `Unauthorized`, used by server actions). "Is this user logged in?" therefore has two implementations with different failure contracts until Plan B §2c consolidates them.
+- **Identity:** Clerk session token (JWT) in cookies. `proxy.ts` — the Next 16 name for the root middleware — reads it.
+- **Authority:** route protection lives in `proxy.ts` — `clerkMiddleware` calls `redirectToSignIn()` for a session-less request on the paths its `isProtected` matcher names, after Arcjet's `shield`/`detectBot`. The two functions that share the name `checkUser` decide no access at that layer. `lib/checkUser.ts` resolves `currentUser()` to a `users` row and creates it on first sight; it returns `null` for an empty session and returns `null` again after catching a failed read or write, so a database failure is indistinguishable from a signed-out visitor, and it never redirects. `actions/lib/checkUser.ts` reads `auth()` and throws `Unauthorized` with no session, `User not found` with no row. "Is this user logged in?" therefore has two implementations with different failure contracts until Plan B §2c consolidates them.
 - **Ownership:** All data reads are scoped to `userId`. A transaction query always scopes to the session user's `userId`. No privileged read bypass.
-- **Gate location:** `lib/checkUser.ts:checkUser()` in pages/layouts, `actions/lib/checkUser.ts:checkUser()` in actions. Example: `const userId = await checkUser();` in a Server Component.
+- **Gate location:** `actions/lib/checkUser.ts:checkUser()` at the top of a server action is the only call here that fails closed. `lib/checkUser.ts:checkUser()` has two callers — `components/header.tsx:9` (the header is mounted by `app/layout.tsx`, so it runs on every page including the public landing) and `app/(main)/transaction/create/page.tsx:8` — and both `await` it and discard the value, so that call provisions the `users` row and changes no access decision. The comment on the second one, "Redirects if not authenticated", describes behavior the function does not have.
 
 ### HTTP surface — implemented
 

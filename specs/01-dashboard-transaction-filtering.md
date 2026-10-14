@@ -22,7 +22,9 @@ Users can filter transactions by category on the dashboard without page reload.
 
 ## Security / permissions
 
-Users may only filter their own transactions. Authority: `checkUser()` in the dashboard layout.
+Users may only filter their own transactions. Authority today: `proxy.ts` for the session, then the `userId`-scoped reads in
+`actions/dashboard.ts` — `app/(main)/layout.tsx` performs no auth and the dashboard page calls no `checkUser()`, so this
+feature cannot inherit a page-level gate; it must scope its own query by the session `userId`.
 
 ## Verification
 
