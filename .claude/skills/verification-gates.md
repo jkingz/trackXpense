@@ -7,15 +7,18 @@ when: "user finishes implementation and needs to verify; asks what tests to run 
 
 ## Toolchain before results
 
-`package.json` pins `packageManager: pnpm@10.6.5`, and corepack can only activate that pin on a
-runtime that version supports. Measured in this checkout: Node 20.19.5 on `PATH` → `pnpm --version`
-prints `10.6.5`; Node 26 → it prints `12.11.2` with
-`[WARN] Cannot use the pnpm version this project pins: no @pnpm/exe.darwin-arm64 native binary was
-found for this host`, and every `pnpm <script>` fails on that warning.
+`package.json` has no `packageManager` field, so `pnpm` is whatever the host resolves: `10.18.3` on this machine,
+the same under Node 20.19.5, 22.15.0, 24.15.0 and 26.8.2. The field used to pin `pnpm@10.6.5` and that version was
+activated against the runtime on `PATH`, which died on Node 26 with
+`no @pnpm/exe.darwin-arm64 native binary was found for this host` — every `pnpm <script>` failed on the warning, and
+the tree looked broken when only the shell was.
 
-So check `node --version` before believing a red gate. `engines` is not declared in `package.json`,
-nothing enforces this for you. `pnpm install --frozen-lockfile --ignore-scripts` is how corepack
-swaps to the pinned version once the right Node is on `PATH`; it does not touch `node_modules`.
+`package.json` does declare `engines.node: ">=22.21.0"`: the highest floor among the installed dependencies' own
+`engines`, because `@arcjet/next` and `vitest` both sit above Node 20 while `next` and `@clerk/nextjs` only ask for
+20.9.0. Nothing enforces it — `engine-strict` needs an npmrc setting this repo does not have.
+
+So check `node --version` and `pnpm --version` before believing a red gate, and report gate numbers from a Node
+inside the declared floor.
 
 ## The chain — the same five AGENTS.md § STANDING RULES §13 lists
 

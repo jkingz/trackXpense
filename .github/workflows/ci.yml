@@ -24,10 +24,15 @@ name: CI
 # all `ƒ` (dynamic, so nothing is prerendered and no remote image is fetched at build time). Do not
 # add a secret to this job; if a step starts needing one, that is a defect in the step.
 #
-# Runtime floor: Next 16 and Clerk 7 both require Node >= 20.9.0, and corepack cannot activate the
-# `packageManager` pnpm pin on a much newer Node (measured here: Node 26 → "no
-# @pnpm/exe.darwin-arm64 native binary was found" and every pnpm script fails). `engines` is not
-# declared in package.json, so this pin is the only enforcement.
+# Runtime floor: package.json declares `engines.node: ">=22.21.0"` — the highest floor among the installed
+# dependencies' own engines (measured 2026-10-14: @arcjet/next ">=22.21.0 <23 || >=24.5.0", vitest
+# "^22.12.0 || ^24.0.0 || >=26.0.0", prisma "^20.19 || ^22.12 || >=24.0", next and @clerk/nextjs ">=20.9.0").
+# Node 20 sat below three of those, enforced by nothing: pnpm checks engines only under `engine-strict`, and
+# this repo has no `.npmrc`. `node-version` below is what makes the declared floor real on this runner.
+#
+# pnpm's version is named in the `pnpm/action-setup@v4` step, not resolved from package.json: this repo
+# carries no `packageManager` field (AGENTS.md §11), so nothing auto-activates a version from the host
+# runtime. Move both together.
 
 on:
   push:
@@ -50,12 +55,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Resolves the pnpm version from package.json's packageManager field — one source of truth.
+      # The pnpm version lives here — package.json deliberately has no packageManager field.
       - uses: pnpm/action-setup@v4
+        with:
+          version: 10.18.3
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
           cache: pnpm
 
       - name: Install (frozen lockfile)

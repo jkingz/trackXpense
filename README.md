@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# TrackXpense
 
-## Getting Started
+A personal finance dashboard: sign in with Clerk, create accounts (CURRENT / SAVINGS), log income and expense
+against them, hold one budget that warns near its limit, and read the result on the dashboard.
 
-First, run the development server:
+**Pre-launch.** What is built, module by module, is `docs/agent-guide/service-architecture.md`. What is *not* built
+is `docs/agent-guide/target-state.md` — read it before assuming a capability exists, and note that some entries
+there are code that exists but has never been executed against a database.
+
+## Setup
+
+Needs a Node release at or above the floor `package.json` declares in `engines.node`. That floor comes from the
+dependencies, not from Next and Clerk alone — `@arcjet/next` and Vitest both want newer than Node 20. `pnpm` is the
+host's own binary: there is no `packageManager` field, so nothing activates a different version under you.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install                    # postinstall runs prisma generate only — it does NOT migrate
+cp .env.example .env.local      # names only, values empty; fill what you have
+pnpm exec prisma migrate dev    # apply what is in prisma/migrations/
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`.env.example` is the inventory of every variable the tree reads, each with the site that reads it. Prisma 7 does
+not load `.env` files by itself: the CLI resolves its URL through `prisma.config.ts`.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## What each command proves here
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | What it actually shows |
+| --- | --- |
+| `pnpm dev` | Serves pages **only with `ARCJET_KEY` present**. `proxy.ts` runs Arcjet's LIVE `shield`/`detectBot` before anything renders, so without a key every route answers 403 and there is nothing to view. |
+| `pnpm typecheck` | `next typegen && tsc --noEmit` over the whole tree, in `strict` mode with two flags deliberately still off (see `AGENTS.md` §13 and the Language strictness body). |
+| `pnpm test` | The Vitest unit tier — `TZ` is pinned by the script and is load-bearing. App characterisation tests plus the instruction-layer checker. Nothing opens a database, so no money-path behaviour is covered, and the app-tier tests pin recorded defects rather than endorsing them. |
+| `pnpm check:docs` | The instruction-layer checker alone: it reads this repo's own guidance files and asserts they agree. |
+| `pnpm build` | Production build (Turbopack). It type-checks, and it never lints. |
+| `pnpm lint` | Exits 1 on a recorded pre-existing ESLint census. The gate is "the census does not grow", not "green"; the number lives in `docs/agent-guide/service-architecture.md` § Verification. |
+| `pnpm email` | Not runnable — `@react-email/components` is installed but `@react-email/ui` is not, and the CLI stops on an interactive prompt. |
 
-## Learn More
+Anything money-shaped needs `DATABASE_URL` plus both Clerk keys. Dashboard rows come from `GET /api/seed`, which
+is an unauthenticated write endpoint for local use only.
 
-To learn more about Next.js, take a look at the following resources:
+## CI
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`.github/workflows/ci.yml` runs install, typecheck, test and build — the first three gates, no lint step, no
+secrets — on push to `main` or `feat/**` and on every pull request. Vercel adds a preview deployment per PR. The
+authoritative gate chain, and what each gate does *not* prove, is `AGENTS.md` §13.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## For agents and contributors
 
-## Deploy on Vercel
+- `AGENTS.md` is the instruction layer's contract: the standing rules, one stub per section, and `CLAUDE.md` is a
+  one-line import of it. The section bodies live in `docs/agent-guide/`, and `docs/agent-guide/README.md` states
+  the read order.
+- Project-specific guidance is in `.claude/skills/`.
+- Feature specs live in `specs/`, one file per deliverable unit. Design docs and plans for conversions and
+  migrations stay under `docs/superpowers/`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Stack
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Next.js App Router on Turbopack, React, TypeScript, Tailwind + Radix, Prisma over PostgreSQL, Clerk for auth,
+Inngest for background work, Resend for email, Arcjet for request protection, Vitest for tests. Exact versions and
+what each was verified against: `docs/agent-guide/architecture.md` § Stack — not repeated here, so this file cannot
+go stale on the next bump.

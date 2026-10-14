@@ -30,7 +30,10 @@ Quick reference:
 | Prisma | `pnpm exec prisma generate`; `pnpm exec prisma migrate dev --name migration_name` (snake_case description); `pnpm exec prisma studio` |
 | Email dev | `pnpm email` — **not runnable.** `@react-email/ui` is not installed, so `email dev` stops on an interactive "must be installed / Would you like to install it?" prompt. `emails/template.tsx` is proven only by `tsc` and module resolution, never by the preview renderer |
 
-`pnpm@10.6.5` only (pinned in `package.json`); Node.js 20+ (`>=20.9.0` for Next 16 / Clerk 7).
+`engines.node: ">=22.21.0"` is declared in `package.json`; the `pnpm` binary is the host's — `10.18.3` here,
+measured on Node 20.19.5 / 22.15.0 / 24.15.0 / 26.8.2 — because there is no `packageManager` field, and CI names
+its own pnpm version in `.github/workflows/ci.yml`. `engine-strict` is off (no `.npmrc`), so the floor is a
+statement, not an enforcement.
 
 Prove "run one file" by testing: `pnpm lint -- --debug nonexistent.ts` should report the file does not match any pattern.
 
