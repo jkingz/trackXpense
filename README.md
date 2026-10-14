@@ -9,9 +9,9 @@ there are code that exists but has never been executed against a database.
 
 ## Setup
 
-Needs **Node 20.9 or newer**: Next.js and Clerk both require it, and the pnpm version pinned in `package.json`
-only activates through corepack on a runtime corepack supports. On a much newer Node, every `pnpm` script dies on
-a missing-native-binary warning that looks like a broken project rather than a broken shell.
+Needs a Node release at or above the floor `package.json` declares in `engines.node`. That floor comes from the
+dependencies, not from Next and Clerk alone — `@arcjet/next` and Vitest both want newer than Node 20. `pnpm` is the
+host's own binary: there is no `packageManager` field, so nothing activates a different version under you.
 
 ```bash
 pnpm install                    # postinstall runs prisma generate only — it does NOT migrate

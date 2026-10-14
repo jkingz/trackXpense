@@ -4,18 +4,18 @@
 
 | Layer | Choice | Verified against |
 | --- | --- | --- |
-| Runtime | Node.js 20+ (`>=20.9.0` for Next 16 and Clerk 7) | Inferred, not pinned in `.nvmrc` or `engines` |
-| Framework | Next.js 16.4.0 (Turbopack default for dev + build) | `package.json`, `pnpm-lock.yaml` |
-| Database | PostgreSQL via Prisma 7.10.0 + `@prisma/adapter-pg` driver adapter | `prisma/schema.prisma`, `prisma.config.ts`, `lib/prisma.ts` |
-| Auth | Clerk | `@clerk/nextjs@7.9.14`, app/(auth)/ routes, `proxy.ts` |
+| Runtime | Node.js `>=22.21.0` | `package.json` `engines`, declared 2026-10-14 as the highest floor among the installed dependencies' own `engines`. Advisory: no `.npmrc`, so pnpm never runs `engine-strict`, and there is no `.nvmrc` |
+| Framework | Next.js 16.4.0 (Turbopack default for dev + build) | `package.json`, `pnpm-lock.yaml` — `latest` on npm, checked 2026-10-14 |
+| Database | PostgreSQL via Prisma 7.10.0 + `@prisma/adapter-pg` driver adapter | `prisma/schema.prisma`, `prisma.config.ts`, `lib/prisma.ts`. `7.10.0` is the `prev` dist-tag; `latest` is the `8.0.0-rc` line, so there is no stable 8 to take |
+| Auth | Clerk | `@clerk/nextjs@7.9.15`, app/(auth)/ routes, `proxy.ts` |
 | Language | TypeScript 5.9.3, `strict: true` with `noImplicitAny: false` + `useUnknownInCatchVariables: false` | `tsconfig.json`, `package.json` (no `.js`/`.jsx` source files remain) |
 | UI | React 19.3.0 + Tailwind 4.3.3 + Radix UI | `package.json`, `app/globals.css` |
-| Forms | React Hook Form 7.90.0 + Zod 4 | `@hookform/resolvers@5.9.1`, `zod@4.6.6` |
+| Forms | React Hook Form 7.90.0 + Zod 4 | `@hookform/resolvers@5.9.1`, `zod@4.6.7` |
 | Tests | Vitest 5 (unit tier only) | `vitest.config.ts`, `tests/`, `pnpm test` |
-| Background jobs | Inngest | `inngest@4.23.0`, `lib/inngest/` |
-| Email | Resend | `resend@6.32.1`, `actions/send-email.ts` (called from `lib/inngest/functions.ts`) |
+| Background jobs | Inngest | `inngest@4.24.0`, `lib/inngest/` |
+| Email | Resend | `resend@6.33.0`, `actions/send-email.ts` (called from `lib/inngest/functions.ts`) |
 | Rate limiting | Arcjet | `@arcjet/next@1.14.1` (was `1.0.0-beta.4`), `proxy.ts` |
-| Lint | ESLint 9.39.5 flat config, `eslint-config-next@16.4.0` | `eslint.config.mjs` (TypeScript pinned to 5.9.3 for `typescript-eslint` peer range) |
+| Lint | ESLint 9.39.5 flat config, `eslint-config-next@16.4.0` | `eslint.config.mjs`. ESLint 10 is `latest` and is **not** installed: under this config `eslint-plugin-import`'s `order` rule throws while formatting `import/order` reports (measured 2026-10-14, exit 2, not a census), and `eslint-plugin-import`, `eslint-plugin-react` and `eslint-plugin-jsx-a11y` all cap their peer at 9. TypeScript stays at 5.9.3 for the `typescript-eslint` peer range (`<6.1.0`), which also excludes TypeScript 7 |
 
 ### System boundaries
 

@@ -25,8 +25,11 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
   §13, `docs/agent-guide/service-architecture.md` § Verification, `docs/agent-guide/code-standards.md` § Testing and
   § Language strictness there quote test, error and file counts because a baseline has to live somewhere. Deciding
   where (a generated census file? the CI log?) is its own unit.
-- **`engines.node` is undeclared** while Next 16 and Clerk 7 both need `>=20.9.0` and CI pins Node 20 by hand.
-  Blocks: a reproducible "which runtime" answer for a new clone.
+- **The two majors that are on npm and not installed: ESLint 10 and TypeScript 7.** Under this repo's flat config,
+  ESLint 10 makes `eslint-plugin-import`'s `order` rule throw before it prints a census (measured 2026-10-14, exit
+  2), and the three plugins `eslint-config-next` loads each cap their peer at ESLint 9; `typescript-eslint` caps
+  TypeScript at `<6.1.0`. Prisma's `latest` tag is an `8.0.0-rc`, so 7.10.0 is the newest stable. Blocks: any claim
+  that the tree is "on latest" — every dependency inside its declared range is current, these three are not.
 - **The seed endpoint is an unauthenticated `GET` that writes rows.** Blocks: any deploy that is not local.
 - **One auth gate, not two `checkUser` functions.** `lib/checkUser.ts` resolves-or-creates the `users` row and returns `null` —
   including when the Prisma read or write throws, so a database failure is indistinguishable from a signed-out visitor — and
@@ -49,7 +52,7 @@ Design intent not implemented. Treat as requirements for future work. Two shapes
   (`hooks/use-fetch.ts:26-28`), which means this effect fires a second toast for the same failure — whether to
   drop the effect or keep it as the only toast is a behaviour decision, not a string edit. Blocks: claiming the
   dashboard's failure copy is verified.
-- **`motion@^14.1.0` is an unused dependency:** listed in `package.json`, and a `git grep` for imports from
+- **`motion` is an unused dependency:** listed in `package.json`, and a `git grep` for imports from
   `motion` across the tracked `.ts`/`.tsx` tree returns nothing, so no module imports it. It stays because dropping
   a dependency edits `package.json` and the lockfile, which is the user's call (`pnpm remove motion`), not a docs
   round's. Blocks: an accurate dependency inventory — every install, build and lockfile diff still carries a
