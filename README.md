@@ -42,13 +42,14 @@ is an unauthenticated write endpoint for local use only.
 
 `.github/workflows/ci.yml` runs install, typecheck, test and build — the first three gates, no lint step, no
 secrets — on push to `main` or `feat/**` and on every pull request. Vercel adds a preview deployment per PR. The
-authoritative gate chain, and what each gate does *not* prove, is `AGENTS.md` §13.
+authoritative gate chain, and what each gate does *not* prove, is `docs/standing-rules/13-verification-gates.md`,
+stubbed at `AGENTS.md` §13.
 
 ## For agents and contributors
 
 - `AGENTS.md` is the instruction layer's contract: the standing rules, one stub per section, and `CLAUDE.md` is a
-  one-line import of it. The section bodies live in `docs/agent-guide/`, and `docs/agent-guide/README.md` states
-  the read order.
+  one-line import of it. The section bodies live in `docs/agent-guide/`, the Rules 11–17 bodies in
+  `docs/standing-rules/`, and `docs/agent-guide/README.md` states the read order.
 - Project-specific guidance is in `.claude/skills/`.
 - Feature specs live in `specs/`, one file per deliverable unit. Design docs and plans for conversions and
   migrations stay under `docs/superpowers/`.

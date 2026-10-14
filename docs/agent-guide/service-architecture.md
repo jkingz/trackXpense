@@ -81,8 +81,8 @@ All dynamic pages use Next.js default ISR (cache when possible, revalidate on re
 
 ```bash
 pnpm typecheck # next typegen && tsc --noEmit — 0 errors over 81 source files
-pnpm test      # TZ=UTC vitest run — 40 passed (4 files)
-pnpm check:docs # TZ=UTC vitest run tests/platform — 21 passed (1 file); the instruction layer checks itself
+pnpm test      # TZ=UTC vitest run — 44 passed (4 files)
+pnpm check:docs # TZ=UTC vitest run tests/platform — 25 passed (1 file); the instruction layer checks itself
 pnpm build     # next build — compiles AND type-checks (9 routes, exit 0)
 pnpm lint      # eslint . — exit 1: 87 errors, 3 warnings (pre-existing debt, see Rule 13)
 # CI: .github/workflows/ci.yml runs install + typecheck + test + build on push to main|feat/** and on
@@ -92,7 +92,8 @@ pnpm lint      # eslint . — exit 1: 87 errors, 3 warnings (pre-existing debt, 
 # Manual: sign in, create account, log transaction, verify dashboard — impossible here, no DATABASE_URL
 ```
 
-These are the numbers this repo's baseline rule allows in exactly two homes: here and `AGENTS.md` §13 gate 2.
+These are the numbers this repo's baseline rule allows in exactly two homes: here and
+`docs/standing-rules/13-verification-gates.md` gate 2.
 
 Test coverage of the app: effectively 0% — the app-tier tests cover the money serialisers, the recurrence helper and the two Zod schemas, not any page, action or route, and the platform tier checks these docs rather than the app. See `docs/agent-guide/code-standards.md` → Testing.
 

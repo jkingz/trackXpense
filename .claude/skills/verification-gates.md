@@ -20,10 +20,10 @@ the tree looked broken when only the shell was.
 So check `node --version` and `pnpm --version` before believing a red gate, and report gate numbers from a Node
 inside the declared floor.
 
-## The chain — the same five AGENTS.md § STANDING RULES §13 lists
+## The chain — the same five `docs/standing-rules/13-verification-gates.md` lists
 
 1. **Typecheck** — `pnpm typecheck` (`next typegen && tsc --noEmit`, whole tree)
-   - Proves types, not behaviour. Baseline and budget are in §13; a missed file cannot hide, because
+   - Proves types, not behaviour. Baseline and budget are in Rule 13's body; a missed file cannot hide, because
      `tsconfig.json` `include` is the whole tree with `allowJs: false`.
    - Suspect a stale build cache: `npx tsc --noEmit --incremental false`.
 
@@ -31,7 +31,7 @@ inside the declared floor.
    - Name the tier it collected. `TZ=UTC` is in the script and is load-bearing.
    - Gate 2 also collects `tests/platform/unit/instruction-layer.test.ts` — the instruction-layer checker,
      the tier `pnpm check:docs` runs alone — so every gate-2 run re-checks AGENTS.md, its bodies in
-     `docs/agent-guide/`, `.claude/skills/` and
+     `docs/agent-guide/` and `docs/standing-rules/`, `.claude/skills/` and
      `.env.example` against each other, plus the vendored heading fixture. When it fails, the fix is in the
      doc or in the fixture, never in the assertion.
    - Most tests are characterisation — they pin behaviour including recorded defects, so green is not an
@@ -46,8 +46,8 @@ inside the declared floor.
      sealed runner. Prove it cold: `NODE_USE_ENV_PROXY=1 HTTPS_PROXY=http://127.0.0.1:9 pnpm build`.
 
 4. **Lint** — `pnpm lint` (`eslint .`, flat config)
-   - Exits 1 on errors, and the tree is **already red** on pre-existing debt recorded in AGENTS.md §13
-     (Verification gates) and `docs/agent-guide/service-architecture.md` § Verification. The gate is "the census does not grow", not "green".
+   - Exits 1 on errors, and the tree is **already red** on pre-existing debt recorded in
+     `docs/standing-rules/13-verification-gates.md` gate 4 and `docs/agent-guide/service-architecture.md` § Verification. The gate is "the census does not grow", not "green".
    - Report the error/warning totals your run printed and compare them to the recorded census.
    - Prove a path filter reaches the runner before quoting it: `pnpm lint -- --debug nonexistent.ts`
      must say the file matches no pattern.
@@ -56,7 +56,7 @@ inside the declared floor.
    - Auth, database and email flows cannot be smoke-tested here: `DATABASE_URL`/`DIRECT_URL` absent,
      `ARCJET_KEY` absent so `proxy.ts`'s LIVE rules answer 403 before a page renders (measured 2026-10-13: with
      `pnpm dev` up and no key, `/`, `/sign-in` and `/dashboard` each returned 403 with Arcjet's own
-     `{"code":403,"message":"Forbidden"}` body, on a curl and a browser User-Agent alike — AGENTS.md §13 gate 5),
+     `{"code":403,"message":"Forbidden"}` body, on a curl and a browser User-Agent alike — Rule 13's body, gate 5),
      `RESEND_API_KEY` absent, and `pnpm email` stops
      on an interactive prompt because `@react-email/ui` is not installed.
    - Say "not verified" and name the missing variable. Never upgrade that to "should work".
@@ -64,10 +64,9 @@ inside the declared floor.
 ## Reporting
 
 For each gate: the command, the output it printed, pass or fail. Counts belong in the reply; the only **suite
-totals** this repo keeps are the `AGENTS.md` §13 gate 2 baseline and the `docs/agent-guide/service-architecture.md`
-§ Verification baseline, refreshed from
-command output whenever they move. Per-file test counts are labels on one file, not suite totals, and are not
-what this exception scopes.
+totals** this repo keeps are the `docs/standing-rules/13-verification-gates.md` gate 2 baseline and the
+`docs/agent-guide/service-architecture.md` § Verification baseline, refreshed from command output whenever they
+move. Per-file test counts are labels on one file, not suite totals, and are not what this exception scopes.
 
 ```
 Typecheck: pnpm typecheck → <tsc output>
@@ -86,6 +85,6 @@ Live:      not verified — no DATABASE_URL
 
 ## Reference
 
-- STANDING RULES §13 for the authoritative chain and baselines
+- STANDING RULES §13 and its body `docs/standing-rules/13-verification-gates.md` for the chain and baselines
 - PM CONVENTIONS § Review gate for the merge requirement
 - `/testing` for tiers, `tests/README.md` for what no test can prove here

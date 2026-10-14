@@ -173,6 +173,30 @@ const GUIDE_POINTER = /docs\/agent-guide\/([a-z0-9][a-z0-9-]*\.md)/g;
 const guidePointers = (md: string): string[] =>
   [...linesOutsideFences(md).join('\n').matchAll(GUIDE_POINTER)].map((m) => m[1]);
 
+// The third home: Rules 11–17 keep their headings in AGENTS.md (the fixture owns the skeleton) and their bodies
+// here. Kept out of GUIDE_DIR on purpose, because the index-equality assertion above compares one directory's
+// README against that directory's files, and merging the two would make it pass on the wrong pairing.
+const RULES_DIR = 'docs/standing-rules';
+const RULE_POINTER = /docs\/standing-rules\/([a-z0-9][a-z0-9-]*\.md)/g;
+const rulesBodies = (): string[] => skillFilesUnder(path.join(ROOT, RULES_DIR), ROOT);
+const rulePointers = (md: string): string[] =>
+  [...linesOutsideFences(md).join('\n').matchAll(RULE_POINTER)].map((m) => m[1]);
+
+function ruleHomeGaps(
+  indexText: string,
+  contractText: string,
+  names: string[],
+): { unindexed: string[]; unpointed: string[]; dangling: string[] } {
+  const indexed = [...new Set(rulePointers(indexText))];
+  const pointed = [...new Set(rulePointers(contractText))];
+  const bodies = names.filter((n) => n !== 'README.md');
+  return {
+    unindexed: bodies.filter((n) => !indexed.includes(n)).sort(),
+    unpointed: bodies.filter((n) => !pointed.includes(n)).sort(),
+    dangling: [...new Set([...indexed, ...pointed])].filter((p) => !names.includes(p)).sort(),
+  };
+}
+
 describe('instruction-layer checker harness', () => {
   it('reads the files it claims to check', () => {
     expect(fs.existsSync(path.join(ROOT, 'AGENTS.md'))).toBe(true);
@@ -213,9 +237,9 @@ describe('env inventory matches', () => {
   });
 
   it('the instruction layer names exactly the variables .env.example inventories', () => {
-    // Both homes are one doc now: names like DIRECT_URL live in the moved bodies, so scanning AGENTS.md alone
+    // All three homes are one doc: names like DIRECT_URL live in the moved bodies, so scanning AGENTS.md alone
     // would report them as unmentioned the moment the bodies split out.
-    const layer = [read('AGENTS.md'), ...guideBodies().map(read)].join('\n');
+    const layer = [read('AGENTS.md'), ...guideBodies().map(read), ...rulesBodies().map(read)].join('\n');
     expect(envMismatch(layer, read('.env.example'))).toEqual({ undocumented: [], unmentioned: [] });
   });
 });
@@ -318,6 +342,46 @@ describe('agent-guide bodies are policed like AGENTS.md', () => {
 
   it('every repo path cited outside a fence in a body resolves', () => {
     const defects = guideBodies().flatMap((f) =>
+      pathCitations(read(f), resolveInRepo).map((d) => `${f}: ${d}`),
+    );
+    expect(defects).toEqual([]);
+  });
+});
+
+describe('standing-rule bodies are policed like the other two homes', () => {
+  it('a body the index omits, a body no stub points at, and a pointer to nothing are all reported', () => {
+    // Deliberately-broken input for the three directions below, so none of them can pass by matching nothing.
+    const names = ['README.md', '11-both.md', '12-index-only.md', '13-stub-only.md'];
+    const index = [
+      'Index: `docs/standing-rules/11-both.md`, `docs/standing-rules/12-index-only.md`',
+      'and `docs/standing-rules/ghost.md`.',
+    ].join('\n');
+    const contract = 'Stub: `docs/standing-rules/11-both.md` and `docs/standing-rules/13-stub-only.md`.';
+    expect(ruleHomeGaps(index, contract, names)).toEqual({
+      unindexed: ['13-stub-only.md'],
+      unpointed: ['12-index-only.md'],
+      dangling: ['ghost.md'],
+    });
+  });
+
+  it('docs/standing-rules holds README plus one body per project rule, indexed and pointed at', () => {
+    const names = rulesBodies().map((f) => f.split('/').pop()!);
+    // Trip-wire, same job as the 11-file and 3-file ones: README plus the seven bodies for Rules 11–17. An eighth
+    // means a rule moved out of AGENTS.md without an index row and a stub.
+    expect(names).toHaveLength(8);
+    expect(ruleHomeGaps(read(`${RULES_DIR}/README.md`), read('AGENTS.md'), names)).toEqual({
+      unindexed: [],
+      unpointed: [],
+      dangling: [],
+    });
+  });
+
+  it('no standing-rule body carries an unfilled template slot', () => {
+    expect(rulesBodies().flatMap((f) => slotLines(read(f)).map((l) => `${f}:${l}`))).toEqual([]);
+  });
+
+  it('every repo path cited outside a fence in a standing-rule body resolves', () => {
+    const defects = rulesBodies().flatMap((f) =>
       pathCitations(read(f), resolveInRepo).map((d) => `${f}: ${d}`),
     );
     expect(defects).toEqual([]);
