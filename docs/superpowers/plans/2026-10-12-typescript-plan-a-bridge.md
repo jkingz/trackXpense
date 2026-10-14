@@ -1485,6 +1485,8 @@ grep -n '<[a-zA-Z_/]' AGENTS.md | grep -v 'VERIFICATION STANDARDS\|FEATURE SPECS
 
 Expected: the four commands as described, and the AGENTS.md health check printing no unfilled slots.
 
+**Superseded 2026-10-13:** the `grep -v` clause above is this plan's own quote and no longer this repo's health check — the instruction-layer checker in `tests/platform/unit/instruction-layer.test.ts` (run by `pnpm check:docs`, and by `pnpm test` in CI) greps `AGENTS.md` whole-file for angle-bracket slots with no exemption clause at all, so the sections the `grep -v` skipped no longer contain any slot to skip and the command here must not be revived as the gate. `.claude/skills/` is **not** slot-checked and legitimately carries bracketed placeholders of its own.
+
 **Commit when asked:** `refactor: complete TypeScript migration and update project documentation`
 
 ---

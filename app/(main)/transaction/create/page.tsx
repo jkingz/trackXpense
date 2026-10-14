@@ -5,7 +5,7 @@ import { checkUser } from '@/lib/checkUser';
 import AddTransactionForm from '../_components/add-transaction-form';
 
 const AddTransaction = async ({ searchParams }) => {
-  await checkUser(); // Redirects if not authenticated
+  await checkUser(); // Provisions the users row from the session; returns null rather than gating
   const accounts = await getUserAccounts();
   const resolvedSearchParams = await searchParams;
   const editId = await resolvedSearchParams?.edit;

@@ -10,6 +10,8 @@
     "lint": "eslint .",
     "test": "TZ=UTC vitest run",
     "test:watch": "TZ=UTC vitest",
+    "check:docs": "TZ=UTC vitest run tests/platform",
+    "skeleton:refresh": "node tests/platform/scripts/refresh-skeleton.mjs",
     "typecheck": "next typegen && tsc --noEmit",
     "postinstall": "prisma generate"
   },

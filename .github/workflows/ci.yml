@@ -1,0 +1,71 @@
+name: CI
+
+# Gate parity with AGENTS.md § STANDING RULES §13 — read that section as the authority; this file
+# executes the subset of it that can run without credentials, and says below why each omission is
+# deliberate. If §13 changes, change this file in the same commit.
+#
+# GATES EXECUTED (the §13 chain minus the omissions below):
+#   gate 1: pnpm typecheck
+#   gate 2: pnpm test — app unit tests + the instruction-layer checker (no credentials needed)
+#   gate 3: pnpm build
+#
+# OMISSIONS (deliberate, not oversights):
+#   * `pnpm lint` — the tree is red on a recorded pre-existing ESLint census (AGENTS.md § TARGET STATE,
+#     "Lint census decides CI's fourth gate"). Adding a step that fails on every push teaches nobody to read CI.
+#     The gate in the meantime is "the census does not grow", which is a local, before/after check.
+#   * Postgres-backed tiers — no `integration`/`e2e` tier exists, and `DATABASE_URL`/`DIRECT_URL`
+#     are not repository secrets here. The money path is verified locally or not at all.
+#   * `pnpm email` — unrunnable; `@react-email/ui` is not installed and the CLI stops on an
+#     interactive prompt.
+#
+# NO SECRETS NEEDED, and that is measured, not assumed: `pnpm install --frozen-lockfile`,
+# `pnpm typecheck`, `pnpm test` and `pnpm build` were all run on 2026-10-13 with `.env.local`
+# removed from the checkout. Build exit 0, `Running TypeScript ... / Finished TypeScript`, 9 routes
+# all `ƒ` (dynamic, so nothing is prerendered and no remote image is fetched at build time). Do not
+# add a secret to this job; if a step starts needing one, that is a defect in the step.
+#
+# Runtime floor: Next 16 and Clerk 7 both require Node >= 20.9.0, and corepack cannot activate the
+# `packageManager` pnpm pin on a much newer Node (measured here: Node 26 → "no
+# @pnpm/exe.darwin-arm64 native binary was found" and every pnpm script fails). `engines` is not
+# declared in package.json, so this pin is the only enforcement.
+
+on:
+  push:
+    branches:
+      - main
+      - "feat/**"
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: typecheck / test / build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Resolves the pnpm version from package.json's packageManager field — one source of truth.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+
+      - name: Install (frozen lockfile)
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test (unit tier, TZ pinned by the script)
+        run: pnpm test
+
+      - name: Build (type-checks; does not lint)
+        run: pnpm build
