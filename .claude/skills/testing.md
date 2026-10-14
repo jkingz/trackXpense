@@ -13,15 +13,16 @@ when: "user needs to write, run, or update tests; asks about test structure, cov
 `jsdom`, `@testing-library/react` and `playwright` are not in `package.json`.
 
 Most tests present are **characterisation**: they pin what the code does today, including two recorded
-defects (see AGENTS.md § Testing), so a green run is not an endorsement of that behaviour. The
+defects (see `docs/agent-guide/code-standards.md` § Testing), so a green run is not an endorsement of that behaviour. The
 instruction-layer checker in `tests/platform/unit/` is the exception — it reads this repo's own guidance files
-(`AGENTS.md`, `.claude/skills/`, `.env.example`) off disk and asserts they agree, so it pins no application
+(`AGENTS.md`, `docs/agent-guide/`, `.claude/skills/`, `.env.example`) off disk and asserts they agree, so it pins no application
 behaviour and needs no database.
 
-Never write a **suite total** into this file, and add none to `AGENTS.md` outside its two recorded baselines —
-§13 gate 2 and § Verification, which are refreshed from command output whenever the suite moves. A total typed
+Never write a **suite total** into this file, and add none to the instruction layer outside its two recorded
+baselines — `AGENTS.md` §13 gate 2 and `docs/agent-guide/service-architecture.md` § Verification, which are refreshed
+from command output whenever the suite moves. A total typed
 anywhere else is wrong the day the next test lands. Per-file counts — the `(6)`, `(4)`, `(9)` labels in
-AGENTS.md § Testing — name one file, not the suite, so they are outside this rule. Run the command and quote
+`docs/agent-guide/code-standards.md` § Testing — name one file, not the suite, so they are outside this rule. Run the command and quote
 its output in the reply.
 
 ## `TZ=UTC` is load-bearing
@@ -82,6 +83,6 @@ environment does not have (AGENTS.md § STANDING RULES → Rule 13 gate 5).
 
 ## Reference
 
-- AGENTS.md § CODE STANDARDS → Testing for the inventory
+- `docs/agent-guide/code-standards.md` § Testing for the inventory
 - `/verification-gates` for where tests sit in the chain
 - `tests/README.md` for the tier definitions

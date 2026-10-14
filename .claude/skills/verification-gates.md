@@ -27,7 +27,8 @@ swaps to the pinned version once the right Node is on `PATH`; it does not touch 
 2. **Tests** — `pnpm test` (`TZ=UTC vitest run`)
    - Name the tier it collected. `TZ=UTC` is in the script and is load-bearing.
    - Gate 2 also collects `tests/platform/unit/instruction-layer.test.ts` — the instruction-layer checker,
-     the tier `pnpm check:docs` runs alone — so every gate-2 run re-checks AGENTS.md, `.claude/skills/` and
+     the tier `pnpm check:docs` runs alone — so every gate-2 run re-checks AGENTS.md, its bodies in
+     `docs/agent-guide/`, `.claude/skills/` and
      `.env.example` against each other, plus the vendored heading fixture. When it fails, the fix is in the
      doc or in the fixture, never in the assertion.
    - Most tests are characterisation — they pin behaviour including recorded defects, so green is not an
@@ -43,7 +44,7 @@ swaps to the pinned version once the right Node is on `PATH`; it does not touch 
 
 4. **Lint** — `pnpm lint` (`eslint .`, flat config)
    - Exits 1 on errors, and the tree is **already red** on pre-existing debt recorded in AGENTS.md §13
-     (Verification gates) and § Verification. The gate is "the census does not grow", not "green".
+     (Verification gates) and `docs/agent-guide/service-architecture.md` § Verification. The gate is "the census does not grow", not "green".
    - Report the error/warning totals your run printed and compare them to the recorded census.
    - Prove a path filter reaches the runner before quoting it: `pnpm lint -- --debug nonexistent.ts`
      must say the file matches no pattern.
@@ -60,7 +61,8 @@ swaps to the pinned version once the right Node is on `PATH`; it does not touch 
 ## Reporting
 
 For each gate: the command, the output it printed, pass or fail. Counts belong in the reply; the only **suite
-totals** this repo keeps in `AGENTS.md` are the §13 gate 2 and § Verification baselines, refreshed from
+totals** this repo keeps are the `AGENTS.md` §13 gate 2 baseline and the `docs/agent-guide/service-architecture.md`
+§ Verification baseline, refreshed from
 command output whenever they move. Per-file test counts are labels on one file, not suite totals, and are not
 what this exception scopes.
 

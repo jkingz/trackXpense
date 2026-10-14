@@ -7,11 +7,11 @@ when: "user starts a new task, needs to scope work, or asks about development pr
 
 ## The loop, per unit of work
 
-1. **Read what governs the change** — STANDING RULES first, then the context sections for the touched module in AGENTS.md.
+1. **Read what governs the change** — STANDING RULES first, then the context sections for the touched module; `AGENTS.md` holds the rule and the stub, `docs/agent-guide/` holds the body.
 2. **Say the scope in one sentence** — what changes, and what explicitly does NOT.
 3. **Implement the smallest increment** that can be verified on its own.
 4. **Verify with a command** — never with a claim. Use `/verification-gates` skill.
-5. **Update the docs** the change made untrue — in the same change (AGENTS.md, the feature's spec under specs/, inline comments).
+5. **Update the docs** the change made untrue — in the same change (the body under `docs/agent-guide/` and its stub in AGENTS.md if either went stale, the feature's spec under specs/, inline comments).
 6. **Report** — what changed, what was verified, what is still unknown.
 
 ## Scoping rules
