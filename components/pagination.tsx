@@ -1,5 +1,6 @@
-'use client';
-import { useRouter } from 'next/navigation';
+"use client";
+import { useRouter } from "next/navigation";
+
 import {
   Pagination,
   PaginationContent,
@@ -8,7 +9,7 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from './ui/pagination';
+} from "./ui/pagination";
 
 const PaginationControls = ({
   currentPage,
@@ -24,10 +25,10 @@ const PaginationControls = ({
 }) => {
   const router = useRouter();
 
-  function handlePageChange(newPage) {
+  function handlePageChange(newPage: number) {
     if (newPage >= 1 && newPage <= totalPages) {
       const params = new URLSearchParams(searchParams.toString());
-      params.set('page', newPage.toString());
+      params.set("page", newPage.toString());
       startTransition(() => router.push(`?${params.toString()}`));
     }
   }
@@ -47,13 +48,13 @@ const PaginationControls = ({
     const endPage = Math.min(totalPages, currentPage + 2);
 
     if (startPage > 1) pages.push(1);
-    if (startPage > 2) pages.push('ellipsis');
+    if (startPage > 2) pages.push("ellipsis");
 
     for (let i = startPage; i <= endPage; i++) {
       pages.push(i);
     }
 
-    if (endPage < totalPages - 1) pages.push('ellipsis');
+    if (endPage < totalPages - 1) pages.push("ellipsis");
     if (endPage < totalPages) pages.push(totalPages);
 
     return pages;
@@ -64,14 +65,12 @@ const PaginationControls = ({
         <PaginationItem>
           <PaginationPrevious
             onClick={() => handlePageChange(currentPage - 1)}
-            className={
-              currentPage === 1 ? 'pointer-events-none opacity-50' : ''
-            }
+            className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
           />
         </PaginationItem>
 
         {getPageNumbers().map((page, index) =>
-          typeof page === 'number' ? (
+          typeof page === "number" ? (
             <PaginationItem key={page}>
               <PaginationLink
                 onClick={() => handlePageChange(page)}
@@ -84,15 +83,13 @@ const PaginationControls = ({
             <PaginationItem key={`ellipsis-${index}`}>
               <PaginationEllipsis />
             </PaginationItem>
-          )
+          ),
         )}
 
         <PaginationItem>
           <PaginationNext
             onClick={() => handlePageChange(currentPage + 1)}
-            className={
-              currentPage === totalPages ? 'pointer-events-none opacity-50' : ''
-            }
+            className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
           />
         </PaginationItem>
       </PaginationContent>

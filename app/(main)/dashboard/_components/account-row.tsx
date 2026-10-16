@@ -1,0 +1,96 @@
+"use client";
+
+import { useEffect, type MouseEvent } from "react";
+import Link from "next/link";
+import { toast } from "sonner";
+
+import { updateDefaultAccount } from "@/actions/accounts";
+import PendingRail from "@/components/pending-rail";
+import { Switch } from "@/components/ui/switch";
+import useFetch from "@/hooks/use-fetch";
+import { signedUsd } from "@/lib/money";
+
+type Account = {
+  id: string;
+  name: string;
+  type: string;
+  balance: number;
+  isDefault: boolean;
+  _count?: { transactions?: number } | null;
+};
+
+/**
+ * One ledger row. The name and the balance are the link, and the default switch
+ * sits outside it, so the switch is a real control rather than a click trapped
+ * inside an anchor.
+ */
+export function AccountRow({ account }: { account: Account }) {
+  const { id, name, type, balance, isDefault, _count } = account;
+  const {
+    data: updated,
+    error,
+    fn: updateAccountFn,
+    loading: updateAccountLoading,
+  } = useFetch(updateDefaultAccount);
+
+  const handleDefaultAccountChange = async (event: MouseEvent) => {
+    event.preventDefault();
+    if (isDefault) {
+      toast.warning("At least one account has to be the default");
+      return;
+    }
+    await updateAccountFn(id);
+  };
+
+  useEffect(() => {
+    if (updated && !updateAccountLoading) {
+      toast.success(`${name} is now the default account`);
+    }
+  }, [updated, updateAccountLoading, name]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error.message || "Could not set the default account");
+    }
+  }, [error]);
+
+  const transactions = _count?.transactions ?? 0;
+
+  return (
+    <li className="relative">
+      <div className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent/40">
+        <Link
+          href={`/account/${id}`}
+          className="flex min-w-0 flex-1 items-center justify-between gap-4 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-medium text-card-foreground">{name}</span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">
+              {type.charAt(0) + type.slice(1).toLowerCase()} account
+              {transactions > 0 && ` · ${transactions} ${transactions === 1 ? "entry" : "entries"}`}
+            </span>
+          </span>
+          <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
+            {signedUsd(balance)}
+          </span>
+        </Link>
+
+        <div className="flex shrink-0 items-center gap-2">
+          {isDefault && (
+            <span className="hidden text-xs text-muted-foreground sm:inline">Default</span>
+          )}
+          <Switch
+            checked={isDefault}
+            onClick={handleDefaultAccountChange}
+            disabled={updateAccountLoading}
+            aria-label={`Make ${name} the default account`}
+          />
+        </div>
+      </div>
+
+      {updateAccountLoading && (
+        <PendingRail label={`Setting ${name} as default`} className="absolute inset-x-0 bottom-0" />
+      )}
+    </li>
+  );
+}

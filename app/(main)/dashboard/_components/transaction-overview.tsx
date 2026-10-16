@@ -1,94 +1,123 @@
-'use client';
+"use client";
 
-import { format } from 'date-fns';
-import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
-import { useState } from 'react';
-import {
-  Cell,
-  Legend,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-} from 'recharts';
+import { format } from "date-fns";
+import Link from "next/link";
+import { useState } from "react";
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/select";
+import { categoryColors, defaultCategories } from "@/data/categories";
+import { usd } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
-const COLORS = [
-  '#FF6B6B',
-  '#4ECDC4',
-  '#45B7D1',
-  '#96CEB4',
-  '#FFEEAD',
-  '#D4A5A5',
-  '#9FA8DA',
-];
+type OverviewAccount = {
+  id: string;
+  name: string;
+  isDefault: boolean;
+};
 
-export function DashboardOverview({ accounts, transactions }) {
+type OverviewTransaction = {
+  id: string;
+  accountId: string;
+  type: "INCOME" | "EXPENSE";
+  amount: number;
+  date: Date | string;
+  category: string;
+  description: string | null;
+};
+
+const categoryNames = new Map(defaultCategories.map((c) => [c.id, c.name]));
+
+const categoryLabel = (id: string) => categoryNames.get(id) ?? id;
+const categoryDot = (id: string) => categoryColors[id] ?? "var(--color-brand-deep)";
+
+/** How many categories get their own bar before the remainder folds into one line. */
+const TOP_CATEGORIES = 6;
+
+/**
+ * One account filter drives both panels, so "recent activity" and "where it
+ * goes" always describe the same account instead of silently disagreeing.
+ */
+export function DashboardOverview({
+  accounts,
+  transactions,
+}: {
+  accounts: OverviewAccount[];
+  transactions: OverviewTransaction[];
+}) {
   const [selectedAccountId, setSelectedAccountId] = useState(
-    accounts.find((a) => a.isDefault)?.id || accounts[0]?.id
+    accounts.find((a) => a.isDefault)?.id || accounts[0]?.id,
   );
 
-  // Filter transactions for selected account
-  const accountTransactions = transactions.filter(
-    (t) => t.accountId === selectedAccountId
-  );
+  const accountTransactions = transactions.filter((t) => t.accountId === selectedAccountId);
 
-  // Get recent transactions (last 5)
-  const recentTransactions = accountTransactions
+  const recentTransactions = [...accountTransactions]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 5);
+    .slice(0, 7);
 
-  // Calculate expense breakdown for current month
-  const currentDate = new Date();
-  const currentMonthExpenses = accountTransactions.filter((t) => {
-    const transactionDate = new Date(t.date);
+  const now = new Date();
+  const monthExpenses = accountTransactions.filter((t) => {
+    const date = new Date(t.date);
     return (
-      t.type === 'EXPENSE' &&
-      transactionDate.getMonth() === currentDate.getMonth() &&
-      transactionDate.getFullYear() === currentDate.getFullYear()
+      t.type === "EXPENSE" &&
+      date.getMonth() === now.getMonth() &&
+      date.getFullYear() === now.getFullYear()
     );
   });
 
-  // Group expenses by category
-  const expensesByCategory = currentMonthExpenses.reduce((acc, transaction) => {
-    const category = transaction.category;
-    if (!acc[category]) {
-      acc[category] = 0;
-    }
-    acc[category] += transaction.amount;
-    return acc;
-  }, {});
+  const totalsByCategory = new Map<string, number>();
+  for (const transaction of monthExpenses) {
+    totalsByCategory.set(
+      transaction.category,
+      (totalsByCategory.get(transaction.category) ?? 0) + transaction.amount,
+    );
+  }
 
-  // Format data for pie chart
-  const pieChartData = Object.entries(expensesByCategory).map(
-    ([category, amount]) => ({
-      name: category,
-      value: amount,
-    })
-  );
+  const ranked = [...totalsByCategory.entries()].sort((a, b) => b[1] - a[1]);
+  const top = ranked.slice(0, TOP_CATEGORIES);
+  const rest = ranked.slice(TOP_CATEGORIES);
+  const monthTotal = monthExpenses.reduce((total, t) => total + t.amount, 0);
+
+  type Bar = { key: string; label: string; amount: number; color: string };
+  const bars: Bar[] = top.map(([category, amount]) => ({
+    key: category,
+    label: categoryLabel(category),
+    amount,
+    color: categoryDot(category),
+  }));
+  if (rest.length > 0) {
+    bars.push({
+      key: "__rest",
+      label: "Everything else",
+      amount: rest.reduce((total, [, amount]) => total + amount, 0),
+      color: "var(--color-muted-foreground)",
+    });
+  }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {/* Recent Transactions Card */}
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-          <CardTitle className="text-base font-normal">
-            Recent Transactions
-          </CardTitle>
-          <Select
-            value={selectedAccountId}
-            onValueChange={setSelectedAccountId}
+    <div className="space-y-6">
+      {/* Recent activity */}
+      <section aria-labelledby="activity-heading" className="rounded-2xl border bg-card">
+        <header className="flex flex-wrap items-center justify-between gap-4 border-b px-5 py-4">
+          <h2
+            id="activity-heading"
+            className="text-sm font-semibold tracking-tight text-card-foreground"
           >
-            <SelectTrigger className="w-[140px]">
+            Recent activity
+          </h2>
+          {/* `items` resolves the closed trigger's label to the account name; `null` is
+              Base UI's empty sentinel, so the placeholder still shows when no account exists. */}
+          <Select
+            value={selectedAccountId ?? null}
+            items={accounts.map((account) => ({ label: account.name, value: account.id }))}
+            onValueChange={(value) => setSelectedAccountId(value ?? "")}
+          >
+            <SelectTrigger size="sm" className="w-[150px]">
               <SelectValue placeholder="Select account" />
             </SelectTrigger>
             <SelectContent>
@@ -99,98 +128,106 @@ export function DashboardOverview({ accounts, transactions }) {
               ))}
             </SelectContent>
           </Select>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentTransactions.length === 0 ? (
-              <p className="text-center text-muted-foreground py-4">
-                No recent transactions
-              </p>
-            ) : (
-              recentTransactions.map((transaction) => (
-                <div
-                  key={transaction.id}
-                  className="flex items-center justify-between"
-                >
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {transaction.description || 'Untitled Transaction'}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {format(new Date(transaction.date), 'PP')}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={cn(
-                        'flex items-center',
-                        transaction.type === 'EXPENSE'
-                          ? 'text-red-500'
-                          : 'text-green-500'
-                      )}
-                    >
-                      {transaction.type === 'EXPENSE' ? (
-                        <ArrowDownRight className="mr-1 h-4 w-4" />
-                      ) : (
-                        <ArrowUpRight className="mr-1 h-4 w-4" />
-                      )}
-                      ${transaction.amount.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+        </header>
 
-      {/* Expense Breakdown Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-normal">
-            Monthly Expense Breakdown
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0 pb-5">
-          {pieChartData.length === 0 ? (
-            <p className="text-center text-muted-foreground py-4">
-              No expenses this month
-            </p>
-          ) : (
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: $${value.toFixed(2)}`}
-                  >
-                    {pieChartData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={COLORS[index % COLORS.length]}
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    formatter={(value) => `$${value.toFixed(2)}`}
-                    contentStyle={{
-                      backgroundColor: 'hsl(var(--popover))',
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: 'var(--radius)',
-                    }}
+        {recentTransactions.length === 0 ? (
+          <div className="px-5 py-10 text-center">
+            <p className="text-sm text-muted-foreground">Nothing logged in this account yet.</p>
+            <Link
+              href="/transaction/create"
+              className="mt-2 inline-block text-sm font-medium text-brand-deep underline-offset-4 hover:underline"
+            >
+              Add the first entry
+            </Link>
+          </div>
+        ) : (
+          <ul className="divide-y divide-border">
+            {recentTransactions.map((transaction) => {
+              const isExpense = transaction.type === "EXPENSE";
+              return (
+                <li
+                  key={transaction.id}
+                  className="flex items-center gap-4 px-5 py-3.5 transition-colors hover:bg-accent/40"
+                >
+                  <span
+                    aria-hidden
+                    className="size-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: categoryDot(transaction.category) }}
                   />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-medium text-card-foreground">
+                      {transaction.description || categoryLabel(transaction.category)}
+                    </span>
+                    <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                      {format(new Date(transaction.date), "d MMM")} ·{" "}
+                      {categoryLabel(transaction.category)}
+                    </span>
+                  </span>
+                  <span
+                    className={cn(
+                      "shrink-0 font-mono text-sm font-semibold tabular-nums",
+                      isExpense ? "text-expense" : "text-income",
+                    )}
+                  >
+                    {isExpense ? "−" : "+"}${usd(transaction.amount)}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      {/* Where the month went */}
+      <section aria-labelledby="breakdown-heading" className="rounded-2xl border bg-card px-5 py-4">
+        <header className="flex items-baseline justify-between gap-4">
+          <h2
+            id="breakdown-heading"
+            className="text-sm font-semibold tracking-tight text-card-foreground"
+          >
+            Where this month went
+          </h2>
+          <p className="font-mono text-xs tabular-nums text-muted-foreground">${usd(monthTotal)}</p>
+        </header>
+
+        {bars.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">
+            No spending recorded this month.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {bars.map((bar) => {
+              const share = monthTotal > 0 ? (bar.amount / monthTotal) * 100 : 0;
+              return (
+                <li key={bar.key}>
+                  <div className="flex items-baseline justify-between gap-4 text-sm">
+                    <span className="flex min-w-0 items-center gap-2.5">
+                      <span
+                        aria-hidden
+                        className="size-2 shrink-0 rounded-full"
+                        style={{ backgroundColor: bar.color }}
+                      />
+                      <span className="truncate text-card-foreground">{bar.label}</span>
+                    </span>
+                    <span className="shrink-0 font-mono tabular-nums text-muted-foreground">
+                      ${usd(bar.amount)}
+                      <span className="ml-2 text-xs opacity-70">{share.toFixed(0)}%</span>
+                    </span>
+                  </div>
+                  {/* Width is data, so it has to be inline. The bar is decorative
+                      — the number above already carries the value. */}
+                  <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="--share-bar h-full rounded-full"
+                      style={{ width: `${share}%`, backgroundColor: bar.color }}
+                    />
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

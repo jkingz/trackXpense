@@ -1,6 +1,6 @@
-import { currentUser } from '@clerk/nextjs/server';
+import { currentUser } from "@clerk/nextjs/server";
 
-import { db } from './prisma';
+import { db } from "./prisma";
 
 export const checkUser = async () => {
   const user = await currentUser();
@@ -27,7 +27,7 @@ export const checkUser = async () => {
     });
     return newUser;
   } catch (error) {
-    console.error('Error checking user:', error);
+    console.error("Error checking user:", error);
     return null;
   }
 };

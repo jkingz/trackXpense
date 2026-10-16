@@ -1,50 +1,130 @@
-import { Show, SignInButton, UserButton } from '@clerk/nextjs';
-import { LayoutDashboard, PenBox } from 'lucide-react';
-import Link from 'next/link';
-import { Button } from './ui/button';
+import { Show, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
+import { LayoutDashboard, PenBox } from "lucide-react";
+import Link from "next/link";
+import { Suspense } from "react";
 
-import { checkUser } from '@/lib/checkUser';
+import { Logo } from "@/components/logo";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { checkUser } from "@/lib/checkUser";
 
-const Header = async () => {
-  await checkUser();
+const landingLinks = [
+  { label: "What's inside", href: "/#inside" },
+  { label: "How it works", href: "/#flow" },
+  { label: "Categories", href: "/#categories" },
+];
+
+/**
+ * Placeholder for the auth-aware slot. It mirrors the real geometry (two pills
+ * plus an avatar) so the bar never reflows when the database answers.
+ */
+function AuthSlotSkeleton() {
   return (
-    <header className="fixed top-0 w-screen bg-white/80 backdrop-blur-md z-50 border-b">
-      <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
-        <Link href="/">
-          <span className="font-bold text-xl">TrackXpense</span>
+    <div className="flex items-center gap-2" aria-hidden>
+      <Skeleton className="h-8 w-20 rounded-md" />
+      <Skeleton className="h-8 w-28 rounded-md" />
+      <Skeleton className="size-9 rounded-full" />
+    </div>
+  );
+}
+
+/**
+ * Reads the signed-in state and provisions the ledger row. This is the only part
+ * of the header that touches the database, so it is the only part that is
+ * suspended — the bar itself paints immediately.
+ */
+async function AuthSlot() {
+  await checkUser();
+
+  return (
+    <div className="flex items-center gap-2">
+      <Show when="signed-out">
+        <SignInButton forceRedirectUrl="/dashboard">
+          <Button variant="ghost" size="sm" className="px-3">
+            Sign in
+          </Button>
+        </SignInButton>
+        <SignUpButton forceRedirectUrl="/dashboard">
+          <Button size="sm" className="px-4">
+            Start tracking
+          </Button>
+        </SignUpButton>
+      </Show>
+
+      <Show when="signed-in">
+        <Link
+          href="/dashboard"
+          className="text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <Button variant="outline" size="sm">
+            <LayoutDashboard />
+            <span className="hidden md:inline">Dashboard</span>
+          </Button>
         </Link>
-        <div className="flex items-center space-x-4">
-          <Show when="signed-in">
+        <Link href="/transaction/create" className="transition-transform hover:-translate-y-0.5">
+          <Button size="sm">
+            <PenBox />
+            <span className="hidden md:inline">Add Transaction</span>
+          </Button>
+        </Link>
+        <UserButton
+          appearance={{
+            elements: {
+              avatarBox: "size-9 rounded-full",
+            },
+          }}
+        />
+      </Show>
+    </div>
+  );
+}
+
+const Header = () => {
+  return (
+    <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/60">
+      <nav className="container mx-auto flex h-16 items-center justify-between gap-6 px-4">
+        <Link
+          href="/"
+          className="group flex shrink-0 items-center gap-2.5"
+          aria-label="TrackXpense home"
+        >
+          <Logo className="size-7 text-brand-deep transition-colors group-hover:text-foreground" />
+          <span className="text-base font-bold tracking-tight text-foreground">TrackXpense</span>
+        </Link>
+
+        <div className="hidden items-center gap-1 lg:flex">
+          {landingLinks.map((link) => (
             <Link
-              href={'/dashboard'}
-              className="text-gray-600 hover:text-blue-600 flex items-center gap-2"
+              key={link.href}
+              href={link.href}
+              className="rounded-md px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
-              <Button variant="outline">
-                <LayoutDashboard size={18} />
-                <span className="hidden md:inline">Dashboard</span>
-              </Button>
+              {link.label}
             </Link>
-            <Link href={'/transaction/create'}>
-              <Button className="flex items-center gap-2">
-                <PenBox size={18} />
-                <span className="hidden md:inline">Add Transaction</span>
-              </Button>
-            </Link>
-          </Show>
-          <Show when="signed-out">
-            <SignInButton forceRedirectUrl="/dashboard">
-              <Button variant="outline">Login</Button>
-            </SignInButton>
-          </Show>
-          <Show when="signed-in">
-            <UserButton
-              appearance={{
-                elements: {
-                  avatarBox: 'w-10 h-10',
-                },
-              }}
-            />
-          </Show>
+          ))}
+        </div>
+
+        {/* Forced-login review: the sign-in / sign-up / user-button cluster is
+            taken out of the bar. AuthSlot and AuthSlotSkeleton stay defined
+            below, so restoring it is a one-line uncomment — and the bar no longer
+            waits on the database to paint. */}
+        {/* <Suspense fallback={<AuthSlotSkeleton />}>
+          <AuthSlot />
+        </Suspense> */}
+
+        <div className="flex items-center gap-2">
+          <Link href="/dashboard">
+            <Button variant="ghost" size="sm">
+              <LayoutDashboard />
+              <span className="hidden md:inline">Dashboard</span>
+            </Button>
+          </Link>
+          <Link href="/transaction/create" className="transition-transform hover:-translate-y-0.5">
+            <Button size="sm">
+              <PenBox />
+              <span className="hidden md:inline">Add Transaction</span>
+            </Button>
+          </Link>
         </div>
       </nav>
     </header>

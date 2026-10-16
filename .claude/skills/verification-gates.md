@@ -5,87 +5,63 @@ when: "user finishes implementation and needs to verify; asks what tests to run 
 
 # Verification Gates
 
-## Toolchain before results
+## The chain
 
-`package.json` has no `packageManager` field, so `pnpm` is whatever the host resolves: `10.18.3` on this machine,
-the same under Node 20.19.5, 22.15.0, 24.15.0 and 26.8.2. The field used to pin `pnpm@10.6.5` and that version was
-activated against the runtime on `PATH`, which died on Node 26 with
-`no @pnpm/exe.darwin-arm64 native binary was found for this host` — every `pnpm <script>` failed on the warning, and
-the tree looked broken when only the shell was.
+Work is done when, in this order:
 
-`package.json` does declare `engines.node: ">=22.21.0"`: the highest floor among the installed dependencies' own
-`engines`, because `@arcjet/next` and `vitest` both sit above Node 20 while `next` and `@clerk/nextjs` only ask for
-20.9.0. Nothing enforces it — `engine-strict` needs an npmrc setting this repo does not have.
+1. **Tests pass** — Tests covering changed paths pass. New behavior gets a new test in the same change.
+   - Name which tier it covered — the default command is one tier, not the suite.
+   - Report the command and output.
 
-So check `node --version` and `pnpm --version` before believing a red gate, and report gate numbers from a Node
-inside the declared floor.
+2. **Typecheck passes** — `<cmd>`
+   - Proves types, not behavior.
 
-## The chain — the same five AGENTS.md § STANDING RULES §13 lists
+3. **Lint passes** — `<cmd>`
+   - Code style and forbidden patterns.
 
-1. **Typecheck** — `pnpm typecheck` (`next typegen && tsc --noEmit`, whole tree)
-   - Proves types, not behaviour. Baseline and budget are in §13; a missed file cannot hide, because
-     `tsconfig.json` `include` is the whole tree with `allowJs: false`.
-   - Suspect a stale build cache: `npx tsc --noEmit --incremental false`.
+4. **Production build passes** — `<cmd>`
+   - Anything the build fetches over the network at build time is a latent CI failure.
 
-2. **Tests** — `pnpm test` (`TZ=UTC vitest run`)
-   - Name the tier it collected. `TZ=UTC` is in the script and is load-bearing.
-   - Gate 2 also collects `tests/platform/unit/instruction-layer.test.ts` — the instruction-layer checker,
-     the tier `pnpm check:docs` runs alone — so every gate-2 run re-checks AGENTS.md, its bodies in
-     `docs/agent-guide/`, `.claude/skills/` and
-     `.env.example` against each other, plus the vendored heading fixture. When it fails, the fix is in the
-     doc or in the fixture, never in the assertion.
-   - Most tests are characterisation — they pin behaviour including recorded defects, so green is not an
-     endorsement. The instruction-layer checker is the exception: it reads docs, not app behaviour.
-     See `/testing`.
-
-3. **Build** — `pnpm build` (Next 16, Turbopack)
-   - A real type gate since Plan A Task 12: `next.config.mjs` carries no `typescript` key, so it
-     prints `Running TypeScript ...`. It **never lints** — Next 16 removed `next lint` and the
-     `eslint` build key.
-   - Anything fetched at build time (a font, an icon CDN) passes on a warm cache and fails on a
-     sealed runner. Prove it cold: `NODE_USE_ENV_PROXY=1 HTTPS_PROXY=http://127.0.0.1:9 pnpm build`.
-
-4. **Lint** — `pnpm lint` (`eslint .`, flat config)
-   - Exits 1 on errors, and the tree is **already red** on pre-existing debt recorded in AGENTS.md §13
-     (Verification gates) and `docs/agent-guide/service-architecture.md` § Verification. The gate is "the census does not grow", not "green".
-   - Report the error/warning totals your run printed and compare them to the recorded census.
-   - Prove a path filter reaches the runner before quoting it: `pnpm lint -- --debug nonexistent.ts`
-     must say the file matches no pattern.
-
-5. **Live exercise** — impossible for the money path in this environment
-   - Auth, database and email flows cannot be smoke-tested here: `DATABASE_URL`/`DIRECT_URL` absent,
-     `ARCJET_KEY` absent so `proxy.ts`'s LIVE rules answer 403 before a page renders (measured 2026-10-13: with
-     `pnpm dev` up and no key, `/`, `/sign-in` and `/dashboard` each returned 403 with Arcjet's own
-     `{"code":403,"message":"Forbidden"}` body, on a curl and a browser User-Agent alike — AGENTS.md §13 gate 5),
-     `RESEND_API_KEY` absent, and `pnpm email` stops
-     on an interactive prompt because `@react-email/ui` is not installed.
-   - Say "not verified" and name the missing variable. Never upgrade that to "should work".
+5. **Live exercise** (when tests cannot reach it)
+   - A page, a migration, a queue job was exercised for real
+   - Report the observation: what you did, what you saw
 
 ## Reporting
 
-For each gate: the command, the output it printed, pass or fail. Counts belong in the reply; the only **suite
-totals** this repo keeps are the `AGENTS.md` §13 gate 2 baseline and the `docs/agent-guide/service-architecture.md`
-§ Verification baseline, refreshed from
-command output whenever they move. Per-file test counts are labels on one file, not suite totals, and are not
-what this exception scopes.
+For each gate:
+
+- State what you ran
+- Quote the output or count
+- Say whether it passed or failed
+
+Example:
 
 ```
-Typecheck: pnpm typecheck → <tsc output>
-Tests:     pnpm test       → <vitest file + test counts>
-Build:     pnpm build      → <route table, exit code>
-Lint:      pnpm lint       → <error + warning totals> vs the recorded census
-Live:      not verified — no DATABASE_URL
+Tests: pnpm test:unit tests/auth/unit
+→ 12 pass, 0 fail
+
+Typecheck: pnpm typecheck
+→ No errors
+
+Lint: pnpm lint
+→ No violations
+
+Build: pnpm build
+→ 42 pages prerendered, 0 errors
+
+Live: Tested /dashboard page, saw new metric chart render correctly
 ```
 
-## Not gates
+## A gate that only passes on your machine is not a gate
 
-- **CI** — see `.github/workflows/ci.yml` for exactly which of the five it runs, and which it omits
-  with a reason. Green CI proves the push, not the feature (Rule 2).
-- A passing check that carries a warning annotation.
-- `git status` cleanliness — a dirty tree is not evidence about behaviour.
+Anything fetched at build time over the network is a latent CI failure. Anything that needs your machine's environment state is not verified.
+
+## CI verification
+
+The same commands run on every push and pull request. No test count is quoted in AGENTS.md; read the suite output from CI, not the docs.
 
 ## Reference
 
-- STANDING RULES §13 for the authoritative chain and baselines
+- STANDING RULES §13 for `VERIFICATION_GATE_CHAIN`
+- DEVELOPMENT WORKFLOW § Verification for the full context
 - PM CONVENTIONS § Review gate for the merge requirement
-- `/testing` for tiers, `tests/README.md` for what no test can prove here

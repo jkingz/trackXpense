@@ -1,14 +1,6 @@
-'use client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { endOfDay, format, startOfDay, subDays } from 'date-fns';
-import { useMemo, useState } from 'react';
+"use client";
+import { endOfDay, format, startOfDay, subDays } from "date-fns";
+import { useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -18,14 +10,25 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts';
+} from "recharts";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { signedUsd, usd } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
 const DATE_RANGES = {
-  '7D': { label: 'Last 7 Days', days: 7 },
-  '1M': { label: 'Last Month', days: 30 },
-  '3M': { label: 'Last 3 Months', days: 90 },
-  '6M': { label: 'Last 6 Months', days: 180 },
-  ALL: { label: 'All Time', days: null },
+  "7D": { label: "Last 7 Days", days: 7 },
+  "1M": { label: "Last Month", days: 30 },
+  "3M": { label: "Last 3 Months", days: 90 },
+  "6M": { label: "Last 6 Months", days: 180 },
+  ALL: { label: "All Time", days: null },
 };
 
 type ChartTransaction = {
@@ -40,38 +43,31 @@ type DailyGroup = {
   expense: number;
 };
 
-const AccountChart = ({
-  transactions,
-}: {
-  transactions: ChartTransaction[];
-}) => {
-  const [dateRange, setDateRange] = useState('1M');
+const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) => {
+  const [dateRange, setDateRange] = useState("1M");
 
   const filteredData = useMemo(() => {
-    const range = DATE_RANGES[dateRange];
+    const range = DATE_RANGES[dateRange as keyof typeof DATE_RANGES];
     const now = new Date();
 
     // calculate start date based on date range
-    const startDate = range.days
-      ? startOfDay(subDays(now, range.days))
-      : startOfDay(new Date(0));
-
+    const startDate = range.days ? startOfDay(subDays(now, range.days)) : startOfDay(new Date(0));
 
     // filter transactions within date  range
     const filtered = transactions.filter(
-      (t) => new Date(t.date) >= startDate && new Date(t.date) <= endOfDay(now)
+      (t) => new Date(t.date) >= startDate && new Date(t.date) <= endOfDay(now),
     );
 
     // group transactions by date and sum amounts
     const grouped = filtered.reduce<Record<string, DailyGroup>>((acc, transaction) => {
-      const date = format(new Date(transaction.date), 'MMM dd');
+      const date = format(new Date(transaction.date), "MMM dd");
       // create new object if date doesn't exist in accumulator
       if (!acc[date]) {
         acc[date] = { date, income: 0, expense: 0 };
       }
 
       // add transaction amount to existing object
-      if (transaction.type === 'INCOME') {
+      if (transaction.type === "INCOME") {
         acc[date].income += transaction.amount;
       } else {
         acc[date].expense += transaction.amount;
@@ -81,7 +77,7 @@ const AccountChart = ({
 
     // convert grouped object to array of objects
     return Object.values(grouped).sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
     );
   }, [transactions, dateRange]);
 
@@ -93,17 +89,15 @@ const AccountChart = ({
         acc.expense += day.expense;
         return acc;
       },
-      { income: 0, expense: 0 }
+      { income: 0, expense: 0 },
     );
   }, [filteredData]);
   return (
     <div className="pb-2">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-base font-normal">
-            Transaction Overview
-          </CardTitle>
-          <Select defaultValue={dateRange} onValueChange={setDateRange}>
+          <CardTitle className="text-base font-normal">Transaction Overview</CardTitle>
+          <Select defaultValue={dateRange} onValueChange={(value) => setDateRange(value ?? "1M")}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Select range" />
             </SelectTrigger>
@@ -120,26 +114,25 @@ const AccountChart = ({
           <div className="flex justify-around mb-6 text-sm">
             <div className="text-center">
               <p className="text-muted-foreground">Total Income</p>
-              <p className="text-lg font-bold text-green-500">
-                ${totals.income.toFixed(2)}
+              <p className="font-mono text-lg font-bold text-income tabular-nums">
+                ${usd(totals.income)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-muted-foreground">Total Expenses</p>
-              <p className="text-lg font-bold text-red-500">
-                ${totals.expense.toFixed(2)}
+              <p className="font-mono text-lg font-bold text-expense tabular-nums">
+                ${usd(totals.expense)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-muted-foreground">Net</p>
               <p
-                className={`text-lg font-bold ${
-                  totals.income > totals.expense
-                    ? 'text-green-500'
-                    : 'text-red-500'
-                }`}
+                className={cn(
+                  "font-mono text-lg font-bold tabular-nums",
+                  totals.income > totals.expense ? "text-income" : "text-expense",
+                )}
               >
-                ${(totals.income - totals.expense).toFixed(2)}
+                {signedUsd(totals.income - totals.expense)}
               </p>
             </div>
           </div>
@@ -166,15 +159,15 @@ const AccountChart = ({
                 <Legend />
                 <Bar
                   dataKey="income"
-                  name={'Income'}
-                  fill="#14b8a6"
+                  name="Income"
+                  fill="var(--color-income)"
                   barSize={12}
                   radius={[4, 4, 0, 0]}
                 />
                 <Bar
                   dataKey="expense"
-                  name={'Expense'}
-                  fill="#ef4444"
+                  name="Expense"
+                  fill="var(--color-expense)"
                   radius={[4, 4, 0, 0]}
                   barSize={12}
                 />

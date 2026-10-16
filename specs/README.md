@@ -10,6 +10,7 @@ One file per feature or deliverable unit of work.
 ## Structure
 
 Each spec describes:
+
 - **Goal** — observable outcome
 - **Increments** — implementation phases
 - **Open questions** — unresolved decisions

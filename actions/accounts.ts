@@ -1,15 +1,15 @@
-'use server';
+"use server";
 
-import { auth } from '@clerk/nextjs/server';
-import type { Prisma, TransactionType } from '@prisma/client';
-import { revalidatePath } from 'next/cache';
+import type { Prisma, TransactionType } from "@prisma/client";
+import { revalidatePath } from "next/cache";
 
-import { db } from '@/lib/prisma';
-import { serializeTransaction } from '@/lib/serialized-transaction';
+import { db } from "@/lib/prisma";
+import { serializeTransaction } from "@/lib/serialized-transaction";
 
-import { checkUser } from './lib';
+import { checkUser } from "./lib";
+import { toErrorMessage } from "./lib";
 
-export async function updateDefaultAccount(accountId) {
+export async function updateDefaultAccount(accountId: string) {
   try {
     //check if user is logged in
     const user = await checkUser();
@@ -25,26 +25,16 @@ export async function updateDefaultAccount(accountId) {
     });
 
     // return the updated account
-    revalidatePath('/dashboard');
+    revalidatePath("/dashboard");
     return { success: true, data: serializeTransaction(account) };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: toErrorMessage(error) };
   }
 }
 
-export async function getAccountsWithTransactions(accountId) {
+export async function getAccountsWithTransactions(accountId: string) {
   try {
-    const { userId } = await auth();
-    //check if user is logged in
-    if (!userId) throw new Error('Unauthorized');
-
-    //check if user exists
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    //if user doesn't exist,
-    if (!user) throw new Error('User not found');
+    const user = await checkUser();
 
     // if (!account) return null;
     const account = await db.account.findFirst({
@@ -62,19 +52,9 @@ export async function getAccountsWithTransactions(accountId) {
   } catch {}
 }
 
-export async function bulkDeleteTransactions(transactionsIds) {
+export async function bulkDeleteTransactions(transactionsIds: string[]) {
   try {
-    const { userId } = await auth();
-    //check if user is logged in
-    if (!userId) throw new Error('Unauthorized');
-
-    //check if user exists
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    //if user doesn't exist,
-    if (!user) throw new Error('User not found');
+    const user = await checkUser();
 
     //delete the transactions
     const transactions = await db.transaction.findMany({
@@ -82,14 +62,17 @@ export async function bulkDeleteTransactions(transactionsIds) {
     });
 
     //recalculate the account balance
-    const accountBalanceChanges = transactions.reduce((acc, transaction) => {
-      const amount = parseFloat(transaction.amount); // Convert to number
-      const change = transaction.type === 'EXPENSE' ? amount : -amount;
+    const accountBalanceChanges = transactions.reduce<Record<string, number>>(
+      (acc, transaction) => {
+        const amount = transaction.amount.toNumber(); // Decimal to number
 
-      // accumulate the changes by account
-      acc[transaction.accountId] = (acc[transaction.accountId] || 0) + change;
-      return acc;
-    }, {});
+        // accumulate the changes by account
+        const change = transaction.type === "EXPENSE" ? amount : -amount;
+        acc[transaction.accountId] = (acc[transaction.accountId] || 0) + change;
+        return acc;
+      },
+      {},
+    );
 
     // Delete transactions and update account balances in a single transaction
     // Prisma transaction is used to ensure atomicity
@@ -98,9 +81,7 @@ export async function bulkDeleteTransactions(transactionsIds) {
       await tx.transaction.deleteMany({
         where: { id: { in: transactionsIds }, userId: user.id },
       });
-      for (const [accountId, balanceChange] of Object.entries(
-        accountBalanceChanges
-      )) {
+      for (const [accountId, balanceChange] of Object.entries(accountBalanceChanges)) {
         // Update account balance
         await tx.account.update({
           where: { id: accountId },
@@ -108,35 +89,25 @@ export async function bulkDeleteTransactions(transactionsIds) {
         });
       }
     });
-    revalidatePath('/dashboard');
+    revalidatePath("/dashboard");
     const accountIds = [...new Set(transactions.map((t) => t.accountId))];
     accountIds.forEach((id) => revalidatePath(`/account/${id}`));
     return { success: true };
   } catch (error) {
-    return { success: false, error: error.message };
+    return { success: false, error: toErrorMessage(error) };
   }
 }
 
 export async function getPaginatedTransactions({
   page = 1,
   itemsPerPage = 10,
-  searchTerm = '',
-  typeFilter = '',
-  recurringFilter = '',
-  sortField = 'date',
-  sortDirection = 'desc',
+  searchTerm = "",
+  typeFilter = "",
+  recurringFilter = "",
+  sortField = "date",
+  sortDirection = "desc",
 }) {
-  const { userId } = await auth();
-  //check if user is logged in
-  if (!userId) throw new Error('Unauthorized');
-
-  //check if user exists
-  const user = await db.user.findUnique({
-    where: { clerkUserId: userId },
-  });
-
-  //if user doesn't exist,
-  if (!user) throw new Error('User not found');
+  const user = await checkUser();
 
   const skip = (page - 1) * itemsPerPage;
 
@@ -147,8 +118,8 @@ export async function getPaginatedTransactions({
   if (searchTerm) {
     const searchLower = searchTerm.toLowerCase();
     where.OR = [
-      { description: { contains: searchLower, mode: 'insensitive' } },
-      { category: { contains: searchLower, mode: 'insensitive' } },
+      { description: { contains: searchLower, mode: "insensitive" } },
+      { category: { contains: searchLower, mode: "insensitive" } },
     ];
     // Avoid searching `amount` and `date` unless exact match is needed
     const amountSearch = parseFloat(searchTerm);
@@ -158,7 +129,7 @@ export async function getPaginatedTransactions({
   }
 
   if (typeFilter) where.type = typeFilter as TransactionType;
-  if (recurringFilter) where.isRecurring = recurringFilter === 'recurring';
+  if (recurringFilter) where.isRecurring = recurringFilter === "recurring";
 
   // Fetch transactions and total count in parallel
   const [transactions, total] = await Promise.all([

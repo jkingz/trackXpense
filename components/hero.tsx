@@ -1,60 +1,82 @@
 "use client";
-import { Button } from "@/components/ui/button";
+
+import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 import Link from "next/link";
-import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+
+import { LiveLedger } from "@/components/landing/live-ledger";
+import { BrandGlow, DotPattern } from "@/components/ambient";
+import { Button } from "@/components/ui/button";
 
 const HeroSection = () => {
-  const imageRef = useRef<HTMLDivElement>(null);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: stageRef,
+    offset: ["start end", "center center"],
+  });
 
-  useEffect(() => {
-    const imgElement = imageRef.current!;
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      const scrollThreshold = 100;
+  // The ledger arrives flat and lifts into place as the page settles under it.
+  const rotateX = useTransform(scrollYProgress, [0, 1], [12, 0]);
+  const scale = useTransform(scrollYProgress, [0, 1], [0.94, 1]);
+  const panelStyle = reduceMotion ? undefined : { rotateX, scale };
 
-      if (scrollPosition > scrollThreshold) {
-        imgElement.classList.add("scrolled");
-      } else {
-        imgElement.classList.remove("scrolled");
-      }
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, []);
   return (
-    <div className="pb-20 px-4">
-      <div className="container mx-auto text-center">
-        <h1 className="--gradient-title text-5xl md:text-8xl lg:text-[105px] pb-6">
-          Manage your Finances <br /> with AI
-        </h1>
-        <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-          An AI-powered financial platform, helps you track and manage your
-          financial habbits, set budgets, and make informed financial
-        </p>
-        <div>
-          <Link href="/dashboard">
-            <Button size="lg" className="px-8">
-              Get started
-            </Button>
-          </Link>
+    <section id="top" className="relative isolate overflow-hidden">
+      <DotPattern className="opacity-60" fade="ellipse" />
+      <BrandGlow className="-top-32 -left-24 opacity-70" />
+      <BrandGlow className="top-24 right-[-6rem] opacity-50" />
+
+      <div className="container relative mx-auto grid grid-cols-1 items-center gap-x-10 gap-y-16 px-4 py-16 md:py-24 lg:grid-cols-12 lg:py-32">
+        <div className="lg:col-span-6 lg:col-start-1">
+          <h1 className="max-w-[15ch] text-[clamp(2.6rem,6vw,5rem)] font-bold leading-[0.95] tracking-tighter text-balance text-foreground">
+            Log the expense. Watch the balance move.
+          </h1>
+
+          <p className="mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground md:text-xl">
+            A two-account ledger you fill in yourself. One entry, one category, and the running
+            balance and budget headroom on your dashboard change the moment you save it.
+          </p>
+
+          <div className="mt-10 flex flex-wrap items-center gap-3">
+            <Link href="/dashboard" className="transition-transform hover:-translate-y-0.5">
+              <Button size="lg" className="px-8 text-base">
+                Open the ledger
+              </Button>
+            </Link>
+            <Link
+              href="/transaction/create"
+              className="transition-transform hover:-translate-y-0.5"
+            >
+              <Button size="lg" variant="outline" className="px-8 text-base">
+                Log an entry
+              </Button>
+            </Link>
+          </div>
+
+          <p className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+            <span>No bank to connect</span>
+            <span aria-hidden className="text-border">
+              /
+            </span>
+            <span>Nothing to import</span>
+            <span aria-hidden className="text-border">
+              /
+            </span>
+            <span>Free while it is small</span>
+          </p>
+        </div>
+
+        <div
+          ref={stageRef}
+          className="--capture-stage relative z-10 lg:col-span-6 lg:col-start-7 lg:mt-20 xl:mt-28"
+        >
+          <motion.div style={panelStyle} className="relative">
+            <LiveLedger />
+          </motion.div>
         </div>
       </div>
-      <div className="--hero-image-wrapper">
-        <div ref={imageRef} className="--hero-image">
-          <Image
-            src="/AI.jpg"
-            alt="banner"
-            width={1280}
-            height={720}
-            priority
-            className="rounded-lg shadow-2xl border mx-auto"
-          />
-        </div>
-      </div>
-    </div>
+    </section>
   );
 };
 

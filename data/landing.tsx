@@ -1,60 +1,68 @@
-import {
-  BarChart3,
-  Receipt,
-  PieChart,
-  CreditCard,
-  Zap,
-} from "lucide-react";
+import { Gauge, Landmark, LayoutDashboard, ScanLine, Tags } from "lucide-react";
 
-// Features Data
 export const featuresData = [
   {
-    icon: <BarChart3 className="h-8 w-8 text-blue-600" />,
-    title: "Advanced Analytics",
+    kind: "accounts",
+    icon: <Landmark className="size-6 text-brand-deep" />,
+    title: "Two accounts, two running balances",
     description:
-      "Get detailed insights into your spending patterns with AI-powered analytics",
+      "Open a CURRENT account and a SAVINGS account. Every entry is marked income or expense, and the mark decides which way that balance moves.",
+    span: "sm:col-span-2 lg:col-span-3",
   },
   {
-    icon: <Receipt className="h-8 w-8 text-blue-600" />,
-    title: "Smart Receipt Scanner",
+    kind: "budget",
+    icon: <Gauge className="size-6 text-brand-deep" />,
+    title: "One budget, edited where you read it",
     description:
-      "Extract data automatically from receipts using advanced AI technology",
+      "Set a single figure on the dashboard. A bar shows how far your logged expenses have climbed against it — no settings screen, no report to wait for.",
+    span: "lg:col-span-3",
   },
   {
-    icon: <PieChart className="h-8 w-8 text-blue-600" />,
-    title: "Budget Planning",
-    description: "Create and manage budgets with intelligent recommendations",
+    kind: "categories",
+    icon: <Tags className="size-6 text-brand-deep" />,
+    title: "21 categories, ready on day one",
+    description:
+      "Groceries, Salary, Housing, Freelance. Every entry carries one, so the ledger says where the money went, not only how much.",
+    span: "lg:col-span-2",
   },
   {
-    icon: <CreditCard className="h-8 w-8 text-blue-600" />,
-    title: "Multi-Account Support",
-    description: "Manage your current and savings accounts in one place",
+    kind: "receipt",
+    icon: <ScanLine className="size-6 text-brand-deep" />,
+    title: "Photograph the receipt",
+    description:
+      "On the add-transaction form a photo fills in amount, date, description and category before you type a word.",
+    span: "lg:col-span-2",
   },
   {
-    icon: <Zap className="h-8 w-8 text-blue-600" />,
-    title: "Automated Insights",
-    description: "Get automated financial insights and recommendations",
+    kind: "dashboard",
+    icon: <LayoutDashboard className="size-6 text-brand-deep" />,
+    title: "The dashboard is the log",
+    description:
+      "Budget bar on top, income and expenses beside it, one card per account. It reads back what you just entered.",
+    span: "lg:col-span-2",
   },
 ];
 
-// How It Works Data
 export const howItWorksData = [
   {
-    icon: <CreditCard className="h-8 w-8 text-blue-600" />,
-    title: "1. Create Your Account",
+    kind: "accounts",
+    title: "Open an account",
     description:
-      "Get started in minutes with our simple and secure sign-up process",
+      "One short form. Name it, say whether it is current or savings, give it a starting balance.",
+    fields: ["Name", "Current or Savings", "Starting balance"],
   },
   {
-    icon: <BarChart3 className="h-8 w-8 text-blue-600" />,
-    title: "2. Track Your Spending",
+    kind: "receipt",
+    title: "Log an entry",
     description:
-      "Categorize and track your transactions as you record them",
+      "The same shape every time, so recording one cost never becomes a project of its own.",
+    fields: ["Amount", "Income or Expense", "Category", "Date", "Description"],
   },
   {
-    icon: <PieChart className="h-8 w-8 text-blue-600" />,
-    title: "3. Get Insights",
+    kind: "budget",
+    title: "Read the result",
     description:
-      "Receive AI-powered insights and recommendations to optimize your finances",
+      "Sign in and the page answers the only two questions that matter: what is left, and how close the budget is.",
+    fields: ["Balance per account", "Income against expenses", "Budget headroom"],
   },
 ];

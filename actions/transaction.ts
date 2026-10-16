@@ -1,25 +1,37 @@
-'use server';
-import { revalidatePath } from 'next/cache';
+"use server";
 
-import { db } from '@/lib/prisma';
+import { request } from "@arcjet/next";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import { revalidatePath } from "next/cache";
 
-import aj from '@/lib/arcjet';
-import { request } from '@arcjet/next';
-import { auth } from '@clerk/nextjs/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { calculateNextRecurringDate, checkUser, serializeAmount } from './lib';
+import aj from "@/lib/arcjet";
+import { db } from "@/lib/prisma";
+import type { TransactionInput } from "@/lib/schema";
+
+import { calculateNextRecurringDate, checkUser, serializeAmount } from "./lib";
+import { toErrorMessage } from "./lib";
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
 
+// Model chosen from measured behaviour against this key, not from a doc page.
+// Census on one receipt image, 3 attempts each: `gemini-2.5-flash` and
+// `gemini-2.5-flash-lite` 404 ("no longer available to new users") — that is what
+// broke the scan — while `gemini-3.8-flash` and `gemini-flash-latest` answered but
+// intermittently threw 503 "high demand" and took 38-92s. `gemini-3.1-flash-lite`
+// and `gemini-flash-lite-latest` went 10/10 in 2-5s with byte-identical
+// extraction. The versioned name is pinned over the rolling alias so the model
+// behind the feature cannot change under the app mid-demo.
+const RECEIPT_MODEL = "gemini-3.1-flash-lite";
+
 // Scan Receipt
-export async function scanReceipt(file) {
+export async function scanReceipt(file: File) {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = genAI.getGenerativeModel({ model: RECEIPT_MODEL });
 
     // Convert File to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
     // Convert ArrayBuffer to Base64
-    const base64String = Buffer.from(arrayBuffer).toString('base64');
+    const base64String = Buffer.from(arrayBuffer).toString("base64");
 
     const prompt = `
       Analyze this receipt image and extract the following information in JSON format:
@@ -53,29 +65,47 @@ export async function scanReceipt(file) {
 
     const response = await result.response;
     const text = response.text();
-    const cleanedText = text.replace(/```(?:json)?\n?/g, '').trim();
+    const cleanedText = text.replace(/```(?:json)?\n?/g, "").trim();
 
+    let data: {
+      amount?: unknown;
+      date?: unknown;
+      description?: unknown;
+      category?: unknown;
+      merchantName?: unknown;
+    };
     try {
-      const data = JSON.parse(cleanedText);
-      return {
-        amount: parseFloat(data.amount),
-        date: new Date(data.date),
-        description: data.description,
-        category: data.category,
-        merchantName: data.merchantName,
-      };
+      data = JSON.parse(cleanedText);
     } catch (parseError) {
-      console.error('Error parsing JSON response:', parseError);
-      throw new Error('Invalid response format from Gemini');
+      console.error("Error parsing JSON response:", parseError);
+      throw new Error("Invalid response format from Gemini");
     }
+
+    const amount = parseFloat(data.amount as string);
+    const date = new Date(data.date as string);
+    // The prompt tells the model to answer `{}` for a non-receipt, so an absent
+    // amount or date is an expected outcome, not a crash: handing it on would put
+    // "NaN" and "Invalid date" into the form fields.
+    if (!Number.isFinite(amount) || Number.isNaN(date.getTime())) {
+      throw new Error("No receipt could be read from that image. Try a clearer photo.");
+    }
+    return {
+      amount,
+      date,
+      description: data.description as string,
+      category: data.category as string,
+      merchantName: data.merchantName as string,
+    };
   } catch (error) {
-    console.error('Error scanning receipt:', error);
-    throw new Error('Failed to scan receipt');
+    console.error("Error scanning receipt:", error);
+    // Carry the cause: a flat "Failed to scan receipt" is what hid a retired model
+    // name behind a retired-model 404.
+    throw new Error(`Failed to scan receipt: ${toErrorMessage(error)}`);
   }
 }
 
 // Create Transaction
-export async function createTransaction(data) {
+export async function createTransaction(data: TransactionInput) {
   try {
     // check if use if logged in
     const user = await checkUser();
@@ -93,17 +123,17 @@ export async function createTransaction(data) {
       if (decision.reason.isRateLimit()) {
         const { remaining, reset } = decision.reason;
         console.error({
-          code: 'RATE_LIMIT_EXCEEDED',
+          code: "RATE_LIMIT_EXCEEDED",
           details: {
             remaining,
             resetInSeconds: reset,
           },
         });
 
-        throw new Error('Too many requests. Please try again later.');
+        throw new Error("Too many requests. Please try again later.");
       }
 
-      throw new Error('Request blocked');
+      throw new Error("Request blocked");
     }
     // check account if exists
     const account = await db.account.findUnique({
@@ -113,11 +143,11 @@ export async function createTransaction(data) {
       },
     });
     if (!account) {
-      throw new Error('Account not found');
+      throw new Error("Account not found");
     }
 
     // calculate balance
-    const balanceChange = data.type === 'EXPENSE' ? -data.amount : data.amount;
+    const balanceChange = data.type === "EXPENSE" ? -data.amount : data.amount;
     // new balance
     const newBalance = account.balance.toNumber() + balanceChange;
 
@@ -145,16 +175,16 @@ export async function createTransaction(data) {
       });
       return newTransaction;
     });
-    revalidatePath('/dashboard');
+    revalidatePath("/dashboard");
     revalidatePath(`/account/${transaction.accountId}`);
     return { success: true, data: serializeAmount(transaction) };
   } catch (error) {
-    throw new Error(error);
+    throw new Error(toErrorMessage(error));
   }
 }
 
 // get transaction by id
-export async function getTransactionById(id) {
+export async function getTransactionById(id: string) {
   // check if use if logged in
   const user = await checkUser();
 
@@ -166,24 +196,16 @@ export async function getTransactionById(id) {
     },
   });
   if (!transaction) {
-    throw new Error('Transaction not found');
+    throw new Error("Transaction not found");
   }
 
   return serializeAmount(transaction);
 }
 
 // update transaction
-export async function updateTransaction(data, id) {
+export async function updateTransaction(data: TransactionInput, id: string) {
   try {
-    // check if use if logged in
-    const { userId } = await auth();
-    if (!userId) throw new Error('Unauthorized');
-
-    const user = await db.user.findUnique({
-      where: { clerkUserId: userId },
-    });
-
-    if (!user) throw new Error('User not found');
+    const user = await checkUser();
     // Get original transaction and calculate balance change
     const originalTransaction = await db.transaction.findUnique({
       where: {
@@ -195,17 +217,14 @@ export async function updateTransaction(data, id) {
       },
     });
     if (!originalTransaction) {
-      throw new Error('Transaction not found');
+      throw new Error("Transaction not found");
     }
 
     const oldBalanceChange =
-      originalTransaction.type === 'EXPENSE'
+      originalTransaction.type === "EXPENSE"
         ? -originalTransaction.amount.toNumber()
         : originalTransaction.amount.toNumber();
-    const newBalanceChange =
-      data.type === 'EXPENSE'
-        ? -parseFloat(data.amount)
-        : parseFloat(data.amount);
+    const newBalanceChange = data.type === "EXPENSE" ? -data.amount : data.amount;
     const netBalanceChange = newBalanceChange - oldBalanceChange;
 
     // Update transaction and account balance in a transaction
@@ -238,10 +257,10 @@ export async function updateTransaction(data, id) {
       });
       return updated;
     });
-    revalidatePath('/dashboard');
+    revalidatePath("/dashboard");
     revalidatePath(`/account/${data.accountId}`);
     return { success: true, data: serializeAmount(transaction) };
   } catch (error) {
-    throw new Error(error);
+    throw new Error(toErrorMessage(error));
   }
 }

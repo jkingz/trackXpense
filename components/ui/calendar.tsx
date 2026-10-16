@@ -1,11 +1,11 @@
 "use client";
 
-import * as React from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import * as React from "react";
 import { DayPicker } from "react-day-picker";
 
-import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const navButton = cn(
   buttonVariants({ variant: "outline" }),
@@ -32,8 +32,7 @@ function Calendar({
         button_next: cn(navButton, "absolute right-1"),
         month_grid: "w-full border-collapse space-x-1",
         weekdays: "flex",
-        weekday:
-          "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
+        weekday: "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
         week: "flex w-full mt-2",
         day: cn(
           "relative p-0 text-center text-sm focus-within:relative focus-within:z-20",
@@ -46,15 +45,12 @@ function Calendar({
           buttonVariants({ variant: "ghost" }),
           "size-8 p-0 font-normal aria-selected:opacity-100",
         ),
-        range_start:
-          "range_start aria-selected:bg-primary aria-selected:text-primary-foreground",
-        range_end:
-          "range_end aria-selected:bg-primary aria-selected:text-primary-foreground",
+        range_start: "range_start aria-selected:bg-primary aria-selected:text-primary-foreground",
+        range_end: "range_end aria-selected:bg-primary aria-selected:text-primary-foreground",
         selected:
           "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
         today: "bg-accent text-accent-foreground",
-        outside:
-          "day-outside text-muted-foreground aria-selected:text-muted-foreground",
+        outside: "day-outside text-muted-foreground aria-selected:text-muted-foreground",
         disabled: "text-muted-foreground opacity-50",
         range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
         hidden: "invisible",

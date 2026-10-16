@@ -47,12 +47,12 @@ The fix's blast radius equals the finding's blast radius. No drive-by cleanup: r
 
 Out-of-scope observations go in **one line to your partner** — not in code, not in the thread.
 
-| Temptation | Reality |
-| --- | --- |
+| Temptation                                                              | Reality                                                              |
+| ----------------------------------------------------------------------- | -------------------------------------------------------------------- |
 | "The bot's suggestion is bigger than its finding, so refactor properly" | Fix the reported defect. The rest is a separately approved proposal. |
-| "This nearby `console.log` / dead code is trivial" | Trivial × every PR = an unreviewable diff. Report it. |
-| "Reviewers will expect the DI/cache/typing work anyway" | Predicted taste is not a requirement. |
-| "One more commit while I'm here saves a round trip" | It re-opens the gate and invalidates your own verification. |
+| "This nearby `console.log` / dead code is trivial"                      | Trivial × every PR = an unreviewable diff. Report it.                |
+| "Reviewers will expect the DI/cache/typing work anyway"                 | Predicted taste is not a requirement.                                |
+| "One more commit while I'm here saves a round trip"                     | It re-opens the gate and invalidates your own verification.          |
 
 ## Do not post filler (hard rule)
 
@@ -66,10 +66,10 @@ Rebase only when one is true: main has commits touching your files; a check fail
 
 ## Exit states
 
-| State | Do |
-| --- | --- |
-| **Ready** | Everything newer than the head handled, checks green, branch current. Report. Merge only if merging was authorized. |
-| **Blocked** | Need a decision, access, or a reviewer correction. Ask, then stop. |
+| State        | Do                                                                                                                                                                                                                                                                                                                                            |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ready**    | Everything newer than the head handled, checks green, branch current. Report. Merge only if merging was authorized.                                                                                                                                                                                                                           |
+| **Blocked**  | Need a decision, access, or a reviewer correction. Ask, then stop.                                                                                                                                                                                                                                                                            |
 | **Obsolete** | An overlapping PR on main covers this work: **stop monitoring** and **ask before closing** unless closing was explicitly authorized. Branch stays intact. Don't "win" the conflict by rebasing duplicate work onto main. The report goes to your partner, **not** the thread — comment on the PR only if a human is actively reviewing there. |
 
 ## Monitoring

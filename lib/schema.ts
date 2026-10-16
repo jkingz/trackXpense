@@ -1,31 +1,37 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const accountSchema = z.object({
-  name: z.string().min(1, 'Name is required').max(100),
-  type: z.enum(['CURRENT', 'SAVINGS']),
-  balance: z.string().min(1, 'Balance is required'),
+  name: z.string().min(1, "Name is required").max(100),
+  type: z.enum(["CURRENT", "SAVINGS"]),
+  balance: z.string().min(1, "Balance is required"),
   isDefault: z.boolean().default(false),
 });
 
 export const transactionSchema = z
   .object({
-    type: z.enum(['INCOME', 'EXPENSE']),
-    amount: z.string().min(1, 'Amount is required'),
+    type: z.enum(["INCOME", "EXPENSE"]),
+    amount: z.string().min(1, "Amount is required"),
     description: z.string().optional(),
-    date: z.date({ error: 'Date is required' }),
-    accountId: z.string().min(1, 'Account is required'),
-    category: z.string().min(1, 'Category is required'),
+    date: z.date({ error: "Date is required" }),
+    accountId: z.string().min(1, "Account is required"),
+    category: z.string().min(1, "Category is required"),
     isRecurring: z.boolean().default(false),
-    recurringInterval: z
-      .enum(['DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'])
-      .optional(),
+    recurringInterval: z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]).optional(),
   })
   .superRefine((data, ctx) => {
     if (data.isRecurring && !data.recurringInterval) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Recurring interval is required for recurring transactions',
-        path: ['recurringInterval'],
+        message: "Recurring interval is required for recurring transactions",
+        path: ["recurringInterval"],
       });
     }
   });
+
+// Shared form value types so server actions and form components agree.
+// Transaction forms parse amount to a number before submitting, so the
+// submitted shape differs from the raw schema input.
+export type AccountInput = z.input<typeof accountSchema>;
+export type TransactionInput = Omit<z.input<typeof transactionSchema>, "amount"> & {
+  amount: number;
+};

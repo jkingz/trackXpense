@@ -1,12 +1,29 @@
-# EDITING THIS FILE
+# Editing these docs
 
-## When to fill sections
+Code is truth. Doc disagrees with code → doc is the defect → fix it same change.
 
-1. **STANDING RULES (Rules 11–17)** — day one when you learn the first fact (package manager, runtime, gates). These stay in `AGENTS.md`.
-2. **PROJECT OVERVIEW through PM CONVENTIONS** — as you build, one section per decision. The prose is here in `docs/agent-guide/`; `AGENTS.md` keeps the heading and the one fact that constrains work.
-3. **SERVICE ARCHITECTURE** — after your first real commit, listing only implemented code.
-4. **TARGET STATE** — whenever design intent outpaces implementation.
-5. **FEATURE SPECS** (`specs/`) — one per unit of work.
+## Doc style — hard rules
+
+Every line earns its place. Violations get deleted, not debated.
+
+- **Terse.** Fragments fine. Drop articles ("the", "a"). Prefer arrows and slashes over sentences.
+- **One fact per line.** No paragraph padding, no intros, no summaries restating the line above.
+- **Cite `file:line`** for every code claim. No invented numbers, paths, dates, thresholds.
+- **No history.** Never "used to", "previously", "no longer", "since Plan A", "the old", "was renamed".
+- **No filler.** Never "note that", "it's worth noting", "essentially", "simply", "in order to".
+- **Counts live in one home:** `service-architecture.md` → Verification. Every other body points there, never repeats a total.
+- **Measured claims carry their date** (`measured 2026-10-17`). Unmeasured → say "unverified".
+- **Not built → `target-state.md`**, never a current-state body.
+- Bad: "The Inngest functions were written and served, though they have never actually been run here."
+- Good: "Inngest functions written + served; never fired here (`INNGEST_EVENT_KEY` unset)."
+
+## When a section earns a fact
+
+1. STANDING RULES — day one.
+2. Bodies below — one section per decision, as you build.
+3. SERVICE ARCHITECTURE — implemented code only, after first commit.
+4. TARGET STATE — intent outpaces implementation.
+5. `specs/` — one per unit of work.
 
 ## Health check
 
@@ -14,13 +31,8 @@
 grep -n '<[a-zA-Z_/]' AGENTS.md
 ```
 
-Every hit is an unfilled slot. Zero hits means `AGENTS.md` describes your project and only your project.
+Any hit = an unfilled slot marker. Zero hits = no template leftovers. Reword prose; never exempt the command.
 
-`tests/platform/unit/instruction-layer.test.ts` runs this check over `AGENTS.md` whole-file **and** over every body
-in `docs/agent-guide/`, so a hit in either home fails — including inside **VERIFICATION STANDARDS**, which currently
-produces no hits. Splitting a body out therefore moves the rule's reach, never weakens it.
-Do not add exemptions to the command; reword the prose.
+## Index is authoritative
 
-## One rule that organizes everything else
-
-**Code is the source of truth.** When implementation and docs disagree, the doc is the defect. Fix the doc in the same change.
+`README.md` lists every body; `AGENTS.md` stubs point at each. New body → add its stub + index row in the same change.

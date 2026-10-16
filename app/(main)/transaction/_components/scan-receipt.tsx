@@ -1,24 +1,27 @@
-'use client';
+"use client";
 
-import { scanReceipt } from '@/actions/transaction';
-import { Button } from '@/components/ui/button';
-import useFetch from '@/hooks/use-fetch';
-import { Camera, Loader2 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
-import { toast } from 'sonner';
+import { Camera } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 
-const ReceiptScanner = ({ onScanComplete }) => {
+import { scanReceipt } from "@/actions/transaction";
+import { Button } from "@/components/ui/button";
+import useFetch from "@/hooks/use-fetch";
+
+export type ScannedReceipt = Awaited<ReturnType<typeof scanReceipt>>;
+
+const ReceiptScanner = ({
+  onScanComplete,
+}: {
+  onScanComplete: (data: ScannedReceipt) => void | Promise<void>;
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const {
-    loading: scanLoading,
-    data: scannedData,
-    fn: scanFn,
-  } = useFetch(scanReceipt);
+  const { loading: scanLoading, data: scannedData, fn: scanFn } = useFetch(scanReceipt);
 
-  const handleReceiptScan = async (file) => {
+  const handleReceiptScan = async (file: File) => {
     // check if file is more than 5mb
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('File size is too large');
+      toast.error("File size is too large");
       return;
     }
     await scanFn(file);
@@ -27,9 +30,9 @@ const ReceiptScanner = ({ onScanComplete }) => {
   useEffect(() => {
     if (scannedData && !scanLoading) {
       onScanComplete(scannedData);
-      toast.success('Receipt scanned successfully');
+      toast.success("Receipt scanned successfully");
     }
-  }, [scannedData, scanLoading]);
+  }, [scannedData, scanLoading, onScanComplete]);
   return (
     <div>
       <input
@@ -48,18 +51,10 @@ const ReceiptScanner = ({ onScanComplete }) => {
         variant="outline"
         className="w-full h-10 bg-gradient-to-br from-orange-500 via-pink-500 to-purple-500 --animate-gradient hover:opacity-90 transition-opacity text-white hover:text-white"
         onClick={() => fileInputRef.current?.click()}
-        disabled={scanLoading}
+        loading={scanLoading}
       >
-        {scanLoading ? (
-          <>
-            <Loader2 className="mr-2 animate-spin" /> Scanning...
-          </>
-        ) : (
-          <>
-            <Camera className="mr-2" />
-            <span>Scan Receipt with AI</span>
-          </>
-        )}
+        <Camera className="mr-2" />
+        <span>{scanLoading ? "Scanning" : "Scan Receipt with AI"}</span>
       </Button>
     </div>
   );

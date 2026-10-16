@@ -1,11 +1,18 @@
-import { getUserAccounts } from '@/actions/dashboard';
-import { getTransactionById } from '@/actions/transaction';
-import { defaultCategories } from '@/data/categories';
-import { checkUser } from '@/lib/checkUser';
-import AddTransactionForm from '../_components/add-transaction-form';
+import { getUserAccounts } from "@/actions/dashboard";
+import { getTransactionById } from "@/actions/transaction";
+import { defaultCategories } from "@/data/categories";
 
-const AddTransaction = async ({ searchParams }) => {
-  await checkUser(); // Provisions the users row from the session; returns null rather than gating
+import AddTransactionForm from "../_components/add-transaction-form";
+
+// Reads the ledger on every request, so it cannot be prerendered: opt out of
+// instant prerendering, which cannot complete without request data.
+export const instant = false;
+
+const AddTransaction = async ({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | undefined>>;
+}) => {
   const accounts = await getUserAccounts();
   const resolvedSearchParams = await searchParams;
   const editId = await resolvedSearchParams?.edit;
@@ -18,8 +25,8 @@ const AddTransaction = async ({ searchParams }) => {
 
   return (
     <div className="max-w-3xl mx-auto px-5">
-      <h1 className="text-5xl --gradient-title">
-        {editId ? 'Edit' : 'Add'} Transactions
+      <h1 className="mb-8 border-b pb-6 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        {editId ? "Edit transaction" : "Add a transaction"}
       </h1>
       <AddTransactionForm
         accounts={accounts}

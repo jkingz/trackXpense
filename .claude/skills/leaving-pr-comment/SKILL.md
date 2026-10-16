@@ -43,6 +43,7 @@ Anything else: no comment.
   ```
 
   `-F body=@-` reads the body from stdin, so nothing shell-expands into it and backticks in code spans survive.
+
 - Top-level instead: `gh pr comment <n> --body-file <file>`, only for trigger 3 or 4.
 
 ## Declining
@@ -51,7 +52,7 @@ State the reason as a checkable claim, then stop: "Not acting: nothing calls thi
 
 ## Never
 
-- Agreement language ("Great catch", "You're absolutely right") — the fix *is* the reply.
+- Agreement language ("Great catch", "You're absolutely right") — the fix _is_ the reply.
 - A comment with no disclaimer.
 - "PTAL", "bumping", "still looking", CI retry noise, or narrating a re-run.
 - `@`-mentioning anyone unless your partner said to.

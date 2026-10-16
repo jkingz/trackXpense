@@ -11,7 +11,7 @@ when: "user needs to commit, push, open a PR, or asks about git workflows"
 - **One logical change per commit.** No sweeping mixed commits.
 - Subject says **why**, body ≤ 4 lines. A reader of `git log` alone should understand what defect existed before.
 - Never commit secrets, rotated tokens, or real env values.
-- **Always check `git status` before `git add`.** Verify you are not staging `.env.local` or `.env*` files.
+- **Always check `git status` before `git add`.** Verify you are not staging `.env` files.
 
 ## Push discipline
 
@@ -22,11 +22,11 @@ when: "user needs to commit, push, open a PR, or asks about git workflows"
 
 ## Pull requests
 
-- Title: `<type>(<scope>): <imperative summary>` — e.g. `feat(transactions): add category filtering`
+- Title: `<type>(<scope>): <imperative summary>` — e.g. `feat(auth): add staff role access`
 - Body structure:
   - **What changed** (2–3 bullets)
-  - **How it was verified** (each gate from `/verification-gates` skill + any live check)
-  - **What wasn't covered** (Clerk/auth in staging only, Resend email not sent, etc.)
+  - **How it was verified** (each gate + any live check)
+  - **What wasn't covered** (real credentials, third-party webhooks, host-specific behavior)
 - One PR per feature/unit. No grab-bag PRs.
 - Keep draft until CI is green; request review after the suite passes.
 

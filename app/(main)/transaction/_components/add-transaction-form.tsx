@@ -1,28 +1,48 @@
-'use client';
-import { createTransaction, updateTransaction } from '@/actions/transaction';
-import { transactionSchema } from '@/lib/schema';
+"use client";
 
-import useFetch from '@/hooks/use-fetch';
-import { zodResolver } from '@hookform/resolvers/zod';
-import type { Account } from '@prisma/client';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
-import type { z } from 'zod';
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { toast } from "sonner";
+import type { z } from "zod";
 
-import type { defaultCategories } from '@/data/categories';
-import AccountsForm from './accounts-form';
-import AmountForm from './amount-form';
-import CategoriesForm from './categories-form';
-import DateForm from './date-form';
-import DescriptionForm from './description-form';
-import FormButtons from './form-buttons';
-import ReceiptScanner from './scan-receipt';
-import SetDefaultForm from './set-default-form';
-import TypeForm from './type-form';
+import { createTransaction, updateTransaction } from "@/actions/transaction";
+import type { defaultCategories } from "@/data/categories";
+import useFetch from "@/hooks/use-fetch";
+import { transactionSchema } from "@/lib/schema";
+import type { TransactionInput } from "@/lib/schema";
 
-type TransactionFormValues = z.input<typeof transactionSchema>;
+import AccountsForm from "./accounts-form";
+import AmountForm from "./amount-form";
+import CategoriesForm from "./categories-form";
+import DateForm from "./date-form";
+import DescriptionForm from "./description-form";
+import FormButtons from "./form-buttons";
+import ReceiptScanner, { type ScannedReceipt } from "./scan-receipt";
+import SetDefaultForm from "./set-default-form";
+import TypeForm from "./type-form";
+
+export type TransactionFormValues = z.input<typeof transactionSchema>;
+
+export type SerializedAccount = {
+  id: string;
+  name: string;
+  type: string;
+  balance: number;
+  isDefault: boolean;
+};
+
+type SerializedTransactionInput = {
+  type: "INCOME" | "EXPENSE";
+  amount: number;
+  description: string | null;
+  accountId: string;
+  category: string;
+  date: Date | string;
+  isRecurring: boolean;
+  recurringInterval?: "DAILY" | "WEEKLY" | "MONTHLY" | "YEARLY" | null;
+};
 
 const AddTransactionForm = ({
   accounts,
@@ -31,16 +51,15 @@ const AddTransactionForm = ({
   initialData = null,
 }: {
   // getUserAccounts serializes rows, so balance is a number and _count is present; the serialized view needs its own type.
-  accounts: Account[];
+  accounts: SerializedAccount[];
   categories: typeof defaultCategories;
   editMode?: boolean;
   // initialData is getTransactionById's serialized row: amount arrives as a number, not z.input's string.
-  initialData?: TransactionFormValues | null;
+  initialData?: SerializedTransactionInput | null;
 }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const editId = searchParams.get('edit');
-  
+  const editId = searchParams.get("edit");
 
   // Inference is not untyped here: zodResolver binds the schema's input type onto
   // defaultValues, where create mode's `date: ''` is not a Date. Measured without <any>:
@@ -54,7 +73,6 @@ const AddTransactionForm = ({
     watch,
     getValues,
     reset,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = useForm<any>({
     resolver: zodResolver(transactionSchema),
     defaultValues:
@@ -72,11 +90,11 @@ const AddTransactionForm = ({
             }),
           }
         : {
-            type: 'EXPENSE',
-            amount: '',
-            description: '',
+            type: "EXPENSE",
+            amount: "",
+            description: "",
             accountId: accounts.find((ac) => ac.isDefault)?.id,
-            date: '',
+            date: "",
             isRecurring: false,
           },
   });
@@ -85,20 +103,23 @@ const AddTransactionForm = ({
     loading: transactionLoading,
     data: transactionResult,
     fn: transactionFn,
-  } = useFetch(editMode ? (data) => updateTransaction(data, editId) : createTransaction);
-
-  const type = watch('type');
-  const isRecurring = watch('isRecurring');
-  const date = watch('date');
-
-  const filteredCategory = categories.filter(
-    (category) => category.type === type
+  } = useFetch(
+    editMode
+      ? (data: TransactionInput) => updateTransaction(data, editId as string)
+      : createTransaction,
   );
 
-  const onSubmit = (data) => {
+  const type = watch("type");
+  const isRecurring = watch("isRecurring");
+  const date = watch("date");
+  const categoryValue = watch("category");
+
+  const filteredCategory = categories.filter((category) => category.type === type);
+
+  const onSubmit = (data: TransactionFormValues) => {
     const formData = {
-      amount: parseFloat(data.amount),
       ...data,
+      amount: parseFloat(data.amount),
     };
     transactionFn(formData);
   };
@@ -106,28 +127,31 @@ const AddTransactionForm = ({
   useEffect(() => {
     if (transactionResult?.success && !transactionLoading) {
       toast.success(
-        editMode
-          ? 'Transaction updated successfully'
-          : 'Transaction created successfully'
+        editMode ? "Transaction updated successfully" : "Transaction created successfully",
       );
       reset();
       router.push(`/account/${transactionResult.data.accountId}`);
     }
   }, [transactionResult, transactionLoading, editMode, router, reset]);
 
-  const handleScanComplete = async (scannedData) => {
-    // Parse the scanned data and extract relevant information
-    if (scannedData) {
-      setValue('date', new Date(scannedData.date));
-      setValue('amount', scannedData.amount.toString());
-      if (scannedData.description) {
-        setValue('description', scannedData.description);
+  // useCallback: ReceiptScanner's effect depends on this identity; an inline
+  // definition would refire onScanComplete on every parent render.
+  const handleScanComplete = useCallback(
+    async (scannedData: ScannedReceipt) => {
+      // Parse the scanned data and extract relevant information
+      if (scannedData) {
+        setValue("date", new Date(scannedData.date));
+        setValue("amount", scannedData.amount.toString());
+        if (scannedData.description) {
+          setValue("description", scannedData.description);
+        }
+        if (scannedData.category) {
+          setValue("category", scannedData.category);
+        }
       }
-      if (scannedData.category) {
-        setValue('category', scannedData.category);
-      }
-    }
-  };
+    },
+    [setValue],
+  );
 
   return (
     <div>
@@ -148,7 +172,7 @@ const AddTransactionForm = ({
         <CategoriesForm
           categories={filteredCategory}
           setValue={setValue}
-          getValues={getValues}
+          category={categoryValue}
           errors={errors}
         />
         <DateForm date={date} setValue={setValue} errors={errors} />

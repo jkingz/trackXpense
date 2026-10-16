@@ -5,84 +5,60 @@ when: "user needs to write, run, or update tests; asks about test structure, cov
 
 # Testing
 
-## What exists today
-
-`pnpm test` is `TZ=UTC vitest run`. The **unit tier is populated** — `tests/money/unit/`,
-`tests/validation/unit/` and `tests/platform/unit/` (the instruction-layer checker, run alone with
-`pnpm check:docs`). `integration` and `e2e` do not exist: no runner entry for them, and
-`jsdom`, `@testing-library/react` and `playwright` are not in `package.json`.
-
-Most tests present are **characterisation**: they pin what the code does today, including two recorded
-defects (see `docs/agent-guide/code-standards.md` § Testing), so a green run is not an endorsement of that behaviour. The
-instruction-layer checker in `tests/platform/unit/` is the exception — it reads this repo's own guidance files
-(`AGENTS.md`, `docs/agent-guide/`, `.claude/skills/`, `.env.example`) off disk and asserts they agree, so it pins no application
-behaviour and needs no database.
-
-Never write a **suite total** into this file, and add none to the instruction layer outside its two recorded
-baselines — `AGENTS.md` §13 gate 2 and `docs/agent-guide/service-architecture.md` § Verification, which are refreshed
-from command output whenever the suite moves. A total typed
-anywhere else is wrong the day the next test lands. Per-file counts — the `(6)`, `(4)`, `(9)` labels in
-`docs/agent-guide/code-standards.md` § Testing — name one file, not the suite, so they are outside this rule. Run the command and quote
-its output in the reply.
-
-## `TZ=UTC` is load-bearing
-
-It lives in the npm script, not in a config file. The recurrence tests are timezone-sensitive and
-fail under other local zones. Call `vitest` directly only with `TZ=UTC` prefixed.
-
 ## Organization
 
-`tests/{feature}/{tier}/` — one folder per feature, tiers `unit`, `integration`, `e2e`. Nothing
-collocated beside the module.
+Tests live in `tests/{feature}/{tier}/` — one folder per feature, tiers `unit`, `integration`, `e2e`. Nothing collocated beside the module.
+
+**Example structure:**
 
 ```
 tests/
-  money/unit/            # exists
-  validation/unit/       # exists
-  platform/unit/         # exists — instruction-layer.test.ts
-  {feature}/integration/ # tier not created
+  auth/
+    unit/
+    integration/
+    e2e/
+  dashboard/
+    unit/
+    integration/
 ```
 
 ## Import patterns
 
-Import the subject through the `@/` alias, never relatively. `vitest.config.ts` maps `@` to the
-repo root and sets `environment: 'node'`, `include: ['tests/**/*.test.ts']`.
+- Import the subject through the project's path alias, **never relatively**
+- Check dynamic forms: `await import("./x")` is invisible to a `from "\./"` pattern
+- Example: `import { handler } from "@/routes/auth"` not `import { handler } from "../../../routes/auth"`
 
 ## Mocking
 
-- **Mock at the boundary only** — the modules that own I/O: Prisma (`lib/prisma.ts`), Clerk,
-  Resend, Inngest.
-- Never mock inside business logic.
-- Unit tier only; integration and e2e use real dependencies.
-- Nothing is mocked today — the unit tier needs no mocks.
+- **Mock at the boundary only** — the module paths that own I/O (file, network, database)
+- Never mock inside business logic
+- Unit tier only; integration and e2e use real dependencies
 
-## Running
+## Running tests
 
-| Need | Command |
-| --- | --- |
-| Whole suite | `pnpm test` |
-| Instruction-layer checker alone | `pnpm check:docs` |
-| One tier or file | `TZ=UTC pnpm exec vitest run tests/money/unit` |
-| Watch | `pnpm test:watch` |
+- All tiers: `<cmd>`
+- One tier only: `<cmd>` — e.g. `pnpm test:unit tests/auth/unit`
+- Prove "run one file": pass a path that must match nothing; the runner must say it collected nothing. If it runs everything and exits 0, the argument never reached the runner.
 
-Prove the path filter reaches the runner before quoting it: `TZ=UTC pnpm exec vitest run
-tests/nope/unit` must name the filter and the `include` glob back.
+## Coverage requirements
 
-**An empty tier is not silently green here.** Vitest exits **1** with `No test files found` when a
-run collects nothing (measured, not assumed), so a tier with no files reports a failure rather than
-passing vacuously. Still name the tier a run actually collected when you report it.
+Every route gets a test covering:
 
-## Coverage requirements — for tests not yet written
+- `401` (unauthenticated)
+- `403` (forbidden)
+- `400` (bad request)
+- **No-data-before-auth path** — verify the handler checks auth before reading data
 
-Every route/action covering `401` (unauthenticated), `403` (ownership), `400` (bad input), plus the
-**no-data-before-auth** path — assert auth gates run before any read. Ownership needs a two-user
-fixture that proves a foreign account cannot be read.
+Ownership/isolation needs a two-tenant fixture that proves a foreign id cannot be read.
 
-Server actions have zero coverage and cannot get it here: they need Postgres credentials this
-environment does not have (AGENTS.md § STANDING RULES → Rule 13 gate 5).
+## Empty or credential-gated tiers
+
+Opt-in and empty tiers exit 0 — report which tier the run actually covered in your verification output.
+
+## What's NOT tested yet
+
+- `<list components, e2e, migrations, or other areas not yet covered>`
 
 ## Reference
 
-- `docs/agent-guide/code-standards.md` § Testing for the inventory
-- `/verification-gates` for where tests sit in the chain
-- `tests/README.md` for the tier definitions
+See CODE STANDARDS § Testing in AGENTS.md for integration with the full verification chain.

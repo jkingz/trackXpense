@@ -1,98 +1,99 @@
 # SERVICE ARCHITECTURE — Implemented surface
 
-This body describes only code that exists. Design intent not yet built lives in `docs/agent-guide/target-state.md`.
-
-Update this body in the same change that alters the surface described here. Move newly built modules out of `docs/agent-guide/target-state.md`.
+Only code that exists. Intent not built → `target-state.md`. Update this body in the same change that alters the surface; move built modules out of `target-state.md`.
 
 ## Request path
 
 ```
-Browser (Clerk session)
-    → proxy.ts (Arcjet shield/detectBot, then clerkMiddleware; redirects unauthenticated hits on /dashboard, /account, /transaction)
-    → App Router page/layout (app/(main)/layout.tsx does no auth)
-    → checkUser() (lib/checkUser.ts provisions the users row and returns null — it never redirects;
-       actions/lib/checkUser.ts throws for server actions)
-    → Prisma queries (scoped to userId)
-    → PostgreSQL
-    → Response (JSON or HTML)
+Browser (Clerk session, or none)
+  → proxy.ts (clerkMiddleware only; Arcjet + redirectToSignIn commented out → session-less reaches the page)
+  → App Router page/layout (app/(main)/layout.tsx does no auth)
+  → checkUser() (lib/checkUser.ts provisions users row, returns null, never redirects;
+                 actions/lib/checkUser.ts resolves session, else demo row)
+  → Prisma queries (scoped to userId) → PostgreSQL
+  → Response (JSON or HTML)
 ```
 
 ## Modules
 
-| Module | Status |
-| --- | --- |
-| `lib/checkUser.ts` | Implemented: resolves `currentUser()` to a `users` row, creating it on first sight. Returns `null` with no session and `null` again after catching a failed read or write; **it never redirects**. Both callers — `components/header.tsx`, mounted by `app/layout.tsx`, and `app/(main)/transaction/create/page.tsx` — discard the value, so this runs for provisioning, not for access. |
-| `actions/lib/checkUser.ts` | Implemented: same name, different contract — **throws** `Unauthorized`. Used by server actions. The two are consolidated by Plan B §2c. |
-| `lib/prisma.ts` | Implemented: Singleton Prisma client through the `@prisma/adapter-pg` adapter (`export const db = ...`). All data access goes through this. |
-| `lib/schema.ts` | Implemented: Zod schemas `accountSchema` and `transactionSchema` (no `userSchema`). Applied **client-side only**, through `zodResolver` in the two forms; no action validates its input. |
-| `lib/serialized-transaction.ts` | Implemented: `Decimal`→number row serializer. Parameter is unannotated, so its return is `any` — the known structural gap. |
-| `lib/arcjet.ts` | Implemented: Arcjet `tokenBucket` client, imported by `actions/transaction.ts`. `proxy.ts` builds a separate shield/detectBot client. Neither is exercised here — no `ARCJET_KEY`. |
-| `lib/inngest/` | Implemented at the source level: client + 4 functions (budget-alert cron, recurring trigger cron, per-event recurring processor, monthly-report cron). **Never executed** — no database, no key, no Inngest account in this environment. |
-| `actions/` | Implemented: 15 exported server actions (`getUserAccounts`, `getDashboardData`, `seedTransactions` take no input; 12 accept client input and validate none of it). Includes `scanReceipt`, the Gemini receipt-OCR action, which cannot run without `GEMINI_API_KEY`. |
-| `app/(auth)/` | Implemented: Clerk sign-in/sign-up pages (Clerk-managed UI). |
-| `app/(main)/` | Implemented: dashboard, account and transaction pages. Its `layout.tsx` performs no auth — the segment is protected only by `proxy.ts`'s route matcher, and the pages read through actions that call `auth()` inline. |
-| `app/api/seed/` | Implemented: Creates test data (users, accounts, transactions). Unauthenticated `GET`; should gate in prod. |
-| `app/api/inngest/` | Implemented: `serve()` exposing GET/POST/PUT for the 4 functions above. Not connected to a running Inngest account. |
-| `tests/` | Implemented: the unit tier — `money`, `validation`, `platform` (the instruction-layer checker). No integration, no e2e. |
+| Module                           | Status                                                                                                                                                                                                                                                                                                                                                   |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/checkUser.ts`               | Resolves `currentUser()` to a `users` row, creates on first sight. Returns `null` with no session and `null` after a failed read/write; **never redirects**. Only importer `AuthSlot` (`components/header.tsx:36`), whose Suspense site (`:111-113`) is commented out → **no request calls this**.                                                       |
+| `actions/lib/checkUser.ts`       | Identity seam. Session → that row; no session → demo row (`lib/demo-identity.ts`), read first, created on miss (not `upsert` — Prisma would compute `@default(uuid())` every call; Cache Components refuses it during prerender). Unique violation on create re-reads. Throws `User not found` only when a session has no row. Request-scoped `cache()`. |
+| `lib/prisma.ts`                  | Singleton Prisma client via `@prisma/adapter-pg`. All data access.                                                                                                                                                                                                                                                                                       |
+| `lib/schema.ts`                  | Zod `accountSchema` + `transactionSchema` (no `userSchema`). **Client-side only** via `zodResolver`; no action validates input.                                                                                                                                                                                                                          |
+| `lib/serialized-transaction.ts`  | `Decimal`→number row serializer, generic over row (`T` + structural `DecimalLike`); typed seam at `:9-11`.                                                                                                                                                                                                                                               |
+| `lib/arcjet.ts`                  | Arcjet `tokenBucket` client, imported by `actions/transaction.ts`. `proxy.ts` shield/detectBot commented out → rate limiting is the only Arcjet rule in path.                                                                                                                                                                                            |
+| `lib/async-state.ts`             | `idle/loading/success/error` reducer; `hooks/use-fetch.ts` wraps it. Tested.                                                                                                                                                                                                                                                                             |
+| `lib/transaction-table-state.ts` | Transactions-table reducer (selection/search/filters/dialog). Tested.                                                                                                                                                                                                                                                                                    |
+| `lib/recurring-lifecycle.ts`     | `recurringPhase` + `applyRecurringTick`; called by `lib/inngest/functions.ts`. Tested.                                                                                                                                                                                                                                                                   |
+| `lib/inngest/`                   | Client + 4 functions (budget-alert cron, recurring-trigger cron, per-event recurring processor, monthly-report cron). **Never executed** — `INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` unset.                                                                                                                                                              |
+| `actions/`                       | 15 exported server actions (`getUserAccounts`, `getDashboardData`, `seedTransactions` take no input; 12 accept client input, validate none). Includes `scanReceipt` (Gemini OCR; `GEMINI_API_KEY` set, browser upload returns extraction in 3-5s from `gemini-3.1-flash-lite` — only the stored file is missing).                                        |
+| `app/(auth)/`                    | Clerk sign-in/up pages.                                                                                                                                                                                                                                                                                                                                  |
+| `app/(main)/`                    | Dashboard, account, transaction pages. `layout.tsx` does no auth; anonymous visit renders directly via the seam (demo owner).                                                                                                                                                                                                                            |
+| `app/api/seed/`                  | Creates test data. Unauthenticated `GET`; gate in prod.                                                                                                                                                                                                                                                                                                  |
+| `app/api/inngest/`               | `serve()` GET/POST/PUT for the 4 functions. Not connected to a running Inngest account.                                                                                                                                                                                                                                                                  |
+| `tests/`                         | Unit tier only: `money`, `validation`, `hooks`, `recurring`, `transactions`. `platform` tier not in tree. No integration/e2e.                                                                                                                                                                                                                            |
 
-Anything not built does not get a row.
+Anything not built gets no row.
 
 ## Cross-cutting rules — one authority, enforced once
 
-- **Auth gate:** the route authority is `proxy.ts` — Arcjet `shield`/`detectBot`, then `clerkMiddleware`, which calls `redirectToSignIn()` for a session-less request matching its four `isProtected` prefixes. `lib/checkUser.ts:checkUser()` provisions the `users` row and answers `null`; `actions/lib/checkUser.ts:checkUser()` throws `Unauthorized`. **Two implementations until Plan B §2c.** **Enforcement:** new server actions call the throwing one; never re-implement a session check, and never treat the page-side one as a gate. (9 sites in `actions/accounts.ts`, `actions/budget.ts`, `actions/dashboard.ts` and `actions/transaction.ts` still read `auth()` inline.)
-- **Database access:** `lib/prisma.ts` — singleton Prisma client. All reads/writes go through `db.user.findUnique()`, `db.transaction.create()`, etc. **Enforcement:** No other modules instantiate Prisma; no raw SQL.
-- **Validation:** `lib/schema.ts` — Zod schemas exist, but the claim "all form submissions and API endpoints validate input against these schemas before database access" is **not** true today: the schemas run only in the client forms via `zodResolver`, and every action trusts its arguments. Server-side enforcement is Plan B's `parseInput`.
+- **Auth gate:** route authority is `proxy.ts` — `clerkMiddleware` runs every request, but `isProtected` + `redirectToSignIn()` commented out for review (restoring = uncomment). `lib/checkUser.ts` provisions the row, answers `null`, currently unreachable. `actions/lib/checkUser.ts` is the identity seam (session row, else demo owner). **Enforcement:** `auth()` read in exactly one file; new actions call the seam, never re-implement a session check.
+- **Database access:** `lib/prisma.ts` singleton. No other module instantiates Prisma; no raw SQL.
+- **Validation:** `lib/schema.ts` schemas run only in client forms; the claim "all submissions validate before DB access" is **false** today. Server-side enforcement is Plan B's `parseInput`.
 
-## HTTP surface (what actually exists)
+## HTTP surface (exists)
 
-| Route | Method | Auth | Notes |
-| --- | --- | --- | --- |
-| `/` | GET | None | Landing page (public). |
-| `/(auth)/sign-in` | GET | None | Clerk sign-in UI. |
-| `/(auth)/sign-up` | GET | None | Clerk sign-up UI. |
-| `/(main)/dashboard` | GET | Clerk session | Protected. Shows accounts, transactions, budget. |
-| `/(main)/account` | GET | Clerk session | Protected. Create/manage accounts. |
-| `/(main)/transaction` | GET | Clerk session | Protected. Create/view transactions. |
-| `/api/seed` | GET | None (dev) | Populate test data. No gating; should be prod-only or require secret. |
-| `/api/inngest` | GET, POST, PUT | Inngest signature | `serve()` for the 4 functions. Not connected to a running Inngest account. |
+| Route                 | Method       | Auth              | Notes                                               |
+| --------------------- | ------------ | ----------------- | --------------------------------------------------- |
+| `/`                   | GET          | None              | Landing                                             |
+| `/(auth)/sign-in`     | GET          | None              | Clerk                                               |
+| `/(auth)/sign-up`     | GET          | None              | Clerk                                               |
+| `/(main)/dashboard`   | GET          | None (gate off)   | Accounts, transactions, budget; demo owner's ledger |
+| `/(main)/account`     | GET          | None (gate off)   | Create/manage accounts                              |
+| `/(main)/transaction` | GET          | None (gate off)   | Create/view transactions                            |
+| `/api/seed`           | GET          | None (dev)        | Writes rows; prod-only or secret                    |
+| `/api/inngest`        | GET/POST/PUT | Inngest signature | 4 functions; not connected                          |
 
-**Planned and absent:** Transaction export, budget-alert email delivery (written but never sent), recurring processing against a real database, and any server-side input validation.
+**Planned, absent:** transaction export, budget-alert email delivery (written, never sent), recurring processing against a real DB, any server-side input validation.
 
-**Built but never verified here:** Receipt OCR is implemented and user-reachable — `actions/transaction.ts:scanReceipt()` sends the image to `gemini-1.5-flash` (`actions/transaction.ts:12,17`) and `app/(main)/transaction/_components/scan-receipt.tsx` renders it inside the add-transaction form (`add-transaction-form.tsx:136`, non-edit mode only). It has never run: `GEMINI_API_KEY` is absent, `scanReceipt(file)` takes an unannotated `file`, and its `parseFloat(data.amount)`/`new Date(data.date)` output is fed straight into the form. Note that `receiptUrl` itself is never populated by the scanner — only amount, date, description, category and merchant come back, so "upload" (persisting the file) is what is actually missing, not the OCR.
+**Measured end to end (2026-10-16):** receipt OCR runs, fills the form. `scanReceipt` (`actions/transaction.ts:27`) sends to `gemini-3.1-flash-lite` (`RECEIPT_MODEL`, `:24`); `scan-receipt.tsx` renders inside the form (`add-transaction-form.tsx:160`, non-edit). One 1.6 MB upload → HTTP 200 in ~4s, `{amount: 19.56, date, category: "groceries", ...}`, form filled, 0 console errors. Two fixes needed: retired model name (`gemini-2.5-flash` 404s against this key though `GET /v1beta/models/gemini-2.5-flash` returns 200), and `categories-form.tsx` used `defaultValue` (read once, so a post-mount category never reached the trigger) — now controlled `value={category ?? null}` + `items`. `receiptUrl` still never written.
 
-## Background work (jobs, workers, cron)
+## Background work
 
-- **Inngest webhook:** `app/api/inngest/route.ts` serves the 4 functions in `lib/inngest/functions.ts` (budget-alert cron, recurring-trigger cron, per-event recurring processor, monthly-report cron). The per-event processor mutates `account.balance` inside `db.$transaction`, so it is live money-path code — but nothing has run here: no Inngest account, no database, no `RESEND_API_KEY`.
-- **Who consumes this in production:** Inngest cloud (not yet enabled).
-- **Gaps:** No function has executed; no cleanup jobs exist.
+- **Inngest webhook:** `app/api/inngest/route.ts` serves the 4 functions. Per-event processor mutates `account.balance` inside `db.$transaction` (live money-path code) — but nothing invoked: no Inngest account configured (`INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` unset).
+- **Prod consumer:** Inngest cloud (not enabled). **Gaps:** no function executed; no cleanup jobs.
 
 ## Pages and caching
 
-Pages are in `app/`:
-- `/` — public landing page (prerendered)
-- `/(auth)/sign-in`, `/(auth)/sign-up` — Clerk pages (dynamic)
-- `/(main)/dashboard` — protected, dynamic (reads user data)
-- `/(main)/account` — protected, dynamic
-- `/(main)/transaction` — protected, dynamic
+Per `pnpm build` (measured 2026-10-16, Next 16.4.1, Cache Components on):
 
-All dynamic pages use Next.js default ISR (cache when possible, revalidate on request). No explicit `revalidate` tags. `next build` reports all 9 routes as dynamic (`ƒ`), not prerendered.
+- `/`, `/_not-found` — `○` static.
+- `/dashboard`, `/account/[id]`, `/transaction/create`, `/sign-in/[[...sign-in]]`, `/sign-up/[[...sign-up]]` — `◐` partial prerender. The three ledger pages `export const instant = false` (read ledger per request).
+- `/api/inngest`, `/api/seed` — `ƒ` dynamic.
+
+`new Date()` in a synchronous page-shell component logs `blocking-prerender-current-time` and error-boundaries that section even with `instant = false`; `dashboard/page.tsx` awaits `connection()` before formatting the month label.
+
+No `no-store`/`revalidate` export anywhere; no `revalidateTag`; `revalidatePath()` at 9 sites across 4 action files. Not access control — ledger pages reachable anonymously while the redirect block stays commented out.
 
 ## Verification
 
 ```bash
-pnpm typecheck # next typegen && tsc --noEmit — 0 errors over 81 source files
-pnpm test      # TZ=UTC vitest run — 40 passed (4 files)
-pnpm check:docs # TZ=UTC vitest run tests/platform — 21 passed (1 file); the instruction layer checks itself
-pnpm build     # next build — compiles AND type-checks (9 routes, exit 0)
-pnpm lint      # eslint . — exit 1: 87 errors, 3 warnings (pre-existing debt, see Rule 13)
-# CI: .github/workflows/ci.yml runs install + typecheck + test + build on push to main|feat/** and on
-#     every pull_request. No lint step (gate 4 is red on the census above), no secrets. First runner
-#     execution 2026-10-14: typecheck / test / build pass in 1m0s, Tests 40 passed (40).
-# CI: gate 2 now also runs the instruction-layer checker.
-# Manual: sign in, create account, log transaction, verify dashboard — impossible here, no DATABASE_URL
+node node_modules/typescript/bin/tsc --noEmit --incremental false   # 0 errors
+./node_modules/.bin/vp check      # exit 0 — format (138 files) + lint 0 errors / 6 no-unused-vars warnings (109 files)
+./node_modules/.bin/vp test       # exit 0 — 35 passed (6 files); passes with and without TZ=UTC
+pnpm build            # exit 0 — compiles, "Running TypeScript ...", 11/11 static pages
+pnpm db:seed          # deletes every transaction/budget/account row, re-seeds each users row
+/usr/bin/curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/dashboard                    # 200, anonymous
+/usr/bin/curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/account/<seeded-id>          # 200 for all four
+# CI: .github/workflows/ci.yml — vp install --frozen-lockfile, vp check, vp test, vp run build on Node 24.
+# tests/platform is gone → nothing checks AGENTS.md vs these bodies; totals are hand-maintained.
+# Exercised in a browser (2026-10-16): receipt scan on /transaction/create. NOT exercised: no form write (create/update), no Inngest function.
+# Known defect the curl pass exposed: getPaginatedTransactions (actions/accounts.ts:101-116) scopes rows by account owner,
+# never accountId → all four account pages render the same cross-account ledger, and the chart fed from it agrees with the wrong numbers.
 ```
 
-These are the numbers this repo's baseline rule allows in exactly two homes: here and `AGENTS.md` §13 gate 2.
+These are the **only** home for totals this body's `architecture.md`/`code-standards.md`/`workflow.md`/`pm-conventions.md` defer to. `AGENTS.md` quotes none. Hand-maintained.
 
-Test coverage of the app: effectively 0% — the app-tier tests cover the money serialisers, the recurrence helper and the two Zod schemas, not any page, action or route, and the platform tier checks these docs rather than the app. See `docs/agent-guide/code-standards.md` → Testing.
-
+App test coverage: effectively 0% — the unit tests cover money serialisers, the recurrence helper, two Zod schemas and the three reducers, not any page/action/route.

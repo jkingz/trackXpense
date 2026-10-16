@@ -1,6 +1,17 @@
-import { Input } from '@/components/ui/input';
+import { Input } from "@/components/ui/input";
+import type { FieldErrors, UseFormRegister } from "react-hook-form";
 
-const AmountForm = ({ register, errors, disabled = false }) => {
+import type { TransactionFormValues } from "./add-transaction-form";
+
+const AmountForm = ({
+  register,
+  errors,
+  disabled = false,
+}: {
+  register: UseFormRegister<TransactionFormValues>;
+  errors: FieldErrors<TransactionFormValues>;
+  disabled?: boolean;
+}) => {
   return (
     <div className="space-y-2">
       <label
@@ -15,15 +26,13 @@ const AmountForm = ({ register, errors, disabled = false }) => {
         type="number"
         step="0.01"
         placeholder="0.00"
-        {...register('amount')}
+        {...register("amount")}
         disabled={disabled} // Allow disabling from parent
-        {...register('amount', {
+        {...register("amount", {
           valueAsNumber: false, // Convert input string to number
         })}
       />
-      {errors.amount && (
-        <p className="text-sm text-red-500">{errors.amount.message}</p>
-      )}
+      {errors.amount && <p className="text-sm text-destructive">{errors.amount.message}</p>}
     </div>
   );
 };

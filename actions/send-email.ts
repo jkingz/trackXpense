@@ -1,13 +1,22 @@
-'use server';
+"use server";
 
-import { Resend } from 'resend';
+import type { ReactNode } from "react";
+import { Resend } from "resend";
 
-export async function sendEmail({ to, subject, react }) {
-  const resend = new Resend(process.env.RESEND_API_KEY || '');
+export async function sendEmail({
+  to,
+  subject,
+  react,
+}: {
+  to: string | string[];
+  subject: string;
+  react: ReactNode;
+}) {
+  const resend = new Resend(process.env.RESEND_API_KEY || "");
 
   try {
     const data = await resend.emails.send({
-      from: 'Finance App <onboarding@resend.dev>',
+      from: "Finance App <onboarding@resend.dev>",
       to,
       subject,
       react,
@@ -15,7 +24,7 @@ export async function sendEmail({ to, subject, react }) {
 
     return { success: true, data };
   } catch (error) {
-    console.error('Failed to send email:', error);
+    console.error("Failed to send email:", error);
     return { success: false, error };
   }
 }

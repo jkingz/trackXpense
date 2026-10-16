@@ -1,18 +1,21 @@
 // Helper function to calculate next recurring date
-export const calculateNextRecurringDate = (startDate, interval) => {
+export const calculateNextRecurringDate = (
+  startDate: Date | string,
+  interval: string | null | undefined,
+) => {
   const date = new Date(startDate);
 
   switch (interval) {
-    case 'DAILY':
+    case "DAILY":
       date.setDate(date.getDate() + 1);
       break;
-    case 'WEEKLY':
+    case "WEEKLY":
       date.setDate(date.getDate() + 7);
       break;
-    case 'MONTHLY':
+    case "MONTHLY":
       date.setMonth(date.getMonth() + 1);
       break;
-    case 'YEARLY':
+    case "YEARLY":
       date.setFullYear(date.getFullYear() + 1);
       break;
   }

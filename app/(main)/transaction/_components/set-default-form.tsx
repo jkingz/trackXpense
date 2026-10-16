@@ -4,18 +4,28 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import type { FieldErrors, UseFormGetValues, UseFormSetValue } from "react-hook-form";
 
-const SetDefaultForm = ({ getValues, setValue, isRecurring, errors }) => {
+import type { TransactionFormValues } from "./add-transaction-form";
+
+const SetDefaultForm = ({
+  getValues,
+  setValue,
+  isRecurring,
+  errors,
+}: {
+  getValues: UseFormGetValues<TransactionFormValues>;
+  setValue: UseFormSetValue<TransactionFormValues>;
+  isRecurring: boolean;
+  errors: FieldErrors<TransactionFormValues>;
+}) => {
   return (
     <>
       <div className="flex items-center justify-between rounded-lg border p-3 gap-2">
         <div className="space-y-0.5">
-          <label
-            htmlFor="isDefault"
-            className="font-medium text-sm cursor-pointer"
-          >
+          <label htmlFor="isDefault" className="font-medium text-sm cursor-pointer">
             Recurring Transaction
           </label>
           <p className="text-sm text-muted-foreground">
@@ -24,7 +34,7 @@ const SetDefaultForm = ({ getValues, setValue, isRecurring, errors }) => {
         </div>
         <Switch
           id="isDefault"
-          onCheckedChange={(checked) => setValue('isRecurring', checked)}
+          onCheckedChange={(checked) => setValue("isRecurring", checked)}
           checked={isRecurring}
         ></Switch>
       </div>
@@ -32,8 +42,13 @@ const SetDefaultForm = ({ getValues, setValue, isRecurring, errors }) => {
         <div className="space-y-2">
           <label className="text-sm font-medium">Recurring Interval</label>
           <Select
-            onValueChange={(value) => setValue('recurringInterval', value)}
-            defaultValue={getValues('recurringInterval')}
+            onValueChange={(value) =>
+              setValue(
+                "recurringInterval",
+                (value ?? undefined) as TransactionFormValues["recurringInterval"],
+              )
+            }
+            defaultValue={getValues("recurringInterval")}
           >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select recurring Interval" />
@@ -46,9 +61,7 @@ const SetDefaultForm = ({ getValues, setValue, isRecurring, errors }) => {
             </SelectContent>
           </Select>
           {errors.recurringInterval && (
-            <p className="text-sm text-red-500">
-              {errors.recurringInterval.message}
-            </p>
+            <p className="text-sm text-destructive">{errors.recurringInterval.message}</p>
           )}
         </div>
       )}

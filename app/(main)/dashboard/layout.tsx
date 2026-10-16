@@ -1,26 +1,7 @@
-import { Suspense } from 'react';
-import { BarLoader } from 'react-spinners';
-
-import DashBoardPage from './page';
-
-const DashBoardLayout = () => {
-  return (
-    <div className="px-5 ">
-      <h1 className="text-6xl font-bold --gradient-title mb-5">Dashboard</h1>
-      <Suspense
-        fallback={
-          <BarLoader
-            className="mt-4"
-            width={'100%'}
-            height={5}
-            color="#0ea5e9"
-          />
-        }
-      >
-        <DashBoardPage />
-      </Suspense>
-    </div>
-  );
+const DashBoardLayout = ({ children }: { children: React.ReactNode }) => {
+  // No page title here: ./page.tsx renders the ledger header, because it carries
+  // the account count and the month the figures belong to.
+  return <div className="px-5">{children}</div>;
 };
 
 export default DashBoardLayout;

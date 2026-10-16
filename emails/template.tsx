@@ -7,8 +7,8 @@ import {
   Preview,
   Section,
   Text,
-} from '@react-email/components';
-import * as React from 'react';
+} from "@react-email/components";
+import * as React from "react";
 
 type MonthlyReportData = {
   month?: string;
@@ -29,16 +29,16 @@ type BudgetAlertData = {
 
 type EmailTemplateProps = {
   userName?: string | null;
-  type?: 'monthly-report' | 'budget-alert';
+  type?: "monthly-report" | "budget-alert";
   data?: MonthlyReportData & BudgetAlertData;
 };
 
 export default function EmailTemplate({
-  userName = '',
-  type = 'monthly-report',
+  userName = "",
+  type = "monthly-report",
   data = {},
 }: EmailTemplateProps) {
-  if (type === 'monthly-report') {
+  if (type === "monthly-report") {
     return (
       <Html>
         <Head />
@@ -48,9 +48,7 @@ export default function EmailTemplate({
             <Heading style={styles.title}>Monthly Financial Report</Heading>
 
             <Text style={styles.text}>Hello {userName},</Text>
-            <Text style={styles.text}>
-              Here&rsquo;s your financial summary for {data?.month}:
-            </Text>
+            <Text style={styles.text}>Here&rsquo;s your financial summary for {data?.month}:</Text>
 
             {/* Main Stats */}
             <Section style={styles.statsContainer}>
@@ -74,14 +72,12 @@ export default function EmailTemplate({
             {data?.stats?.byCategory && (
               <Section style={styles.section}>
                 <Heading style={styles.heading}>Expenses by Category</Heading>
-                {Object.entries(data?.stats.byCategory).map(
-                  ([category, amount]) => (
-                    <div key={category} style={styles.row}>
-                      <Text style={styles.text}>{category}</Text>
-                      <Text style={styles.text}>${amount}</Text>
-                    </div>
-                  )
-                )}
+                {Object.entries(data?.stats.byCategory).map(([category, amount]) => (
+                  <div key={category} style={styles.row}>
+                    <Text style={styles.text}>{category}</Text>
+                    <Text style={styles.text}>${amount}</Text>
+                  </div>
+                ))}
               </Section>
             )}
 
@@ -98,8 +94,8 @@ export default function EmailTemplate({
             )}
 
             <Text style={styles.footer}>
-              Thank you for using TrackXpense. Keep tracking your finances for
-              better financial health!
+              Thank you for using TrackXpense. Keep tracking your finances for better financial
+              health!
             </Text>
           </Container>
         </Body>
@@ -107,7 +103,7 @@ export default function EmailTemplate({
     );
   }
 
-  if (type === 'budget-alert') {
+  if (type === "budget-alert") {
     return (
       <Html>
         <Head />
@@ -117,8 +113,7 @@ export default function EmailTemplate({
             <Heading style={styles.title}>Budget Alert</Heading>
             <Text style={styles.text}>Hello {userName},</Text>
             <Text style={styles.text}>
-              You&rsquo;ve used {data?.percentageUsed!.toFixed(1)}% of your
-              monthly budget.
+              You&rsquo;ve used {data?.percentageUsed!.toFixed(1)}% of your monthly budget.
             </Text>
             <Section style={styles.statsContainer}>
               <div style={styles.stat}>
@@ -145,66 +140,66 @@ export default function EmailTemplate({
 
 const styles: Record<string, React.CSSProperties> = {
   body: {
-    backgroundColor: '#f6f9fc',
-    fontFamily: '-apple-system, sans-serif',
+    backgroundColor: "#f6f9fc",
+    fontFamily: "-apple-system, sans-serif",
   },
   container: {
-    backgroundColor: '#ffffff',
-    margin: '0 auto',
-    padding: '20px',
-    borderRadius: '5px',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+    backgroundColor: "#ffffff",
+    margin: "0 auto",
+    padding: "20px",
+    borderRadius: "5px",
+    boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
   },
   title: {
-    color: '#1f2937',
-    fontSize: '32px',
-    fontWeight: 'bold',
-    textAlign: 'center',
-    margin: '0 0 20px',
+    color: "#1f2937",
+    fontSize: "32px",
+    fontWeight: "bold",
+    textAlign: "center",
+    margin: "0 0 20px",
   },
   heading: {
-    color: '#1f2937',
-    fontSize: '20px',
-    fontWeight: '600',
-    margin: '0 0 16px',
+    color: "#1f2937",
+    fontSize: "20px",
+    fontWeight: "600",
+    margin: "0 0 16px",
   },
   text: {
-    color: '#4b5563',
-    fontSize: '16px',
-    margin: '0 0 16px',
+    color: "#4b5563",
+    fontSize: "16px",
+    margin: "0 0 16px",
   },
   section: {
-    marginTop: '32px',
-    padding: '20px',
-    backgroundColor: '#f9fafb',
-    borderRadius: '5px',
-    border: '1px solid #e5e7eb',
+    marginTop: "32px",
+    padding: "20px",
+    backgroundColor: "#f9fafb",
+    borderRadius: "5px",
+    border: "1px solid #e5e7eb",
   },
   statsContainer: {
-    margin: '32px 0',
-    padding: '20px',
-    backgroundColor: '#f9fafb',
-    borderRadius: '5px',
+    margin: "32px 0",
+    padding: "20px",
+    backgroundColor: "#f9fafb",
+    borderRadius: "5px",
   },
   stat: {
-    marginBottom: '16px',
-    padding: '12px',
-    backgroundColor: '#fff',
-    borderRadius: '4px',
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+    marginBottom: "16px",
+    padding: "12px",
+    backgroundColor: "#fff",
+    borderRadius: "4px",
+    boxShadow: "0 1px 2px rgba(0, 0, 0, 0.05)",
   },
   row: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    padding: '12px 0',
-    borderBottom: '1px solid #e5e7eb',
+    display: "flex",
+    justifyContent: "space-between",
+    padding: "12px 0",
+    borderBottom: "1px solid #e5e7eb",
   },
   footer: {
-    color: '#6b7280',
-    fontSize: '14px',
-    textAlign: 'center',
-    marginTop: '32px',
-    paddingTop: '16px',
-    borderTop: '1px solid #e5e7eb',
+    color: "#6b7280",
+    fontSize: "14px",
+    textAlign: "center",
+    marginTop: "32px",
+    paddingTop: "16px",
+    borderTop: "1px solid #e5e7eb",
   },
 };

@@ -1,7 +1,12 @@
-import { SignUp } from '@clerk/nextjs';
+import { SignUp } from "@clerk/nextjs";
+import { Suspense } from "react";
 
 function Page() {
-  return <SignUp />;
+  return (
+    <Suspense>
+      <SignUp />
+    </Suspense>
+  );
 }
 
 export default Page;

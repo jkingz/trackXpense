@@ -1,5 +1,7 @@
-import { useState } from 'react';
-import { toast } from 'sonner';
+import { useReducer } from "react";
+import { toast } from "sonner";
+
+import { asyncReducer, initialAsyncState } from "@/lib/async-state";
 
 const useFetch = <A extends unknown[], R>(
   cb: (...args: A) => Promise<R>,
@@ -11,28 +13,31 @@ const useFetch = <A extends unknown[], R>(
   fn: (...args: A) => Promise<R | undefined>;
   setData: (data: R | undefined) => void;
 } => {
-  const [data, setData] = useState<R | undefined>(undefined);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
+  // The state machine lives in lib/async-state.ts; this hook only dispatches into it,
+  // so the transitions stay testable without React.
+  const [state, dispatch] = useReducer(asyncReducer<R>, initialAsyncState<R>());
 
   const fn = async (...args: A) => {
-    setLoading(true);
-    setError(null);
+    dispatch({ type: "START" });
     try {
       const data = await cb(...args);
-      setData(data);
-      setError(null);
+      dispatch({ type: "SUCCESS", data });
       return data;
     } catch (error) {
-      setError(error);
-      toast.error(error.message);
+      const err = error instanceof Error ? error : new Error(String(error));
+      dispatch({ type: "ERROR", error: err });
+      toast.error(err.message);
       return undefined;
-    } finally {
-      setLoading(false);
     }
   };
 
-  return { data, loading, error, fn, setData };
+  return {
+    data: state.data,
+    loading: state.status === "loading",
+    error: state.error,
+    fn,
+    setData: (data: R | undefined) => dispatch({ type: "SET_DATA", data }),
+  };
 };
 
 export default useFetch;

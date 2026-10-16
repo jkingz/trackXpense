@@ -1,45 +1,52 @@
 ## Project Overview
 
-### Overview
+### What it is
 
-TrackXpense is a personal finance dashboard. Users sign up with Clerk, create accounts (checking/savings), log transactions (income/expense), and track spending against a budget. The app calculates account balances and surfaces key metrics on the dashboard.
+TrackXpense — personal finance dashboard. Visitor opens `/dashboard`, creates accounts (checking/savings), logs transactions (income/expense), tracks spend vs budget. App computes balances + dashboard metrics.
+
+Clerk sign-in implemented; a session takes over its ledger. Nothing forces it: no session → local demo owner's ledger.
 
 ### Goals
-- Users can track spending in real time across multiple accounts
-- Budgets surface warnings when approaching limits
-- Transaction history is searchable and categorized
 
-### Core user flow
-1. Sign up with Clerk → Dashboard
-2. Create account (CURRENT or SAVINGS) → Lands in dashboard
-3. Log transaction (type, amount, category, date) → Account balance updates
-4. View dashboard → See total balance, recent transactions, budget status
+- Real-time spend tracking across accounts.
+- Budget warnings near limit.
+- Searchable, categorized history.
+
+### Core flow
+
+1. Open `/dashboard` → ledger, seeded seven-month history (`pnpm db:seed`).
+2. Create account (CURRENT/SAVINGS) → dashboard.
+3. Log transaction (type, amount, category, date) → balance updates.
+4. Dashboard → total balance, recent transactions, budget status.
 
 ### Scope
 
-**In scope:**
-- User authentication (Clerk)
-- Multiple accounts per user
-- Transaction logging (income, expense, one-time and recurring)
-- Budget alerts
-- Dashboard metrics
+In:
 
-**Out of scope:**
-- Webhook processing for recurring transactions: the Inngest functions are written and served, but no schedule has ever fired in this environment (see SERVICE ARCHITECTURE, Background work)
-- Email alerts delivered to a user: `actions/send-email.ts` exists and is called by `lib/inngest/functions.ts`; `RESEND_API_KEY` is absent, so nothing has been sent
-- Receipt **storage**: the OCR half is built and user-reachable (`scanReceipt` in `actions/transaction.ts`, rendered by `app/(main)/transaction/_components/scan-receipt.tsx`), so this is no longer a UI placeholder without a backend; what is out of scope is persisting the file — `receiptUrl` is never written and no upload endpoint exists. See SERVICE ARCHITECTURE → HTTP surface and TARGET STATE
-- Social features / multi-user sharing
-- Mobile app
+- Clerk auth — present, not enforced on ledger routes.
+- Multiple accounts per user.
+- Transaction logging — income/expense, one-time + recurring.
+- Budget alerts.
+- Dashboard metrics.
+
+Out:
+
+- Recurring webhook processing — Inngest functions written + served, never fired (`INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` unset).
+- Email delivery — `actions/send-email.ts` written, called only by Inngest functions that never fire; `RESEND_API_KEY` present in `.env.local` (measured 2026-10-16), so unconfigured is not the gap.
+- Receipt **storage** — OCR built + reachable (`scanReceipt` in `actions/transaction.ts`, rendered by `scan-receipt.tsx`); `receiptUrl` never written, no upload endpoint.
+- Social / multi-user sharing.
+- Mobile app.
+
+See `service-architecture.md` and `target-state.md`.
 
 ### Success criteria
-- Dashboard loads in < 1s after auth
-- Transactions persist and reflect on balance within the same session
-- New user can sign up, create an account, and log a transaction in < 2 minutes
 
-### Open product questions
-- Recurring transaction cadence: should the next occurrence be auto-created, or only on manual trigger?
-- Should budget alerts be email-only, in-app toast-only, or both?
-- Currency support: USD only for MVP, or multi-currency from day one?
+- Dashboard loads < 1s after auth.
+- Transactions persist + reflect on balance same session.
+- New user signup → account → transaction < 2min.
 
----
+### Open questions
 
+- Recurring cadence — auto-create next occurrence, or manual trigger only?
+- Budget alerts — email, in-app toast, or both?
+- Currency — USD only, or multi-currency from day one?
