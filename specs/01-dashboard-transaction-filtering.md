@@ -32,7 +32,7 @@ This feature is not built (`docs/agent-guide/verification-standards.md` § Verif
 UI"), so nothing below has been run. These are the checks that would verify it, not results:
 
 - `pnpm build` → compiles and type-checks once the filter exists; run today it says nothing about this spec.
-- `pnpm test` → stays green while the feature is built (unit tier plus the instruction-layer checker).
+- `vp test` → stays green while the feature is built (unit tier).
 - Manual/live: sign in, open the dashboard, select a category, confirm the list narrows to that category and
-  only to the session user's rows — not run here: no `DATABASE_URL`, no `ARCJET_KEY` (`docs/standing-rules/13-verification-gates.md` gate 5).
+  only to the session user's rows — not run here: no `DATABASE_URL`, no `ARCJET_KEY` (`docs/agent-guide/pm-conventions.md` Review gate 5).
 - Not verified at all yet: category persistence across sessions, bulk filtering performance.
