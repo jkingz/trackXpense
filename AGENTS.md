@@ -34,7 +34,7 @@ Commit/push/PR only when asked. Before push: pull main, merge, resolve, then com
 
 ### 8. Pull-request babysitting
 
-Watching a PR: `.claude/skills/babysitting-a-pr/SKILL.md`. Commenting: `.claude/skills/leaving-pr-comment/SKILL.md`. No filler. Declined finding gets written decline, then resolve.
+Every PR opened here is babysat to green: watch the thread and checks until green, handle review/CI feedback, confirm CI actually ran. Watching: `.claude/skills/babysitting-a-pr/SKILL.md`. Commenting: `.claude/skills/leaving-pr-comment/SKILL.md`. No filler. Declined finding gets written decline, then resolve.
 
 ### 9. Skills and instructions come before improvising
 
