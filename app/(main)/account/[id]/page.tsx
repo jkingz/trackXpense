@@ -32,6 +32,7 @@ const AccountsPage = async ({
   const [accountData, { transactions, total }] = await Promise.all([
     getAccountsWithTransactions(resolvedParams.id),
     getPaginatedTransactions({
+      accountId: resolvedParams.id,
       page,
       itemsPerPage,
       searchTerm,
@@ -56,7 +57,7 @@ const AccountsPage = async ({
               : "Unknown"}{" "}
             account
           </p>
-          <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground capitalize sm:text-4xl">
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground capitalize sm:text-3xl">
             {account.name}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -65,7 +66,7 @@ const AccountsPage = async ({
         </div>
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Balance</p>
-          <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-foreground sm:text-3xl">
+          <p className="mt-1 font-mono text-xl font-semibold tabular-nums text-foreground sm:text-2xl">
             {signedUsd(account.balance)}
           </p>
         </div>
