@@ -44,7 +44,7 @@ function Footer() {
           </p>
           <Link
             href="/transaction/create"
-            className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-brand-deep transition-colors hover:text-foreground"
+            className="mt-6 inline-flex items-center gap-1.5 rounded-full border border-border bg-card/60 px-4 py-2 text-sm font-medium text-foreground backdrop-blur-md transition-colors hover:border-border/80 hover:bg-card/80"
           >
             Log something
             <ArrowUpRight className="size-4" />

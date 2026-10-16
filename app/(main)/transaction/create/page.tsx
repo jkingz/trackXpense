@@ -25,7 +25,7 @@ const AddTransaction = async ({
 
   return (
     <div className="max-w-3xl mx-auto px-5">
-      <h1 className="mb-8 border-b pb-6 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+      <h1 className="mb-8 border-b pb-6 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
         {editId ? "Edit transaction" : "Add a transaction"}
       </h1>
       <AddTransactionForm

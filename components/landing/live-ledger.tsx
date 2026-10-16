@@ -153,7 +153,7 @@ export function LiveLedger() {
   const percentUsed = Math.min((spent / BUDGET) * 100, 100);
 
   return (
-    <div className="rounded-2xl border bg-card p-5 shadow-2xl shadow-brand-deep/10 md:p-6">
+    <div className="glass-panel p-5 md:p-6">
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm font-semibold tracking-tight text-card-foreground">
           Add a transaction

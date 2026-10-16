@@ -158,12 +158,12 @@ function FeatureBento() {
           <Card
             key={feature.kind}
             className={cn(
-              "group gap-0 overflow-hidden border bg-card p-6 shadow-none transition-all duration-500 ease-out hover:-translate-y-1 hover:border-brand/50 hover:shadow-lg md:p-8",
+              "group gap-0 overflow-hidden glass-panel p-6 transition-all duration-500 ease-out hover:-translate-y-1 md:p-8",
               feature.span,
             )}
           >
             <CardContent className="p-0">
-              <div className="flex size-11 items-center justify-center rounded-xl bg-brand-veil transition-transform duration-500 ease-out group-hover:scale-110">
+              <div className="transition-transform duration-500 ease-out group-hover:scale-110">
                 {feature.icon}
               </div>
               <h3 className="mt-5 text-lg font-bold tracking-tight text-foreground md:text-xl">

@@ -1,7 +1,24 @@
 import type { ReactNode } from "react";
+import { format } from "date-fns";
+import { connection } from "next/server";
 
-const MainLayout = ({ children }: { children: ReactNode }) => {
-  return <div className="container mx-auto py-10 md:py-12">{children}</div>;
+import { getUserAccounts } from "@/actions/dashboard";
+
+import { AppSidebar } from "./_components/app-sidebar";
+
+/** App shell: rail on the left, route content on the right. */
+const MainLayout = async ({ children }: { children: ReactNode }) => {
+  const accounts = await getUserAccounts();
+  // Date the shell by the request, like the dashboard sections do.
+  await connection();
+  const today = format(new Date(), "EEE, d MMM");
+
+  return (
+    <div className="container mx-auto flex flex-col gap-8 py-10 md:py-12 lg:flex-row">
+      <AppSidebar accounts={accounts} today={today} />
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
+  );
 };
 
 export default MainLayout;

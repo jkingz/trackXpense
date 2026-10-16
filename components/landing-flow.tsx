@@ -37,10 +37,7 @@ function FlowCard({
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
       // `scale` only: binding `y` here would fight the `initial`/`animate` pair above.
       style={reduceMotion ? undefined : { scale }}
-      className={cn(
-        "rounded-2xl border bg-card p-6 shadow-lg shadow-foreground/5 lg:sticky md:p-8",
-        PIN[index],
-      )}
+      className={cn("glass-panel p-6 lg:sticky md:p-8", PIN[index])}
     >
       <div className="flex items-baseline gap-3">
         <span className="font-mono text-xs tabular-nums text-muted-foreground">

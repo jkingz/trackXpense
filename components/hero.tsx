@@ -24,13 +24,12 @@ const HeroSection = () => {
   return (
     <section id="top" className="relative isolate overflow-hidden">
       <DotPattern className="opacity-60" fade="ellipse" />
-      <BrandGlow className="-top-32 -left-24 opacity-70" />
       <BrandGlow className="top-24 right-[-6rem] opacity-50" />
 
       <div className="container relative mx-auto grid grid-cols-1 items-center gap-x-10 gap-y-16 px-4 py-16 md:py-24 lg:grid-cols-12 lg:py-32">
         <div className="lg:col-span-6 lg:col-start-1">
           <h1 className="max-w-[15ch] text-[clamp(2.6rem,6vw,5rem)] font-bold leading-[0.95] tracking-tighter text-balance text-foreground">
-            Log the expense. Watch the balance move.
+            Log the expense. <span className="--gradient-title">Watch the balance move.</span>
           </h1>
 
           <p className="mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground md:text-xl">
@@ -40,7 +39,7 @@ const HeroSection = () => {
 
           <div className="mt-10 flex flex-wrap items-center gap-3">
             <Link href="/dashboard" className="transition-transform hover:-translate-y-0.5">
-              <Button size="lg" className="px-8 text-base">
+              <Button size="lg" className="rounded-full px-8 text-base">
                 Open the ledger
               </Button>
             </Link>
@@ -48,7 +47,11 @@ const HeroSection = () => {
               href="/transaction/create"
               className="transition-transform hover:-translate-y-0.5"
             >
-              <Button size="lg" variant="outline" className="px-8 text-base">
+              <Button
+                size="lg"
+                variant="outline"
+                className="glass-panel rounded-full px-8 text-base"
+              >
                 Log an entry
               </Button>
             </Link>
