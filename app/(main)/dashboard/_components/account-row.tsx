@@ -61,16 +61,14 @@ export function AccountRow({ account }: { account: Account }) {
       <div className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent/40">
         <Link
           href={`/account/${id}`}
-          className="flex min-w-0 flex-1 items-center justify-between gap-4 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          className="block min-w-0 flex-1 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <span className="min-w-0">
-            <span className="block truncate text-sm font-medium text-card-foreground">{name}</span>
-            <span className="mt-0.5 block text-xs text-muted-foreground">
-              {type.charAt(0) + type.slice(1).toLowerCase()} account
-              {transactions > 0 && ` · ${transactions} ${transactions === 1 ? "entry" : "entries"}`}
-            </span>
+          <span className="block truncate text-sm font-medium text-card-foreground">{name}</span>
+          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+            {type.charAt(0) + type.slice(1).toLowerCase()} account
+            {transactions > 0 && ` · ${transactions} ${transactions === 1 ? "entry" : "entries"}`}
           </span>
-          <span className="shrink-0 font-mono text-sm font-semibold tabular-nums text-foreground">
+          <span className="mt-1 block font-mono text-sm font-semibold tabular-nums text-foreground">
             {signedUsd(balance)}
           </span>
         </Link>

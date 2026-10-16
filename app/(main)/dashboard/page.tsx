@@ -1,22 +1,31 @@
 import { format } from "date-fns";
-import { Plus } from "lucide-react";
-import Link from "next/link";
 import { connection } from "next/server";
 import { cache, Suspense } from "react";
 
 import { getCurrentBudget } from "@/actions/budget";
 import { getDashboardData, getUserAccounts } from "@/actions/dashboard";
-import { Button } from "@/components/ui/button";
-
-import { AccountsPanel } from "./_components/accounts-panel";
-import BudgetProgress from "./_components/budget-progress";
 import {
-  ActivitySkeleton,
+  cashflow,
+  expenseDeltaPct,
+  monthTotals,
+  savingsRate,
+  spendByCategory,
+  spendByWeekday,
+  yearComparison,
+} from "@/lib/dashboard-stats";
+
+import BudgetProgress from "./_components/budget-progress";
+import { CashflowPanel } from "./_components/cashflow-panel";
+import { CategoryDonut } from "./_components/category-donut";
+import {
   BudgetSkeleton,
-  SummarySkeleton,
+  ChartsSkeleton,
+  KpiCardsSkeleton,
+  YearSkeleton,
 } from "./_components/dashboard-skeleton";
-import { LedgerSummary } from "./_components/ledger-summary";
-import { DashboardOverview } from "./_components/transaction-overview";
+import { KpiRow } from "./_components/kpi-row";
+import { RecentActivity } from "./_components/recent-activity";
+import { YearCard } from "./_components/year-card";
 
 // Reads the ledger on every request, so it cannot be prerendered: opt out of
 // instant prerendering, which cannot complete without request data.
@@ -24,68 +33,67 @@ export const instant = false;
 
 /**
  * The statement band and the activity panel both read the same ledger, and
- * React.cache collapses those two reads into one query per request while still
+ * React.cache collapses those reads into one query per request while still
  * letting each boundary fill in on its own.
  */
 const loadTransactions = cache(() => getDashboardData());
 
 type Account = Awaited<ReturnType<typeof getUserAccounts>>[number];
 
-function PageHeader({ accountCount, monthLabel }: { accountCount: number; monthLabel: string }) {
-  return (
-    <div className="flex flex-wrap items-end justify-between gap-4 border-b pb-6">
-      <div>
-        <p className="text-sm text-muted-foreground">{monthLabel}</p>
-        <h1 className="mt-1 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-          Your ledger
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {accountCount === 0
-            ? "No accounts yet"
-            : `${accountCount} ${accountCount === 1 ? "account" : "accounts"}`}
-        </p>
-      </div>
-      <Link href="/transaction/create">
-        <Button>
-          <Plus />
-          Add a transaction
-        </Button>
-      </Link>
-    </div>
-  );
-}
-
-async function SummarySection({ accounts }: { accounts: Account[] }) {
+async function KpiSection({ accounts, monthName }: { accounts: Account[]; monthName: string }) {
   const transactions = await loadTransactions();
   const now = new Date();
-
-  let income = 0;
-  let expense = 0;
-  for (const t of transactions) {
-    const date = new Date(t.date);
-    if (date.getMonth() !== now.getMonth() || date.getFullYear() !== now.getFullYear()) continue;
-    if (t.type === "INCOME") income += t.amount;
-    else expense += t.amount;
-  }
+  const { income, expense } = monthTotals(transactions, now);
+  const previous = monthTotals(
+    transactions,
+    new Date(now.getFullYear(), now.getMonth() - 1, 15),
+  ).expense;
 
   return (
-    <div className="--reveal">
-      <LedgerSummary
-        totalBalance={accounts.reduce((total, account) => total + account.balance, 0)}
-        accountCount={accounts.length}
-        income={income}
-        expense={expense}
-      />
+    <KpiRow
+      accountCount={accounts.length}
+      totalBalance={accounts.reduce((total, account) => total + account.balance, 0)}
+      income={income}
+      expense={expense}
+      savings={savingsRate(income, expense)}
+      expenseDelta={expenseDeltaPct(expense, previous)}
+      monthName={monthName}
+    />
+  );
+}
+
+async function OverviewSection({
+  accounts,
+  monthName,
+}: {
+  accounts: Account[];
+  monthName: string;
+}) {
+  const transactions = await loadTransactions();
+  const now = new Date();
+  const { slices, total } = spendByCategory(transactions, now);
+  const names = new Map(accounts.map((account) => [account.id, account.name]));
+  const recent = transactions.map((transaction) => ({
+    ...transaction,
+    accountName: names.get(transaction.accountId) ?? "Unknown account",
+  }));
+
+  return (
+    <div className="--reveal grid items-start gap-4 lg:grid-cols-3">
+      <CategoryDonut slices={slices} total={total} monthName={monthName} />
+      <CashflowPanel days={cashflow(transactions, now)} week={spendByWeekday(transactions, now)} />
+      <RecentActivity transactions={recent} />
     </div>
   );
 }
 
-async function ActivitySection({ accounts }: { accounts: Account[] }) {
+async function YearSection() {
   const transactions = await loadTransactions();
+  const { thisYear, lastYear, deltaPct } = yearComparison(transactions, new Date());
 
   return (
     <div className="--reveal">
-      <DashboardOverview accounts={accounts} transactions={transactions || []} />
+      <YearCard thisYear={thisYear} lastYear={lastYear} deltaPct={deltaPct} />
     </div>
   );
 }
@@ -110,33 +118,29 @@ const DashBoardPage = async () => {
   const defaultAccount = accounts?.find((account) => account.isDefault);
   // Pin this render to a request before consulting the clock. Next refuses an
   // unstable `new Date()` during the prerender pass (blocking-prerender-current-
-  // time), and the month label above the ledger is genuinely request data.
+  // time), and the month names below are genuinely request data.
   await connection();
-  const monthLabel = format(new Date(), "MMMM yyyy");
+  const now = new Date();
 
   return (
-    <div className="space-y-8">
-      <PageHeader accountCount={accounts.length} monthLabel={monthLabel} />
-
-      <Suspense fallback={<SummarySkeleton />}>
-        <SummarySection accounts={accounts} />
+    <div className="space-y-4">
+      <Suspense fallback={<YearSkeleton />}>
+        <YearSection />
       </Suspense>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <Suspense fallback={<ActivitySkeleton />}>
-            <ActivitySection accounts={accounts} />
-          </Suspense>
-        </div>
+      <div className="--reveal grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <Suspense fallback={<BudgetSkeleton />}>
+          <BudgetSection defaultAccountId={defaultAccount?.id} />
+        </Suspense>
 
-        <div className="space-y-6">
-          <Suspense fallback={<BudgetSkeleton />}>
-            <BudgetSection defaultAccountId={defaultAccount?.id} />
-          </Suspense>
-
-          <AccountsPanel accounts={accounts} />
-        </div>
+        <Suspense fallback={<KpiCardsSkeleton />}>
+          <KpiSection accounts={accounts} monthName={format(now, "MMMM")} />
+        </Suspense>
       </div>
+
+      <Suspense fallback={<ChartsSkeleton />}>
+        <OverviewSection accounts={accounts} monthName={format(now, "MMMM")} />
+      </Suspense>
     </div>
   );
 };

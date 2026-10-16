@@ -61,7 +61,10 @@ const BudgetProgress = ({
   }, [error]);
 
   return (
-    <section aria-labelledby="budget-heading" className="rounded-2xl border bg-card px-5 py-4">
+    <section
+      aria-labelledby="budget-heading"
+      className="glass-panel flex h-full flex-col px-4 py-3"
+    >
       <header className="flex items-center justify-between gap-4">
         <h2
           id="budget-heading"
@@ -113,7 +116,7 @@ const BudgetProgress = ({
         </div>
       ) : (
         <>
-          <p className="mt-3 font-mono text-2xl font-bold tabular-nums leading-none tracking-tight text-foreground">
+          <p className="mt-3 font-mono text-xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
             ${usd(currentExpenses)}
             {initialBudget && (
               <span className="text-base font-medium text-muted-foreground">
@@ -132,9 +135,11 @@ const BudgetProgress = ({
                 }
               />
               <p className="text-xs text-muted-foreground">
-                {headroom >= 0
-                  ? `$${usd(headroom)} left to spend`
-                  : `$${usd(Math.abs(headroom))} over budget`}
+                {headroom >= 0 ? `$${usd(headroom)} left` : `$${usd(Math.abs(headroom))} over`}
+                <span aria-hidden> · </span>
+                <span className={cn("font-mono tabular-nums", percentUsed >= 90 && "text-expense")}>
+                  {percentUsed.toFixed(1)}% used
+                </span>
               </p>
             </div>
           ) : (
@@ -143,17 +148,6 @@ const BudgetProgress = ({
             </p>
           )}
         </>
-      )}
-
-      {initialBudget && !isEditing && (
-        <p
-          className={cn(
-            "mt-3 font-mono text-xs tabular-nums text-muted-foreground",
-            percentUsed >= 90 && "text-expense",
-          )}
-        >
-          {percentUsed.toFixed(1)}% used
-        </p>
       )}
     </section>
   );

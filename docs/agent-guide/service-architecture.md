@@ -27,13 +27,14 @@ Browser (Clerk session, or none)
 | `lib/async-state.ts`             | `idle/loading/success/error` reducer; `hooks/use-fetch.ts` wraps it. Tested.                                                                                                                                                                                                                                                                             |
 | `lib/transaction-table-state.ts` | Transactions-table reducer (selection/search/filters/dialog). Tested.                                                                                                                                                                                                                                                                                    |
 | `lib/recurring-lifecycle.ts`     | `recurringPhase` + `applyRecurringTick`; called by `lib/inngest/functions.ts`. Tested.                                                                                                                                                                                                                                                                   |
+| `lib/dashboard-stats.ts`         | Pure dashboard aggregates (month totals, deltas, savings rate, category ranking, 30-day cashflow, weekday spend, year-over-year). No React; tested.                                                                                                                                                                                                      |
 | `lib/inngest/`                   | Client + 4 functions (budget-alert cron, recurring-trigger cron, per-event recurring processor, monthly-report cron). **Never executed** — `INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` unset.                                                                                                                                                              |
 | `actions/`                       | 15 exported server actions (`getUserAccounts`, `getDashboardData`, `seedTransactions` take no input; 12 accept client input, validate none). Includes `scanReceipt` (Gemini OCR; `GEMINI_API_KEY` set, browser upload returns extraction in 3-5s from `gemini-3.1-flash-lite` — only the stored file is missing).                                        |
 | `app/(auth)/`                    | Clerk sign-in/up pages.                                                                                                                                                                                                                                                                                                                                  |
 | `app/(main)/`                    | Dashboard, account, transaction pages. `layout.tsx` does no auth; anonymous visit renders directly via the seam (demo owner).                                                                                                                                                                                                                            |
 | `app/api/seed/`                  | Creates test data. Unauthenticated `GET`; gate in prod.                                                                                                                                                                                                                                                                                                  |
 | `app/api/inngest/`               | `serve()` GET/POST/PUT for the 4 functions. Not connected to a running Inngest account.                                                                                                                                                                                                                                                                  |
-| `tests/`                         | Unit tier only: `money`, `validation`, `hooks`, `recurring`, `transactions`. `platform` tier not in tree. No integration/e2e.                                                                                                                                                                                                                            |
+| `tests/`                         | Unit tier only: `money`, `validation`, `hooks`, `recurring`, `transactions`, `dashboard`. No integration/e2e.                                                                                                                                                                                                                                            |
 
 Anything not built gets no row.
 
@@ -81,8 +82,8 @@ No `no-store`/`revalidate` export anywhere; no `revalidateTag`; `revalidatePath(
 
 ```bash
 node node_modules/typescript/bin/tsc --noEmit --incremental false   # 0 errors
-./node_modules/.bin/vp check      # exit 0 — format (138 files) + lint 0 errors / 6 no-unused-vars warnings (109 files)
-./node_modules/.bin/vp test       # exit 0 — 35 passed (6 files); passes with and without TZ=UTC
+./node_modules/.bin/vp check      # exit 0 — format (164 files) + lint 0 errors / 6 no-unused-vars warnings (117 files)
+./node_modules/.bin/vp test       # exit 0 — 47 passed (8 files); passes with and without TZ=UTC
 pnpm build            # exit 0 — compiles, "Running TypeScript ...", 11/11 static pages
 pnpm db:seed          # deletes every transaction/budget/account row, re-seeds each users row
 /usr/bin/curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/dashboard                    # 200, anonymous
@@ -90,8 +91,8 @@ pnpm db:seed          # deletes every transaction/budget/account row, re-seeds e
 # CI: .github/workflows/ci.yml — vp install --frozen-lockfile, vp check, vp test, vp run build on Node 24.
 # tests/platform is gone → nothing checks AGENTS.md vs these bodies; totals are hand-maintained.
 # Exercised in a browser (2026-10-16): receipt scan on /transaction/create. NOT exercised: no form write (create/update), no Inngest function.
-# Known defect the curl pass exposed: getPaginatedTransactions (actions/accounts.ts:101-116) scopes rows by account owner,
-# never accountId → all four account pages render the same cross-account ledger, and the chart fed from it agrees with the wrong numbers.
+# Fixed 2026-10-17: getPaginatedTransactions takes a required accountId and scopes via buildTransactionWhere
+# (actions/lib/transactionWhere.ts, tested) — account + owner travel together, so each account page renders its own ledger.
 ```
 
 These are the **only** home for totals this body's `architecture.md`/`code-standards.md`/`workflow.md`/`pm-conventions.md` defer to. `AGENTS.md` quotes none. Hand-maintained.

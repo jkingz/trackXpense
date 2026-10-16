@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 function ClosingCta() {
   return (
     <section id="start" className="container mx-auto px-4 pb-24 md:pb-32">
-      <div className="relative isolate overflow-hidden rounded-3xl bg-ink px-6 py-16 text-center md:px-12 md:py-24">
+      <div className="relative isolate overflow-hidden rounded-3xl bg-ink px-6 py-16 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] md:px-12 md:py-24">
         <div
           aria-hidden
           className="--dot-grid pointer-events-none absolute inset-0 opacity-[0.14] [background-size:20px_20px] [mask-image:radial-gradient(ellipse_70%_70%_at_50%_0%,#000_40%,transparent_100%)]"
@@ -36,7 +36,7 @@ function ClosingCta() {
             >
               <Button
                 size="lg"
-                className="bg-paper px-8 text-base text-ink hover:bg-paper/90 hover:text-ink"
+                className="rounded-full bg-paper px-8 text-base text-ink hover:bg-paper/90 hover:text-ink"
               >
                 Log tonight&apos;s shop
               </Button>
@@ -45,7 +45,7 @@ function ClosingCta() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-paper/30 bg-transparent px-8 text-base text-paper hover:bg-paper/10 hover:text-paper"
+                className="rounded-full border-paper/30 bg-transparent px-8 text-base text-paper hover:bg-paper/10 hover:text-paper"
               >
                 I already track here
               </Button>

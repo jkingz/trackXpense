@@ -1,13 +1,11 @@
 "use server";
 
-import type { Prisma, TransactionType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/prisma";
 import { serializeTransaction } from "@/lib/serialized-transaction";
 
-import { checkUser } from "./lib";
-import { toErrorMessage } from "./lib";
+import { buildTransactionWhere, checkUser, toErrorMessage } from "./lib";
 
 export async function updateDefaultAccount(accountId: string) {
   try {
@@ -99,6 +97,7 @@ export async function bulkDeleteTransactions(transactionsIds: string[]) {
 }
 
 export async function getPaginatedTransactions({
+  accountId,
   page = 1,
   itemsPerPage = 10,
   searchTerm = "",
@@ -106,30 +105,27 @@ export async function getPaginatedTransactions({
   recurringFilter = "",
   sortField = "date",
   sortDirection = "desc",
+}: {
+  accountId: string;
+  page?: number;
+  itemsPerPage?: number;
+  searchTerm?: string;
+  typeFilter?: string;
+  recurringFilter?: string;
+  sortField?: string;
+  sortDirection?: string;
 }) {
   const user = await checkUser();
 
   const skip = (page - 1) * itemsPerPage;
 
-  const where: Prisma.TransactionWhereInput = {
-    account: { userId: user.id },
-  };
-
-  if (searchTerm) {
-    const searchLower = searchTerm.toLowerCase();
-    where.OR = [
-      { description: { contains: searchLower, mode: "insensitive" } },
-      { category: { contains: searchLower, mode: "insensitive" } },
-    ];
-    // Avoid searching `amount` and `date` unless exact match is needed
-    const amountSearch = parseFloat(searchTerm);
-    if (!isNaN(amountSearch)) {
-      where.OR.push({ amount: amountSearch });
-    }
-  }
-
-  if (typeFilter) where.type = typeFilter as TransactionType;
-  if (recurringFilter) where.isRecurring = recurringFilter === "recurring";
+  const where = buildTransactionWhere({
+    userId: user.id,
+    accountId,
+    searchTerm,
+    typeFilter,
+    recurringFilter,
+  });
 
   // Fetch transactions and total count in parallel
   const [transactions, total] = await Promise.all([

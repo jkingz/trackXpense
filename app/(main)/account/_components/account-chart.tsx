@@ -97,7 +97,7 @@ const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) =>
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-base font-normal">Transaction Overview</CardTitle>
-          <Select defaultValue={dateRange} onValueChange={(value) => setDateRange(value ?? "1M")}>
+          <Select value={dateRange} onValueChange={(value) => setDateRange(value ?? "1M")}>
             <SelectTrigger className="w-[150px]">
               <SelectValue placeholder="Select range" />
             </SelectTrigger>

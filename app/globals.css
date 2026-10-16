@@ -7,10 +7,10 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-space-grotesk);
-  --font-mono: var(--font-jetbrains-mono);
-  --default-font-family: var(--font-space-grotesk);
-  --default-mono-font-family: var(--font-jetbrains-mono);
+  --font-sans: "HarmonyOS Sans", var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --default-font-family: var(--font-sans);
+  --default-mono-font-family: var(--font-mono);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -132,6 +132,9 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  /* The veil is a light-mode wash; in dark mode it must be a faint teal aura,
+     not a near-white flood — translucent glass lets it straight through. */
+  --color-brand-veil: oklch(0.24 0.05 205);
 }
 
 @layer base {
@@ -205,6 +208,199 @@
   animation: reveal 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* Frosted dashboard surfaces. Glass has no inherent color: fills are always
+   white-neutral and the mood comes from the aurora behind them. Dark uses the
+   fintech frosted formula; light uses the Apple Liquid Glass variant. */
+.glass-panel {
+  background: var(--glass-fill);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-specular), var(--glass-shadow);
+  border-radius: 20px;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+.glass-panel:hover {
+  background: var(--glass-fill-hover);
+  border-color: var(--glass-border-hover);
+}
+
+:root {
+  --glass-fill: rgba(255, 255, 255, 0.45);
+  --glass-fill-hover: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.65);
+  --glass-border-hover: rgba(255, 255, 255, 0.8);
+  --glass-specular: 0 2px 0 0 rgba(255, 255, 255, 0.8) inset;
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+.dark {
+  --glass-fill: rgba(255, 255, 255, 0.06);
+  --glass-fill-hover: rgba(255, 255, 255, 0.09);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-hover: rgba(255, 255, 255, 0.22);
+  --glass-specular: 0 1px 0 0 rgba(255, 255, 255, 0.2) inset;
+  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+
+/* Signature element: the Total Balance tile carries the iridescent hero wash
+   (cyan → indigo → magenta) with a slow sheen sweep. The only gradient fill
+   on the page; everything else stays white-neutral glass. */
+.glass-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      135deg,
+      rgba(34, 211, 238, 0.22) 0%,
+      rgba(129, 140, 248, 0.26) 45%,
+      rgba(232, 121, 249, 0.22) 75%,
+      rgba(52, 211, 153, 0.16) 100%
+    ),
+    var(--glass-fill);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 8px 40px rgba(129, 140, 248, 0.35),
+    0 1px 0 0 rgba(255, 255, 255, 0.25) inset;
+  border-radius: 20px;
+}
+.glass-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    115deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.14) 50%,
+    transparent 70%
+  );
+  transform: translateX(-100%);
+  animation: hero-sheen 6s ease-in-out infinite;
+}
+@keyframes hero-sheen {
+  0%,
+  55% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* The rail date glows like caught light so today reads at a glance. The text
+   itself follows the theme (deep brand ink on light, bright brand on dark);
+   only the glow stays constant. Static — the pulse lives on the dot beside it. */
+.date-glow {
+  color: var(--color-brand-deep);
+  text-shadow:
+    0 0 10px color-mix(in oklab, var(--color-brand) 45%, transparent),
+    0 0 30px color-mix(in oklab, var(--color-brand) 25%, transparent);
+}
+.dark .date-glow {
+  color: var(--color-brand);
+  text-shadow:
+    0 0 10px color-mix(in oklab, var(--color-brand) 60%, transparent),
+    0 0 30px color-mix(in oklab, var(--color-brand) 35%, transparent);
+}
+
+/* Ambient wash the glass refracts. Three skill-spec blobs: 90px blur, slow
+   transform-only drift. Ocean Frost hues in dark, pastels in light. */
+.app-aurora {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.app-aurora .blob {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(90px);
+  opacity: 0.55;
+  animation: blob-float 11s ease-in-out infinite;
+  will-change: transform;
+}
+.blob-1 {
+  width: 640px;
+  height: 640px;
+  top: -180px;
+  left: -12%;
+  background: #a78bfa;
+}
+.blob-2 {
+  width: 460px;
+  height: 460px;
+  bottom: -140px;
+  right: -8%;
+  background: #5eead4;
+  animation-delay: -4s;
+}
+.blob-3 {
+  width: 340px;
+  height: 340px;
+  top: 42%;
+  left: 44%;
+  background: #fb923c;
+  animation-delay: -7s;
+}
+:root .app-aurora .blob {
+  opacity: 0.35;
+}
+/* Dark mode gets the saturated set. Scoped under .dark (not :root) so the
+   higher-specificity light defaults above do not win everywhere. */
+.dark .app-aurora .blob {
+  opacity: 0.55;
+}
+.dark .blob-1 {
+  background: #0ea5e9;
+}
+.dark .blob-2 {
+  background: #6366f1;
+}
+.dark .blob-3 {
+  background: #22d3ee;
+}
+@keyframes blob-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(40px, -40px) scale(1.06);
+  }
+  66% {
+    transform: translate(-25px, 25px) scale(0.95);
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-panel,
+  .glass-hero {
+    background: var(--color-card);
+  }
+  .glass-hero::after {
+    display: none;
+  }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .app-aurora {
+    display: none;
+  }
+  .glass-panel,
+  .glass-hero {
+    background: var(--color-card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .glass-hero::after {
+    display: none;
+  }
+}
+
 /* Indeterminate rail: shown while a transition or server action is pending, when
    no real percentage exists to display. */
 @keyframes pendingRail {
@@ -245,6 +441,10 @@
     animation: none;
   }
   .--marquee-track-reverse {
+    animation: none;
+  }
+  .app-aurora .blob,
+  .glass-hero::after {
     animation: none;
   }
   .--live-dot {
