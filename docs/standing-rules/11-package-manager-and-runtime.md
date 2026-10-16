@@ -1,0 +1,5 @@
+# Rule 11 — Package manager and runtime
+
+`pnpm` is whatever the host resolves — `10.18.3` on this machine, measured on Node 20.19.5, 22.15.0, 24.15.0 and 26.8.2 — because `package.json` carries **no** `packageManager` field. It does carry `engines.node: ">=22.21.0"`, which is the highest floor among the installed dependencies' own `engines` (measured 2026-10-14: `@arcjet/next` `>=22.21.0 <23 || >=24.5.0`, `vitest` `^22.12.0 || ^24.0.0 || >=26.0.0`, `prisma` and `@prisma/client` `^20.19 || ^22.12 || >=24.0`, `react-email` `>=20.19.0`, `next` and `@clerk/nextjs` `>=20.9.0`). Nothing enforces it — there is no `.npmrc`, so pnpm never runs `engine-strict`.
+
+What removing the pin bought: the recorded 2026-10-13 failure mode is gone. With a `packageManager` field, the version was auto-activated on the host runtime, and on Node 26 that died on `no @pnpm/exe.darwin-arm64 native binary was found for this host` — a red gate that looked like a broken project rather than a broken shell. Check `pnpm --version` and `node --version` before trusting either. The version CI installs is now written in `.github/workflows/ci.yml`, so that file and this rule move together.
