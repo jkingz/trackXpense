@@ -83,8 +83,8 @@ Lighthouse contrast failures. Reviewed on the working tree against `HEAD`
 
 ## Not covered
 
-- **`DIRECT_URL` is stored on Vercel with literal surrounding quotes.** `vercel env add` warned `Value includes surrounding quotes`; the value came from `vercel env pull`, which quotes it, and the var is now a Secret so it cannot be read back to repair. It only affects `pnpm db:migrate` — runtime uses `DATABASE_URL` — so it does not block the deploy, but it needs re-entering in the dashboard.
-- `DIRECT_URL` points at Supabase (`aws-0-ap-southeast-1.pooler.supabase.com`) while `DATABASE_URL` points at Neon. Migrations and runtime therefore target different databases. Not changed: flipping it is a data-routing decision, not a metadata one.
+- **`DIRECT_URL` removed from Vercel (2026-10-17, by the owner).** It had been stored with literal surrounding quotes from `vercel env pull`, and was unreadable as a Secret, so it was deleted rather than repaired. Safe: `prisma.config.ts:16` reads `DIRECT_URL || DATABASE_URL` and `workflow.md:99` documents that fallback, and no runtime code reads the var — only the Prisma CLI at build time. Production redeployed and re-verified after the deletion (`/api/health` up, all routes 200, Lighthouse unchanged at 100/100/100/100/100).
+- Deleting it also closed the database split: `DIRECT_URL` pointed at Supabase while `DATABASE_URL` points at Neon, so migrations and runtime targeted different databases. Both now resolve to Neon via `DATABASE_URL`.
 - No browser-automation pass over the authenticated UI. The Lighthouse numbers are the unauthenticated landing page only.
 - Custom domain: metadata follows `NEXT_PUBLIC_APP_URL`. Adding a domain later means changing that one var and redeploying; nothing hardcodes the vercel.app host.
 
