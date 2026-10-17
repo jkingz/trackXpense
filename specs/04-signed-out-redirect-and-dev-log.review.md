@@ -34,4 +34,58 @@ Owner-reported errors from a local `pnpm dev` run, fixed as
 - Server log after the fix: no `Sign in required`, no `scroll-behavior` notice. The one Arcjet line in the log is timestamped `00:00:21`, from before the edit.
 - **Unverified end-to-end:** the Arcjet warning is gone from a real `createTransaction` call. The browser automation could not get the add-transaction form to submit (the account `Select` renders a raw UUID and the submit never fires), so no local run has exercised that path since the change. The claim rests on `request()` being unreachable outside production — code reading, not a measured run. Production behaviour of the bucket is likewise unproven.
 
+---
+
+# Increment 2 review — SEO/OG surface, icon, a11y, live deploy
+
+Unit requested in-session (metadata typing, social preview, Vercel env cleanup +
+redeploy), then extended with the site icon, the ARIA progressbar names and the
+Lighthouse contrast failures. Reviewed on the working tree against `HEAD`
+(298b804) by two parallel sub-agents, one per axis.
+
+## Standards
+
+- [x] **High** `docs/agent-guide/service-architecture.md` gained no rows for the new surface. Added: `lib/site.ts`, `lib/brand-mark.tsx`, `lib/og-card.tsx` to the module table, and `/robots.txt`, `/sitemap.xml`, `/opengraph-image`, `/twitter-image`, `/icon/{32,192,512}`, `/apple-icon`, `/llms.txt` to the HTTP table.
+- [x] **High** `docs/agent-guide/code-standards.md` `app/` and `lib/` trees omitted the same files. Both trees updated.
+- [x] **Medium** `lib/brand-mark.tsx` claimed `app/icon.tsx` supplied the home-screen icon, contradicting `app/apple-icon.tsx`. Corrected to name `app/icon.tsx` (tab/search/tile) and `app/apple-icon.tsx` (180px) separately.
+- [x] **Medium** `ui.md` forbade `#hex` in markup with no carve-out, and `lib/og-card.tsx` needs it. Added the `next/og` exception: satori resolves no stylesheet and supports no Tailwind.
+- [x] **Low** `app/page.tsx` claimed JSON-LD and `llms.txt` both track `featuresData`; only JSON-LD does. Comment now says `llms.txt` is a hand-written copy kept out of sync on purpose.
+- [x] **Low** `lib/site.ts` falls back to localhost with no note. `.env.example` now states the fallback is right for `next dev` and wrong for a deploy.
+- [x] **Low** `"TrackXpense"` repeated as a literal in `app/icon.tsx` while `lib/site.ts` holds the single source. Now `site.name`.
+- [x] **Low** `components/ui/progress.tsx` overclaimed ("a violation at every call site"). Trimmed to the actual rule.
+- Accepted, not changed: `app/opengraph-image.tsx` and `app/twitter-image.tsx` are near-duplicates. Next fills `og:image` and `twitter:image` from separate file conventions, so each must default-export; the ~90-line card body is already shared in `lib/og-card.tsx`.
+- Accepted, not changed: `"http://localhost:3000"` and `#0b1120` appear in two files each. One is a dev default in two unrelated subsystems, the other is an OG-card background that cannot read a CSS variable.
+
+## Spec
+
+- [x] **High** `alternates.canonical: "/"` sat in the root layout. Metadata is shallow-merged, so `/dashboard`, `/transaction/create` and `/account` each emitted a canonical pointing at the homepage. Moved to `app/page.tsx`. Verified: `/` emits one canonical, `/sign-in` emits none.
+- [x] **Medium** `--color-warn` was darkened in `@theme` but never re-declared in `.dark`, so dark mode silently inherited the light lightness (`#b46e00`) — legible, but muddy. Dark override added at `oklch(0.72 0.15 70)` (7.0:1 on `--card`, 7.8:1 on `--background`).
+- [x] **Low** `components/landing/live-ledger.tsx` carried an `h-[236px]` → `h-59` rewrite that no request asked for. It was introduced by `pnpm lint --fix`; reverted.
+- [x] Spec 04's deferred note was stale: it described the old single-name cookie check. `docs/agent-guide/target-state.md:28` updated. Gate still presence-only and still unfixed by design (validating in the proxy costs a round trip per request) — that part of the deferral stands.
+- No spec-04 increment was removed or altered by this unit.
+
+## Gates
+
+| Command                           | Result                                                                                |
+| --------------------------------- | ------------------------------------------------------------------------------------- |
+| `pnpm test`                       | 13 files, 113 tests passed                                                            |
+| `pnpm typecheck`                  | clean                                                                                 |
+| `pnpm lint`                       | 0 errors, 1 pre-existing warning (`components/landing/closing-cta.tsx:3`)             |
+| `pnpm build`                      | succeeded, 19 routes                                                                  |
+| Lighthouse 13.5.0 (desktop, live) | performance 100, accessibility 100, best-practices 100, SEO 100, agentic-browsing 100 |
+
+## Live checks (2026-10-17, https://track-xpense-lake.vercel.app)
+
+- `GET /` 200; `/robots.txt`, `/sitemap.xml`, `/llms.txt`, `/opengraph-image`, `/twitter-image`, `/apple-icon`, `/icon/32` all 200 with expected content types.
+- `og:image`, `og:title`, `og:url`, `twitter:card=summary_large_image`, `canonical`, `robots`, `googlebot`, `keywords` all present and absolute.
+- Lighthouse `color-contrast` and `aria-progressbar-name` both score 1. `llms.txt` audit passes; the `webmcp-*` and `ard-schema` audits report `notApplicable` at weight 0, so the agentic-browsing score of 100 is real.
+- `/api/health` → `{"ok":true,"database":"up"}` after the `DATABASE_URL` fix. `POST /api/demo` returns a session; with that cookie `/dashboard`, `/transaction/create` and `/account/[id]` all return 200.
+
+## Not covered
+
+- **`DIRECT_URL` is stored on Vercel with literal surrounding quotes.** `vercel env add` warned `Value includes surrounding quotes`; the value came from `vercel env pull`, which quotes it, and the var is now a Secret so it cannot be read back to repair. It only affects `pnpm db:migrate` — runtime uses `DATABASE_URL` — so it does not block the deploy, but it needs re-entering in the dashboard.
+- `DIRECT_URL` points at Supabase (`aws-0-ap-southeast-1.pooler.supabase.com`) while `DATABASE_URL` points at Neon. Migrations and runtime therefore target different databases. Not changed: flipping it is a data-routing decision, not a metadata one.
+- No browser-automation pass over the authenticated UI. The Lighthouse numbers are the unauthenticated landing page only.
+- Custom domain: metadata follows `NEXT_PUBLIC_APP_URL`. Adding a domain later means changing that one var and redeploying; nothing hardcodes the vercel.app host.
+
 Verdict: pass

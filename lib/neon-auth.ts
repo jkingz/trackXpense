@@ -3,7 +3,10 @@ import { prismaAdapter } from "better-auth/adapters/prisma";
 import { db } from "./prisma";
 
 export const neonAuth = betterAuth({
-  baseURL: "http://localhost:3000",
+  // Better Auth signs cookies and builds callback URLs against this. Hardcoding
+  // localhost made every production auth request point at the wrong origin, so
+  // the deployed origin wins and local dev stays the default.
+  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
   database: prismaAdapter(db, {
     provider: "postgresql",
   }),
