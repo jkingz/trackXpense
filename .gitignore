@@ -14,6 +14,12 @@
 /coverage
 /.playwright-cli/
 
+# opencode pipeline state (machine-local, not a deliverable)
+/.opencode/pipeline-state.json
+
+# claude code machine-local settings (written by /config and the permissions UI)
+/.claude/settings.local.json
+
 # next.js
 /.next/
 /out/

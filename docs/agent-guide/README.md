@@ -17,7 +17,9 @@ Read `AGENTS.md` first, then only the body your change invalidates.
 
 ## Policing
 
-Nothing enforces this today: `tests/platform/` (the checker that read `AGENTS.md`, these bodies, the skills, `.env.example` off disk) is not in the tree. So these rules are conventions, not gates — and a doc/`AGENTS.md` drift fails nothing. See `target-state.md`.
+Doc content is still unenforced: `tests/platform/` (the checker that read `AGENTS.md`, these bodies, the skills, `.env.example` off disk) is not in the tree, so a doc/`AGENTS.md` drift fails nothing. See `target-state.md`.
+
+Stage order and commits are enforced — `lib/pipeline-*.ts` behind two adapters (`.opencode/plugins/pipeline.js`, `scripts/pipeline-gate.ts` for Claude Code), body in `workflow.md` → Build pipeline. It gates product-source edits and `git commit`; it does not read these docs, so a body can still be wrong.
 
 Checks to keep even though nothing enforces them:
 

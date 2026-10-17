@@ -1,0 +1,120 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git show *)",
+      "Bash(git branch --list *)",
+      "Bash(git branch --show-current *)",
+      "Bash(git rev-parse *)",
+      "Bash(ls *)",
+      "Bash(cat *)",
+      "Bash(pnpm *)",
+      "Bash(vp *)",
+      "Read(./.env.example)"
+    ],
+    "deny": [
+      "Bash(git push *--force*)",
+      "Bash(git push *-f *)",
+      "Bash(git reset *--hard*)",
+      "Bash(git clean *)",
+      "Bash(rm *-rf*)",
+      "Bash(*--no-verify*)",
+      "Bash(*--skip-hooks*)",
+      "Read(./.env)",
+      "Read(./.env.local)",
+      "Edit(./.next/**)",
+      "Edit(./node_modules/**)"
+    ],
+    "ask": ["Bash(git commit *)", "Bash(git push *)", "Bash(prisma migrate *)"]
+  },
+  "hooks": {
+    "UserPromptExpansion": [
+      {
+        "matcher": "plan,design,tickets,build,verify,review-changes,next,pipeline,pipeline-reset",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+              "${CLAUDE_PROJECT_DIR}/scripts/pipeline-gate.ts",
+              "expand"
+            ],
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+              "${CLAUDE_PROJECT_DIR}/scripts/pipeline-gate.ts",
+              "pre-edit"
+            ],
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(git commit *)",
+            "command": "node",
+            "args": [
+              "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+              "${CLAUDE_PROJECT_DIR}/scripts/pipeline-gate.ts",
+              "pre-shell"
+            ],
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(pnpm verify *)",
+            "command": "node",
+            "args": [
+              "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+              "${CLAUDE_PROJECT_DIR}/scripts/pipeline-gate.ts",
+              "post-verify"
+            ],
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "if": "Bash(pnpm verify *)",
+            "command": "node",
+            "args": [
+              "--disable-warning=MODULE_TYPELESS_PACKAGE_JSON",
+              "${CLAUDE_PROJECT_DIR}/scripts/pipeline-gate.ts",
+              "post-verify-fail"
+            ],
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -4,6 +4,7 @@ import { cache, Suspense } from "react";
 
 import { getCurrentBudget } from "@/actions/budget";
 import { getDashboardData, getUserAccounts } from "@/actions/dashboard";
+import { requireUser } from "@/actions/lib/checkUser";
 import {
   cashflow,
   expenseDeltaPct,
@@ -114,6 +115,9 @@ async function BudgetSection({ defaultAccountId }: { defaultAccountId?: string }
 }
 
 const DashBoardPage = async () => {
+  // Before its data work: a signed-out visitor is sent to sign-in instead of
+  // rendering a page whose first read throws.
+  await requireUser();
   const accounts = await getUserAccounts();
   const defaultAccount = accounts?.find((account) => account.isDefault);
   // Pin this render to a request before consulting the clock. Next refuses an

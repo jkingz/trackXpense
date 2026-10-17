@@ -1,5 +1,6 @@
 allowBuilds:
   "@prisma/engines": true
+  esbuild: false
   inngest: true
   prisma: true
   protobufjs: true
