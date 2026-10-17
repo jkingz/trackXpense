@@ -84,6 +84,12 @@ app/
   (main)/               — dashboard, accounts, transactions (open: proxy redirect off)
   api/seed/             — dev seed (GET, unauth)
   api/inngest/          — job receiver (serves 4 functions)
+  apple-icon.tsx        — 180px home-screen icon (apple-touch-icon)
+  icon.tsx              — brand mark at 32/192/512 (favicon + search + tile)
+  opengraph-image.tsx   — 1200x630 social card (og:image)
+  twitter-image.tsx     — 1200x630 social card (twitter:image)
+  robots.ts             — /robots.txt rules + sitemap pointer
+  sitemap.ts            — /sitemap.xml from lib/site.ts publicRoutes
   layout.tsx globals.css page.tsx
 actions/                — server actions (accounts, budget, dashboard, seed, send-email, transaction)
   lib/                  — checkUser.ts (identity seam), calculateRecurring.ts, errors.ts, serializedAmount.ts, index.ts
@@ -96,8 +102,12 @@ lib/
   arcjet.ts             — Arcjet tokenBucket (proxy client commented out)
   async-state.ts        — idle/loading/success/error machine
   auth-form-state.ts    — sign-in idle/submitting/error machine (pure)
+  brand-mark.tsx        — brand glyph as next/og primitives (icon + social cards)
   checkUser.ts          — resolve-or-create users row; returns null, never redirects
   demo-identity.ts      — demo owner identity
+  health.ts             — liveness seam behind /api/health
+  og-card.tsx           — shared 1200x630 social card body
+  site.ts               — public origin + name/description; metadataBase source
   inngest/              — client + 4 functions
   money.ts              — usd/signedUsd (grouping, decimals, sign)
   pipeline-artifacts.ts — spec/review/verify-output parsing (pure)

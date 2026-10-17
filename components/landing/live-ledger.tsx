@@ -196,6 +196,7 @@ export function LiveLedger() {
         <Progress
           value={percentUsed}
           className="mt-2"
+          aria-label="Budget headroom used"
           extraStyles={percentUsed >= 90 ? "bg-expense" : "bg-brand-deep"}
         />
       </div>

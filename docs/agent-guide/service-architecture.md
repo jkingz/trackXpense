@@ -30,6 +30,9 @@ Browser (Clerk session, or none)
 | `lib/dashboard-stats.ts`         | Pure dashboard aggregates (month totals, deltas, savings rate, category ranking, 30-day cashflow, weekday spend, year-over-year). No React; tested.                                                                                                                                                                                                      |
 | `lib/health.ts`                  | `checkHealth(ping)` liveness seam; route wires a one-row DB ping. Tested without React or DB.                                                                                                                                                                                                                                                            |
 | `lib/inngest/`                   | Client + 4 functions (budget-alert cron, recurring-trigger cron, per-event recurring processor, monthly-report cron). **Never executed** — `INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` unset.                                                                                                                                                              |
+| `lib/site.ts`                    | Public origin + name/description, read from `NEXT_PUBLIC_APP_URL` (localhost fallback). Source for `metadataBase`, canonical, og:url, `/robots.txt`, `/sitemap.xml`, JSON-LD. No React.                                                                                                                                                                  |
+| `lib/brand-mark.tsx`             | Brand glyph drawn with `next/og` primitives (satori has no SVG). Shared by `app/icon.tsx` and `app/apple-icon.tsx`.                                                                                                                                                                                                                                      |
+| `lib/og-card.tsx`                | Shared 1200x630 social-card body; `app/opengraph-image.tsx` and `app/twitter-image.tsx` each wrap it (Next fills `og:image` and `twitter:image` from separate file conventions).                                                                                                                                                                         |
 | `actions/`                       | 15 exported server actions (`getUserAccounts`, `getDashboardData`, `seedTransactions` take no input; 12 accept client input, validate none). Includes `scanReceipt` (Gemini OCR; `GEMINI_API_KEY` set, browser upload returns extraction in 3-5s from `gemini-3.1-flash-lite` — only the stored file is missing).                                        |
 | `app/(auth)/`                    | Clerk sign-in/up pages.                                                                                                                                                                                                                                                                                                                                  |
 | `app/(main)/`                    | Dashboard, account, transaction pages. `layout.tsx` does no auth; anonymous visit renders directly via the seam (demo owner).                                                                                                                                                                                                                            |
@@ -47,17 +50,24 @@ Anything not built gets no row.
 
 ## HTTP surface (exists)
 
-| Route                 | Method       | Auth              | Notes                                                              |
-| --------------------- | ------------ | ----------------- | ------------------------------------------------------------------ |
-| `/`                   | GET          | None              | Landing                                                            |
-| `/(auth)/sign-in`     | GET          | None              | Clerk                                                              |
-| `/(auth)/sign-up`     | GET          | None              | Clerk                                                              |
-| `/(main)/dashboard`   | GET          | None (gate off)   | Accounts, transactions, budget; demo owner's ledger                |
-| `/(main)/account`     | GET          | None (gate off)   | Create/manage accounts                                             |
-| `/(main)/transaction` | GET          | None (gate off)   | Create/view transactions                                           |
-| `/api/seed`           | GET          | None (dev)        | Writes rows; prod-only or secret                                   |
-| `/api/health`         | GET          | None              | Liveness: DB ping via lib/health; 200 up, 503 down; builds dynamic |
-| `/api/inngest`        | GET/POST/PUT | Inngest signature | 4 functions; not connected                                         |
+| Route                 | Method       | Auth              | Notes                                                                                   |
+| --------------------- | ------------ | ----------------- | --------------------------------------------------------------------------------------- |
+| `/`                   | GET          | None              | Landing                                                                                 |
+| `/(auth)/sign-in`     | GET          | None              | Clerk                                                                                   |
+| `/(auth)/sign-up`     | GET          | None              | Clerk                                                                                   |
+| `/(main)/dashboard`   | GET          | None (gate off)   | Accounts, transactions, budget; demo owner's ledger                                     |
+| `/(main)/account`     | GET          | None (gate off)   | Create/manage accounts                                                                  |
+| `/(main)/transaction` | GET          | None (gate off)   | Create/view transactions                                                                |
+| `/api/seed`           | GET          | None (dev)        | Writes rows; prod-only or secret                                                        |
+| `/api/health`         | GET          | None              | Liveness: DB ping via lib/health; 200 up, 503 down; builds dynamic                      |
+| `/api/inngest`        | GET/POST/PUT | Inngest signature | 4 functions; not connected                                                              |
+| `/robots.txt`         | GET          | None              | `app/robots.ts`; allows `/`, disallows `/api/` + per-user routes, points at the sitemap |
+| `/sitemap.xml`        | GET          | None              | `app/sitemap.ts`; `lib/site.ts` `publicRoutes` only                                     |
+| `/opengraph-image`    | GET          | None              | 1200x630 png via `next/og`; static                                                      |
+| `/twitter-image`      | GET          | None              | Same card as `og:image`; separate file convention                                       |
+| `/icon/{32,192,512}`  | GET          | None              | Brand mark pngs; static                                                                 |
+| `/apple-icon`         | GET          | None              | 180px brand mark; static                                                                |
+| `/llms.txt`           | GET          | None              | `public/llms.txt`; static                                                               |
 
 **Planned, absent:** transaction export, budget-alert email delivery (written, never sent), recurring processing against a real DB, any server-side input validation.
 
