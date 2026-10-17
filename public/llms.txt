@@ -1,0 +1,28 @@
+# TrackXpense
+
+> A personal expense tracker you fill in yourself. Log an entry, pick a category, and your running balance and budget headroom update the moment you save it. No bank connection, no CSV import.
+
+TrackXpense is a self-entered ledger: CURRENT and SAVINGS accounts, income and expense entries, one budget, and 21 categories. Two account types, five fields per entry, zero bank connections.
+
+## What it does
+
+- **Two accounts, two running balances.** Open a CURRENT account and a SAVINGS account. Every entry is marked income or expense, and the mark decides which way that balance moves.
+- **One budget, edited where you read it.** A bar shows how far logged expenses have climbed against the budget figure, on the dashboard itself.
+- **21 categories, ready on day one.** Groceries, Salary, Housing, Freelance and more, so the ledger says where the money went, not only how much.
+- **Photograph the receipt.** A photo on the add-transaction form fills in amount, date, description and category.
+- **The dashboard is the log.** Budget bar, income against expenses, one card per account, reading back what you just entered.
+
+## How to use it
+
+1. **Open an account** — name it, say whether it is current or savings, give it a starting balance.
+2. **Log an entry** — amount, income or expense, category, date, description.
+3. **Read the result** — balance per account, income against expenses, budget headroom.
+
+## Pages
+
+- [/](/): marketing page and product overview. The only indexable page; `/dashboard`, `/transaction` and `/account` are per-user and excluded from the sitemap and from crawling.
+
+## Notes
+
+- Built with Next.js. Self-hosted fonts, no third-party tracking.
+- Optional demo account available on sign-in.
