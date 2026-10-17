@@ -48,9 +48,12 @@
 
 /* Landing accent scale: derived from the sky→teal identity already used by
    .--gradient-title, expressed as tokens so no inline hex or arbitrary values
-   appear in markup. */
+   appear in markup. These are the LIGHT values; `.dark` re-declares the ones
+   that need a different lightness, because a single value cannot be legible on
+   both `--background` values. Every pair below is >=4.5:1 on white and on the
+   #f5f5f5 secondary; the progress-bar fills are >=3:1 as non-text graphics. */
 @theme {
-  --color-brand: oklch(0.71 0.125 196);
+  --color-brand: oklch(0.5 0.1 196);
   --color-brand-deep: oklch(0.47 0.1 208);
   --color-brand-veil: oklch(0.955 0.022 196);
   --color-ink: oklch(0.215 0.028 240);
@@ -59,10 +62,10 @@
   --color-paper-deep: oklch(0.94 0.017 200);
   /* Money direction. Income and expense are meanings, not decoration, so they
      get tokens instead of green-500/red-500 in markup. */
-  --color-income: oklch(0.62 0.14 158);
+  --color-income: oklch(0.52 0.14 158);
   --color-expense: oklch(0.57 0.19 24);
   /* The budget band between "comfortable" and "over" is a state, not a hue. */
-  --color-warn: oklch(0.72 0.15 70);
+  --color-warn: oklch(0.6 0.14 70);
 }
 
 :root {
@@ -78,13 +81,17 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  /* 0.556 cleared 4.5:1 on white but not on `--muted`/`--secondary` (#f5f5f5)
+     or the teal veil, which is where most body copy sits. */
+  --muted-foreground: oklch(0.52 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  /* Focus ring: the only light-mode token that must clear 3:1 as a non-text
+     graphic on white. */
+  --ring: oklch(0.55 0 0);
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -135,6 +142,17 @@
   /* The veil is a light-mode wash; in dark mode it must be a faint teal aura,
      not a near-white flood — translucent glass lets it straight through. */
   --color-brand-veil: oklch(0.24 0.05 205);
+  /* Dark-mode accents are lighter, not darker: at the `@theme` light values
+     `brand-deep` sat at 2.5:1 on the dark veil and `expense` at 3.6:1 on
+     `--card`. These clear 4.5:1 on background, card, muted and the veil. */
+  --color-brand: oklch(0.72 0.12 196);
+  --color-brand-deep: oklch(0.64 0.11 208);
+  --color-income: oklch(0.66 0.14 158);
+  --color-expense: oklch(0.68 0.17 24);
+  /* `warn` needs an explicit dark value too: with no override, dark mode inherits
+     the `@theme` light lightness (0.6), which stays legible but reads muddy
+     against the dark surfaces. 7.0:1 on `--card`, 7.8:1 on `--background`. */
+  --color-warn: oklch(0.72 0.15 70);
 }
 
 @layer base {
@@ -154,7 +172,7 @@
 }
 
 .--gradient-title {
-  @apply bg-gradient-to-br from-sky-600 to-teal-700 font-extrabold text-transparent tracking-tighter pr-2 pb-2 bg-clip-text;
+  @apply bg-linear-to-br from-sky-600 to-teal-700 font-extrabold text-transparent tracking-tighter pr-2 pb-2 bg-clip-text;
 }
 
 .--capture-stage {

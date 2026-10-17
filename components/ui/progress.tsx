@@ -4,13 +4,19 @@ import { Progress as ProgressPrimitive } from "@base-ui/react/progress";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * `aria-label` is required, not optional: Base UI renders `role="progressbar"`,
+ * and a progressbar needs an accessible name. Making it required here means a
+ * new bar cannot be added unnamed.
+ */
 function Progress({
   className,
   value,
   extraStyles,
   ...props
-}: ProgressPrimitive.Root.Props & {
+}: Omit<ProgressPrimitive.Root.Props, "aria-label"> & {
   extraStyles?: string;
+  "aria-label": string;
 }) {
   return (
     <ProgressPrimitive.Root

@@ -130,6 +130,7 @@ const BudgetProgress = ({
             <div className="mt-4 space-y-2">
               <Progress
                 value={percentUsed}
+                aria-label="Budget used"
                 extraStyles={
                   percentUsed >= 90 ? "bg-expense" : percentUsed >= 75 ? "bg-warn" : "bg-income"
                 }
