@@ -1,4 +1,5 @@
 import { getUserAccounts } from "@/actions/dashboard";
+import { requireUser } from "@/actions/lib/checkUser";
 import { getTransactionById } from "@/actions/transaction";
 import { defaultCategories } from "@/data/categories";
 
@@ -13,6 +14,9 @@ const AddTransaction = async ({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) => {
+  // Before its data work: a signed-out visitor is sent to sign-in instead of
+  // rendering a page whose first read throws.
+  await requireUser();
   const accounts = await getUserAccounts();
   const resolvedSearchParams = await searchParams;
   const editId = await resolvedSearchParams?.edit;

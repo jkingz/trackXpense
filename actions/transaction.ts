@@ -110,16 +110,19 @@ export async function createTransaction(data: TransactionInput) {
     // check if use if logged in
     const user = await checkUser();
 
-    // Get request data for ArcJet
-    const req = await request();
+    // Rate limiting. `request()` has no public IP to read locally, so Arcjet
+    // falls back to 127.0.0.1 and warns on every write in development; outside
+    // production the bucket would rate-limit every local developer as one
+    // address anyway. Production keeps both calls.
+    const decision =
+      process.env.NODE_ENV === "production"
+        ? await aj.protect(await request(), {
+            userId: user.id, // Specify the user ID
+            requested: 1, // Specify how many tokens to consume
+          })
+        : null;
 
-    // Check rate limit
-    const decision = await aj.protect(req, {
-      userId: user.id, // Specify the user ID
-      requested: 1, // Specify how many tokens to consume
-    });
-
-    if (decision.isDenied()) {
+    if (decision?.isDenied()) {
       if (decision.reason.isRateLimit()) {
         const { remaining, reset } = decision.reason;
         console.error({

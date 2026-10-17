@@ -72,6 +72,8 @@ State with more than one status is a reducer: a pure `(state, event) => state` i
 - **Async client state — built.** `lib/async-state.ts`: `idle → loading → success | error` via `START`/`SUCCESS`/`ERROR`/`SET_DATA`. `hooks/use-fetch.ts` wraps it, keeps `{ data, loading, error, fn, setData }`, call sites unchanged. Test: `tests/hooks/unit/use-fetch-reducer.test.ts`.
 - **Table UI state — built.** `lib/transaction-table-state.ts`: selection/search/filters/dialog via `TOGGLE_SELECT`/`SET_SELECT_ALL`/`SET_*`/`CLEAR_*`/`SET_DELETE_DIALOG`. `transaction-table.tsx` uses it. Test: `tests/transactions/unit/transaction-table-state.test.ts`.
 - **Recurring lifecycle — built.** `lib/recurring-lifecycle.ts`: `recurringPhase` (`due`/`scheduled`) + `applyRecurringTick` (stamps `lastProcessed`, rolls `nextRecurringDate`). `lib/inngest/functions.ts` calls both. Test: `tests/recurring/unit/recurring-lifecycle.test.ts`.
+- **Build pipeline — built.** `lib/pipeline-state.ts`: `planned → designed → decomposed → building → verified → reviewed` via `PLAN_WRITTEN`/`DESIGN_WRITTEN`/`TICKETS_WRITTEN`/`BUILD_STARTED`/`VERIFY_*`/`REVIEW_*`/`SOURCE_EDITED`/`NEXT_INCREMENT`. `canEditSource`, `canCommit`, `commitBlocker`, `stageBlocker`. Guards in `lib/pipeline-guard.ts` (path class, edit, commit), artifact parsing in `lib/pipeline-artifacts.ts`, I/O in `lib/pipeline-runtime.ts`. Adapters: `.opencode/plugins/pipeline.js` (OpenCode V2) and `scripts/pipeline-gate.ts` (Claude Code hooks). Neither is unit-tested — `tests/` is unit-only. Test: `tests/pipeline/unit/`.
+- **Sign-in form — built.** `lib/auth-form-state.ts`: `idle → submitting | error` via `START`/`FAIL`, with `pending: "submit" | "demo"`. A `FAIL` whose `action` is no longer `pending` is dropped, so a double-fired request cannot relabel the button the user is using. `app/(auth)/sign-in/[[...sign-in]]/page.tsx` dispatches it and derives `busy` from `status`. Test: `tests/auth/unit/auth-form-state.test.ts`.
 - **`transactions.status`** (`PENDING`/`COMPLETED`/`FAILED`) has no transition logic — defaults `COMPLETED`, only read as a filter. Modelling it would be invention; leave until a transition exists.
 
 ### File organization
@@ -93,19 +95,29 @@ hooks/                  — use-fetch.ts (reducer wrapper for server actions)
 lib/
   arcjet.ts             — Arcjet tokenBucket (proxy client commented out)
   async-state.ts        — idle/loading/success/error machine
+  auth-form-state.ts    — sign-in idle/submitting/error machine (pure)
   checkUser.ts          — resolve-or-create users row; returns null, never redirects
   demo-identity.ts      — demo owner identity
   inngest/              — client + 4 functions
   money.ts              — usd/signedUsd (grouping, decimals, sign)
+  pipeline-artifacts.ts — spec/review/verify-output parsing (pure)
+  pipeline-guard.ts     — path class + edit/commit decisions (pure)
+  pipeline-runtime.ts   — pipeline state on disk + git facts + stage checks (I/O; harness adapters call it)
+  pipeline-state.ts     — build-pipeline stage machine (pure)
   prisma.ts             — Prisma singleton (pg adapter)
   recurring-lifecycle.ts— due/scheduled phase + tick
   schema.ts             — Zod schemas
   serialized-transaction.ts — Decimal→number row serializer
   transaction-table-state.ts — table reducer
   utils.ts              — cn
-tests/                  — money, validation, hooks, recurring, transactions under {feature}/unit/; no runner beyond vp
+tests/                  — auth, hooks, money, pipeline, recurring, transactions, validation under {feature}/unit/; no runner beyond vp
   platform/             — DELETED (instruction-layer checker); not in tree
-specs/                  — feature specs (unpolicied fence)
+scripts/                — pipeline-gate.ts (Claude Code hook CLI); seed-demo.ts
+.opencode/              — plugins/pipeline.js (V2 gate enforcer); pipeline-state.json gitignored
+.claude/                — commands/ (shared stage prompt bodies), agents/reviewer.md, settings.json (hooks + permissions)
+CLAUDE.md               — harness entry; imports AGENTS.md
+opencode.json           — permission ladder + reviewer subagent
+specs/                  — feature specs + .design.md/.review.md siblings (unpolicied fence)
 docs/agent-guide/       — these bodies
 docs/superpowers/       — deleted
 tsconfig.json  next-env.d.ts  next.config.ts  vite.config.ts

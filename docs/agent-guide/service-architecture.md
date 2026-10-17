@@ -28,6 +28,7 @@ Browser (Clerk session, or none)
 | `lib/transaction-table-state.ts` | Transactions-table reducer (selection/search/filters/dialog). Tested.                                                                                                                                                                                                                                                                                    |
 | `lib/recurring-lifecycle.ts`     | `recurringPhase` + `applyRecurringTick`; called by `lib/inngest/functions.ts`. Tested.                                                                                                                                                                                                                                                                   |
 | `lib/dashboard-stats.ts`         | Pure dashboard aggregates (month totals, deltas, savings rate, category ranking, 30-day cashflow, weekday spend, year-over-year). No React; tested.                                                                                                                                                                                                      |
+| `lib/health.ts`                  | `checkHealth(ping)` liveness seam; route wires a one-row DB ping. Tested without React or DB.                                                                                                                                                                                                                                                            |
 | `lib/inngest/`                   | Client + 4 functions (budget-alert cron, recurring-trigger cron, per-event recurring processor, monthly-report cron). **Never executed** — `INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` unset.                                                                                                                                                              |
 | `actions/`                       | 15 exported server actions (`getUserAccounts`, `getDashboardData`, `seedTransactions` take no input; 12 accept client input, validate none). Includes `scanReceipt` (Gemini OCR; `GEMINI_API_KEY` set, browser upload returns extraction in 3-5s from `gemini-3.1-flash-lite` — only the stored file is missing).                                        |
 | `app/(auth)/`                    | Clerk sign-in/up pages.                                                                                                                                                                                                                                                                                                                                  |
@@ -46,16 +47,17 @@ Anything not built gets no row.
 
 ## HTTP surface (exists)
 
-| Route                 | Method       | Auth              | Notes                                               |
-| --------------------- | ------------ | ----------------- | --------------------------------------------------- |
-| `/`                   | GET          | None              | Landing                                             |
-| `/(auth)/sign-in`     | GET          | None              | Clerk                                               |
-| `/(auth)/sign-up`     | GET          | None              | Clerk                                               |
-| `/(main)/dashboard`   | GET          | None (gate off)   | Accounts, transactions, budget; demo owner's ledger |
-| `/(main)/account`     | GET          | None (gate off)   | Create/manage accounts                              |
-| `/(main)/transaction` | GET          | None (gate off)   | Create/view transactions                            |
-| `/api/seed`           | GET          | None (dev)        | Writes rows; prod-only or secret                    |
-| `/api/inngest`        | GET/POST/PUT | Inngest signature | 4 functions; not connected                          |
+| Route                 | Method       | Auth              | Notes                                                              |
+| --------------------- | ------------ | ----------------- | ------------------------------------------------------------------ |
+| `/`                   | GET          | None              | Landing                                                            |
+| `/(auth)/sign-in`     | GET          | None              | Clerk                                                              |
+| `/(auth)/sign-up`     | GET          | None              | Clerk                                                              |
+| `/(main)/dashboard`   | GET          | None (gate off)   | Accounts, transactions, budget; demo owner's ledger                |
+| `/(main)/account`     | GET          | None (gate off)   | Create/manage accounts                                             |
+| `/(main)/transaction` | GET          | None (gate off)   | Create/view transactions                                           |
+| `/api/seed`           | GET          | None (dev)        | Writes rows; prod-only or secret                                   |
+| `/api/health`         | GET          | None              | Liveness: DB ping via lib/health; 200 up, 503 down; builds dynamic |
+| `/api/inngest`        | GET/POST/PUT | Inngest signature | 4 functions; not connected                                         |
 
 **Planned, absent:** transaction export, budget-alert email delivery (written, never sent), recurring processing against a real DB, any server-side input validation.
 
@@ -81,10 +83,11 @@ No `no-store`/`revalidate` export anywhere; no `revalidateTag`; `revalidatePath(
 ## Verification
 
 ```bash
-node node_modules/typescript/bin/tsc --noEmit --incremental false   # 0 errors
-./node_modules/.bin/vp check      # exit 0 — format (164 files) + lint 0 errors / 6 no-unused-vars warnings (117 files)
-./node_modules/.bin/vp test       # exit 0 — 47 passed (8 files); passes with and without TZ=UTC
-pnpm build            # exit 0 — compiles, "Running TypeScript ...", 11/11 static pages
+pnpm typecheck        # exit 0 — tsc --noEmit
+pnpm test             # exit 0 — 107 passed (12 files); passes with and without TZ=UTC
+pnpm lint             # exit 0 — vp check: format + lint 0 errors / 6 no-unused-vars warnings (129 files)
+pnpm verify           # exit 0 — test → typecheck → lint → build, the chain the pipeline gates on
+pnpm build            # exit 0 — compiles, "Running TypeScript ...", 13 routes (/api/health dynamic)
 pnpm db:seed          # deletes every transaction/budget/account row, re-seeds each users row
 /usr/bin/curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/dashboard                    # 200, anonymous
 /usr/bin/curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/account/<seeded-id>          # 200 for all four
@@ -93,8 +96,13 @@ pnpm db:seed          # deletes every transaction/budget/account row, re-seeds e
 # Exercised in a browser (2026-10-16): receipt scan on /transaction/create. NOT exercised: no form write (create/update), no Inngest function.
 # Fixed 2026-10-17: getPaginatedTransactions takes a required accountId and scopes via buildTransactionWhere
 # (actions/lib/transactionWhere.ts, tested) — account + owner travel together, so each account page renders its own ledger.
+# Measured 2026-10-17: pipeline gate layer — 58/58 checks green across two throwaway harnesses (not committed:
+# no integration tier in tests/) — 34/34 driving .opencode/plugins/pipeline.js through its V2 hooks and commands,
+# 24/24 driving scripts/pipeline-gate.ts through real Claude Code hook payloads. Plus one live opencode v2.0.30
+# session (source write refused at stage planned, specs/ write allowed). Claude Code 2.1.300 hooks NOT exercised
+# live: its API was unreachable here (ECONNREFUSED). See target-state.md.
 ```
 
 These are the **only** home for totals this body's `architecture.md`/`code-standards.md`/`workflow.md`/`pm-conventions.md` defer to. `AGENTS.md` quotes none. Hand-maintained.
 
-App test coverage: effectively 0% — the unit tests cover money serialisers, the recurrence helper, two Zod schemas and the three reducers, not any page/action/route.
+App test coverage: effectively 0% — the unit tests cover money serialisers, the recurrence helper, two Zod schemas, three app reducers and the build-pipeline machine, not any page/action/route.

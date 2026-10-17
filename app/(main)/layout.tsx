@@ -2,12 +2,16 @@ import type { ReactNode } from "react";
 import { format } from "date-fns";
 import { connection } from "next/server";
 
+import { redirect } from "next/navigation";
+
 import { getUserAccounts } from "@/actions/dashboard";
+import { currentUser } from "@/actions/lib/checkUser";
 
 import { AppSidebar } from "./_components/app-sidebar";
 
-/** App shell: rail on the left, route content on the right. */
+/** App shell: rail on the left, route content on the right. Signed-out visitors go to sign-in. */
 const MainLayout = async ({ children }: { children: ReactNode }) => {
+  if (!(await currentUser())) redirect("/sign-in");
   const accounts = await getUserAccounts();
   // Date the shell by the request, like the dashboard sections do.
   await connection();

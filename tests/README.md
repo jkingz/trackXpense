@@ -1,11 +1,12 @@
 # Tests
 
-Unit tier only: `tests/**/*.test.ts`, run with `./node_modules/.bin/vp test` (Vitest 5 via Vite+, config in `vite.config.ts`, `environment: node`). No `test` script in `package.json`; no `integration`/`e2e` tier.
+Unit tier only: `tests/**/*.test.ts`, run with `pnpm test` (`vp test` — Vitest 5 via Vite+, config in `vite.config.ts`, `environment: node`). No `integration`/`e2e` tier.
 
 ```
 tests/
 ├── hooks/unit/          # use-fetch reducer
 ├── money/unit/          # calculateNextRecurringDate, serializeAmount
+├── pipeline/unit/       # stage machine, path/commit guards, artifact parsers
 ├── recurring/unit/      # recurring lifecycle
 ├── transactions/unit/   # transaction-table reducer
 └── validation/unit/     # Zod schemas
@@ -16,6 +17,10 @@ tests/
 - One folder per feature; tiers are `unit`/`integration`/`e2e` — only `unit` exists.
 - Tests never sit beside source files.
 - Import through the `@` alias (repo root), never relatively.
+- No test imports a harness adapter (`.opencode/plugins/pipeline.js`,
+  `scripts/pipeline-gate.ts`). Their decisions are tested here through the
+  `lib/pipeline-*.ts` reducers they call; the adapters only do I/O. See
+  `docs/agent-guide/target-state.md` for what that leaves unproven.
 
 ## Adding tests
 
