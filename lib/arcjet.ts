@@ -2,7 +2,7 @@ import arcjet, { tokenBucket } from "@arcjet/next";
 
 const aj = arcjet({
   key: process.env.ARCJET_KEY as string,
-  characteristics: ["userId"], // Track based on Clerk userId
+  characteristics: ["userId"], // Track based on Neon Auth userId
   rules: [
     // Rate limiting specifically for collection creation
     tokenBucket({
