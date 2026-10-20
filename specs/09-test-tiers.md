@@ -1,5 +1,7 @@
 # Test Tiers (Integration + E2E)
 
+UI: n/a
+
 ## Goal
 
 Add integration and e2e test tiers beyond unit; CI runs all three.
