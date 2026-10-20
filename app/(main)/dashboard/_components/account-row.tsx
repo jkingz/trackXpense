@@ -23,9 +23,8 @@ type Account = {
 /**
  * One ledger row. The name and the balance are the link, and the default switch
  * sits outside it, so the switch is a real control rather than a click trapped
- * inside an anchor. The right column stacks the account type, the switch, and
- * the `click to view ›` affordance, so the row's clickability indicator lives
- * on the same right rail as the control it could be confused with.
+ * inside an anchor. Left block: name, type, entry count, balance. Right rail:
+ * the switch with the `click to view ›` affordance beneath it.
  */
 export function AccountRow({ account }: { account: Account }) {
   const { id, name, type, balance, isDefault, _count } = account;
@@ -66,13 +65,14 @@ export function AccountRow({ account }: { account: Account }) {
           href={`/account/${id}`}
           className="block min-w-0 flex-1 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-card-foreground">
+          <span className="flex min-w-0 items-center text-sm font-medium text-card-foreground">
             <span className="truncate">{name}</span>
-            {transactions > 0 && (
-              <span className="shrink-0 text-xs font-normal text-muted-foreground">
-                {transactions} {transactions === 1 ? "entry" : "entries"}
-              </span>
-            )}
+          </span>
+          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+            {type.charAt(0) + type.slice(1).toLowerCase()} account
+          </span>
+          <span className="block text-xs text-muted-foreground">
+            {transactions} {transactions === 1 ? "entry" : "entries"}
           </span>
           <span className="mt-1 block font-mono text-sm font-semibold tabular-nums text-foreground">
             {signedUsd(balance)}
@@ -80,9 +80,6 @@ export function AccountRow({ account }: { account: Account }) {
         </Link>
 
         <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <span className="text-xs text-muted-foreground">
-            {type.charAt(0) + type.slice(1).toLowerCase()} account
-          </span>
           <div className="flex items-center gap-2">
             {isDefault && (
               <span className="hidden text-xs text-muted-foreground sm:inline">Default</span>
