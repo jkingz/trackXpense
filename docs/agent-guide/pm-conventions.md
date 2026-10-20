@@ -37,3 +37,5 @@ Before a commit, gates 1–4 plus the `/review` report must be clean —
 excepted. See `workflow.md` → Build pipeline.
 
 CI (`.github/workflows/ci.yml`): `vp install --frozen-lockfile` → `vp check` → `vp test` → `vp run build` on Node 24.
+
+- Feature work: create a feature branch off `dev` before committing; open PR against `dev`.
