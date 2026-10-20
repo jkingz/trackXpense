@@ -71,7 +71,7 @@ Feature work runs seven stages, one command each: `/plan` → `/design` → `/ti
 
 Enforced by the harness, not by convention: product-source edits are refused before `/build`, and `git commit` is refused until `pnpm verify` is green for the current code and a review report postdates it with no open High. Docs-only trees are exempt from the commit gate.
 
-One gate, two adapters: `.opencode/plugins/pipeline.js` (OpenCode) and `scripts/pipeline-gate.ts` (Claude Code hooks), both over `lib/pipeline-*.ts`. Escape hatch `OPENCODE_PIPELINE=off opencode`; `/pipeline-reset` clears the stage. Body: `docs/agent-guide/workflow.md` → Build pipeline.
+One gate, one adapter: `scripts/pipeline-gate.ts` (Claude Code hooks) over `lib/pipeline-*.ts`. OpenCode adapter removed. Escape hatch `OPENCODE_PIPELINE=off opencode`; `/pipeline-reset` clears the stage. Body: `docs/agent-guide/workflow.md` → Build pipeline.
 
 ## Project docs
 

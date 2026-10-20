@@ -38,7 +38,7 @@ export const COMMAND_FOR_STAGE: Record<string, string> = {
 export type Runtime = ReturnType<typeof createRuntime>;
 
 export function createRuntime(directory: string) {
-  const stateFile = path.join(directory, ".opencode/pipeline-state.json");
+  const stateFile = path.join(directory, ".pipeline-state.json");
   const absolute = (rel: string) => path.join(directory, rel);
 
   const readText = (rel: string): string | null => {
@@ -50,7 +50,7 @@ export function createRuntime(directory: string) {
   };
 
   const readState = (): PipelineState => {
-    const raw = readText(".opencode/pipeline-state.json");
+    const raw = readText(".pipeline-state.json");
     if (raw === null) return initialPipelineState();
     try {
       return { ...initialPipelineState(), ...JSON.parse(raw) };

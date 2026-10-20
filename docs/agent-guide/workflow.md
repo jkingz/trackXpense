@@ -26,32 +26,30 @@ Stages, one command each. Enforced by the harness, not by convention.
 
 Then commit, then `/next` for the next increment. `/pipeline` prints the stage; `/pipeline-reset` clears it. State lives in `.opencode/pipeline-state.json` (gitignored).
 
-Enforced: product-source edits are refused before `building`; `git commit` is refused until `pnpm verify` is green for the current code and a review report postdates that code with no open High. Docs-only trees (`specs/`, `docs/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `.opencode/`, `opencode.json`) are exempt from the commit gate and editable at any stage.
+Enforced: product-source edits are refused before `building`; `git commit` is refused until `pnpm verify` is green for the current code and a review report postdates that code with no open High. Docs-only trees (`specs/`, `docs/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `opencode.json`, `.pipeline-state.json`) are exempt from the commit gate and editable at any stage.
 
 ### Harness support
 
-One gate, two adapters. Both call `lib/pipeline-runtime.ts`, so the rules cannot drift apart.
+One adapter: `scripts/pipeline-gate.ts` (Claude Code hooks) over `lib/pipeline-*.ts`. OpenCode adapter removed; Codex and other harnesses have no hook enforcement (advisory).
 
-|              | OpenCode                                                             | Claude Code                                            |
-| ------------ | -------------------------------------------------------------------- | ------------------------------------------------------ |
-| Machine      | `lib/pipeline-state.ts`, `-guard.ts`, `-artifacts.ts`, `-runtime.ts` | same                                                   |
-| Adapter      | `.opencode/plugins/pipeline.js` (V2 plugin API)                      | `scripts/pipeline-gate.ts` (hook CLI)                  |
-| Wiring       | `ctx.tool.hook(...)`, `ctx.command.transform`                        | hooks in `.claude/settings.json`                       |
-| Stage gate   | hook on command execute                                              | `UserPromptExpansion`, matched on command name         |
-| Edit gate    | `tool.execute.before` on edit tools                                  | `PreToolUse` on `Write\|Edit`                          |
-| Commit gate  | `tool.execute.before` on the `shell` tool                            | `PreToolUse` on `Bash` with `if: Bash(git commit *)`   |
-| Verify gate  | `tool.execute.after` (exit code in metadata)                         | `PostToolUse` / `PostToolUseFailure`                   |
-| Permissions  | `opencode.json` → `permissions` array                                | `.claude/settings.json` → `permissions.allow/deny/ask` |
-| Review agent | `agents.reviewer` in `opencode.json`                                 | `.claude/agents/reviewer.md`                           |
-| Commands     | registered by the plugin from `.claude/commands/*.md`                | discovered natively from `.claude/commands/*.md`       |
+|              | Claude Code                                                          |
+| ------------ | -------------------------------------------------------------------- |
+| Machine      | `lib/pipeline-state.ts`, `-guard.ts`, `-artifacts.ts`, `-runtime.ts` |
+| Adapter      | `scripts/pipeline-gate.ts` (hook CLI)                                |
+| Wiring       | hooks in `.claude/settings.json`                                     |
+| Stage gate   | `UserPromptExpansion`, matched on command name                       |
+| Edit gate    | `PreToolUse` on `Write\|Edit`                                        |
+| Commit gate  | `PreToolUse` on `Bash` with `if: Bash(git commit *)`                 |
+| Verify gate  | `PostToolUse` / `PostToolUseFailure`                                 |
+| Permissions  | `.claude/settings.json` → `permissions.allow/deny/ask`               |
+| Review agent | `.claude/agents/reviewer.md`                                         |
+| Commands     | discovered natively from `.claude/commands/*.md`                     |
 
-Command names are shared, so the two harnesses cannot diverge mid-flow. Two are not `review`/`reset`: `/review` is a bundled **alias** of `/code-review`, and `/reset` is a built-in alias — Claude Code replaces a built-in but never its aliases, so both names would silently keep running the bundled behaviour. `/review-changes` and `/pipeline-reset` are unclaimed.
+Command names: `/review` is a bundled **alias** of `/code-review`, and `/reset` is a built-in alias — Claude Code replaces a built-in but never its aliases, so both names would silently keep running the bundled behaviour. `/review-changes` and `/pipeline-reset` are unclaimed.
 
-Escape hatch: `OPENCODE_PIPELINE=off opencode`. For Claude Code, disable the hook group in `.claude/settings.json` — a hook cannot read an env switch, since a command that could set the switch could also disable the gate.
+Escape hatch: disable the hook group in `.claude/settings.json` — a hook cannot read an env switch, since a command that could set the switch could also disable the gate. For cross-harness enforcement, add a git `pre-commit` hook running `scripts/pipeline-gate.ts`.
 
-Machine: `lib/pipeline-*.ts`. Tests: `tests/pipeline/unit/` (the pure modules only). The two adapters are I/O and have no committed tests — `tests/` is unit-only.
-
-Measured 2026-10-17: opencode v2.0.30 — 34/34 plugin checks, plus a live session where a `write` to `lib/health.ts` was refused at stage `planned` and a `write` to `specs/` was allowed. Claude Code 2.1.300 — 24/24 gate-CLI checks driving real hook payloads through a child process per event. The Claude Code hooks were **not** exercised in a live session: the CLI could not reach its API here (model `dev`, `ECONNREFUSED`). Harnesses are throwaway, not committed.
+Machine: `lib/pipeline-*.ts`. Tests: `tests/pipeline/unit/` (the pure modules only). The adapter is I/O and has no committed tests — `tests/` is unit-only.
 
 ### Read order
 
