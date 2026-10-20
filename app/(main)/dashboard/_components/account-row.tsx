@@ -23,9 +23,9 @@ type Account = {
 /**
  * One ledger row. The name and the balance are the link, and the default switch
  * sits outside it, so the switch is a real control rather than a click trapped
- * inside an anchor. The right column names the account type and carries the
- * `click to view ›` affordance above the switch, so both read as belonging to
- * the row's right side rather than bleeding under it.
+ * inside an anchor. The right column stacks the account type, the switch, and
+ * the `click to view ›` affordance, so the row's clickability indicator lives
+ * on the same right rail as the control it could be confused with.
  */
 export function AccountRow({ account }: { account: Account }) {
   const { id, name, type, balance, isDefault, _count } = account;
@@ -80,11 +80,8 @@ export function AccountRow({ account }: { account: Account }) {
         </Link>
 
         <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <span className="text-xs text-muted-foreground">
             {type.charAt(0) + type.slice(1).toLowerCase()} account
-            <span aria-hidden>·</span>
-            click to view
-            <ChevronRight className="size-3" aria-hidden />
           </span>
           <div className="flex items-center gap-2">
             {isDefault && (
@@ -97,6 +94,10 @@ export function AccountRow({ account }: { account: Account }) {
               aria-label={`Make ${name} the default account`}
             />
           </div>
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            click to view
+            <ChevronRight className="size-3" aria-hidden />
+          </span>
         </div>
       </div>
 
