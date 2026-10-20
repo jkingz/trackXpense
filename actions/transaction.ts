@@ -149,8 +149,11 @@ export async function createTransaction(data: TransactionInput) {
       throw new Error("Account not found");
     }
 
+    // Normalise: the form spreads the raw string over the parsed number, so coerce
+    // here rather than trust the caller.
+    const amount = Number(data.amount);
     // calculate balance
-    const balanceChange = data.type === "EXPENSE" ? -data.amount : data.amount;
+    const balanceChange = data.type === "EXPENSE" ? -amount : amount;
     // new balance
     const newBalance = account.balance.toNumber() + balanceChange;
 
@@ -159,6 +162,7 @@ export async function createTransaction(data: TransactionInput) {
       const newTransaction = await tx.transaction.create({
         data: {
           ...data,
+          amount,
           userId: user.id,
           nextRecurringDate:
             data.isRecurring && data.recurringInterval
