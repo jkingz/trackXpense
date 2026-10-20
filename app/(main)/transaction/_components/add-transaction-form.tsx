@@ -12,6 +12,7 @@ import type { defaultCategories } from "@/data/categories";
 import useFetch from "@/hooks/use-fetch";
 import { transactionSchema } from "@/lib/schema";
 import type { TransactionInput } from "@/lib/schema";
+import { cn } from "@/lib/utils";
 
 import AccountsForm from "./accounts-form";
 import AmountForm from "./amount-form";
@@ -49,6 +50,9 @@ const AddTransactionForm = ({
   categories,
   editMode = false,
   initialData = null,
+  onSuccess,
+  onCancel,
+  stickyFooter = false,
 }: {
   // getUserAccounts serializes rows, so balance is a number and _count is present; the serialized view needs its own type.
   accounts: SerializedAccount[];
@@ -56,6 +60,11 @@ const AddTransactionForm = ({
   editMode?: boolean;
   // initialData is getTransactionById's serialized row: amount arrives as a number, not z.input's string.
   initialData?: SerializedTransactionInput | null;
+  // Hosted in a dialog the form closes itself instead of navigating away; the page leaves both undefined.
+  onSuccess?: (accountId: string) => void;
+  onCancel?: () => void;
+  // Pins the actions to the bottom of the dialog's scroll area.
+  stickyFooter?: boolean;
 }) => {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -130,9 +139,13 @@ const AddTransactionForm = ({
         editMode ? "Transaction updated successfully" : "Transaction created successfully",
       );
       reset();
-      router.push(`/account/${transactionResult.data.accountId}`);
+      if (onSuccess) {
+        onSuccess(transactionResult.data.accountId);
+      } else {
+        router.push(`/account/${transactionResult.data.accountId}`);
+      }
     }
-  }, [transactionResult, transactionLoading, editMode, router, reset]);
+  }, [transactionResult, transactionLoading, editMode, router, reset, onSuccess]);
 
   // useCallback: ReceiptScanner's effect depends on this identity; an inline
   // definition would refire onScanComplete on every parent render.
@@ -186,11 +199,17 @@ const AddTransactionForm = ({
           getValues={getValues}
           errors={errors}
         />
-        <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+        <div
+          className={cn(
+            "grid grid-cols-2 md:grid-cols-2 gap-4",
+            stickyFooter && "sticky bottom-0 z-10 -mx-5 border-t bg-background px-5 py-4",
+          )}
+        >
           <FormButtons
             router={router}
             transactionLoading={transactionLoading}
             editMode={editMode}
+            onCancel={onCancel}
           />
         </div>
       </form>

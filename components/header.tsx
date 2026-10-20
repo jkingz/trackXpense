@@ -1,7 +1,4 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { SignOutButton } from "@/components/sign-out-button";
-import { LayoutDashboard, PenBox } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -10,7 +7,6 @@ import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { neonAuth } from "@/lib/neon-auth";
 
 const landingLinks = [
   { label: "What's inside", href: "/#inside" },
@@ -19,15 +15,13 @@ const landingLinks = [
 ];
 
 /**
- * Placeholder for the auth-aware slot. It mirrors the real geometry (two pills
- * plus an avatar) so the bar never reflows when the database answers.
+ * Placeholder for the auth-aware slot. It mirrors the real geometry (a single
+ * icon button) so the bar never reflows when the database answers.
  */
 function AuthSlotSkeleton() {
   return (
     <div className="flex items-center gap-2" aria-hidden>
-      <Skeleton className="h-8 w-20 rounded-md" />
-      <Skeleton className="h-8 w-28 rounded-md" />
-      <Skeleton className="size-9 rounded-full" />
+      <Skeleton className="size-8 rounded-md" />
     </div>
   );
 }
@@ -54,30 +48,7 @@ async function AuthSlot() {
 
   return (
     <div className="flex items-center gap-2">
-      <Link
-        href="/dashboard"
-        className="text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <Button variant="outline" size="sm">
-          <LayoutDashboard />
-          <span className="hidden md:inline">Dashboard</span>
-        </Button>
-      </Link>
-      <Link href="/transaction/create" className="transition-transform hover:-translate-y-0.5">
-        <Button size="sm">
-          <PenBox />
-          <span className="hidden md:inline">Add Transaction</span>
-        </Button>
-      </Link>
-      <form
-        action={async () => {
-          "use server";
-          await neonAuth.api.signOut({ headers: await headers() });
-          redirect("/");
-        }}
-      >
-        <SignOutButton />
-      </form>
+      <SignOutButton />
     </div>
   );
 }
@@ -122,11 +93,11 @@ export default function Header() {
         </Suspense>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           {/* Suspense boundary for AuthSlot - allows non-blocking render */}
           <Suspense fallback={<AuthSlotSkeleton />}>
             <AuthSlot />
           </Suspense>
-          <ThemeToggle />
         </div>
       </nav>
     </header>

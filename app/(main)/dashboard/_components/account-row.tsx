@@ -2,6 +2,7 @@
 
 import { useEffect, type MouseEvent } from "react";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 import { updateDefaultAccount } from "@/actions/accounts";
@@ -9,6 +10,7 @@ import PendingRail from "@/components/pending-rail";
 import { Switch } from "@/components/ui/switch";
 import useFetch from "@/hooks/use-fetch";
 import { signedUsd } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
 type Account = {
   id: string;
@@ -22,9 +24,10 @@ type Account = {
 /**
  * One ledger row. The name and the balance are the link, and the default switch
  * sits outside it, so the switch is a real control rather than a click trapped
- * inside an anchor.
+ * inside an anchor. Left block: name, type, entry count, balance. Right rail:
+ * the switch with the `click to view ›` affordance beneath it.
  */
-export function AccountRow({ account }: { account: Account }) {
+export function AccountRow({ account, active = false }: { account: Account; active?: boolean }) {
   const { id, name, type, balance, isDefault, _count } = account;
   const {
     data: updated,
@@ -58,12 +61,20 @@ export function AccountRow({ account }: { account: Account }) {
 
   return (
     <li className="relative">
-      <div className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent/40">
+      <div
+        className={cn(
+          "flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent/40",
+          active && "bg-accent/30",
+        )}
+      >
         <Link
           href={`/account/${id}`}
+          aria-current={active ? "page" : undefined}
           className="block min-w-0 flex-1 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <span className="block truncate text-sm font-medium text-card-foreground">{name}</span>
+          <span className="flex min-w-0 items-center text-sm font-medium text-card-foreground">
+            <span className="truncate">{name}</span>
+          </span>
           <span className="mt-0.5 block truncate text-xs text-muted-foreground">
             {type.charAt(0) + type.slice(1).toLowerCase()} account
             {transactions > 0 && ` · ${transactions} ${transactions === 1 ? "entry" : "entries"}`}
@@ -73,16 +84,22 @@ export function AccountRow({ account }: { account: Account }) {
           </span>
         </Link>
 
-        <div className="flex shrink-0 items-center gap-2">
-          {isDefault && (
-            <span className="hidden text-xs text-muted-foreground sm:inline">Default</span>
-          )}
-          <Switch
-            checked={isDefault}
-            onClick={handleDefaultAccountChange}
-            disabled={updateAccountLoading}
-            aria-label={`Make ${name} the default account`}
-          />
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <div className="flex items-center gap-2">
+            {isDefault && (
+              <span className="hidden text-xs text-muted-foreground sm:inline">Default</span>
+            )}
+            <Switch
+              checked={isDefault}
+              onClick={handleDefaultAccountChange}
+              disabled={updateAccountLoading}
+              aria-label={`Make ${name} the default account`}
+            />
+          </div>
+          <span className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
+            {active ? "viewing" : "click to view"}
+            {!active && <ChevronRight className="size-3" aria-hidden />}
+          </span>
         </div>
       </div>
 

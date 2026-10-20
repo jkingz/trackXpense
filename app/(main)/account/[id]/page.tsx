@@ -4,6 +4,7 @@ import { getAccountsWithTransactions, getPaginatedTransactions } from "@/actions
 import { signedUsd } from "@/lib/money";
 
 import AccountChart from "../_components/account-chart";
+import { RenameAccountDialog } from "../_components/rename-account-dialog";
 import TransactionsTable from "../_components/transaction-table";
 
 // Reads one account's ledger on every request, so it cannot be prerendered: opt
@@ -57,9 +58,12 @@ const AccountsPage = async ({
               : "Unknown"}{" "}
             account
           </p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-foreground capitalize sm:text-3xl">
-            {account.name}
-          </h1>
+          <div className="mt-1 flex items-center gap-1.5">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              {account.name}
+            </h1>
+            <RenameAccountDialog accountId={account.id} name={account.name} />
+          </div>
           <p className="mt-1 text-sm text-muted-foreground">
             {entryCount} {entryCount === 1 ? "entry" : "entries"}
           </p>
