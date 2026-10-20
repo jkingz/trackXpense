@@ -70,9 +70,7 @@ export function AccountRow({ account }: { account: Account }) {
           </span>
           <span className="mt-0.5 block truncate text-xs text-muted-foreground">
             {type.charAt(0) + type.slice(1).toLowerCase()} account
-          </span>
-          <span className="block text-xs text-muted-foreground">
-            {transactions} {transactions === 1 ? "entry" : "entries"}
+            {transactions > 0 && ` · ${transactions} ${transactions === 1 ? "entry" : "entries"}`}
           </span>
           <span className="mt-1 block font-mono text-sm font-semibold tabular-nums text-foreground">
             {signedUsd(balance)}
@@ -91,7 +89,7 @@ export function AccountRow({ account }: { account: Account }) {
               aria-label={`Make ${name} the default account`}
             />
           </div>
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+          <span className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
             click to view
             <ChevronRight className="size-3" aria-hidden />
           </span>
