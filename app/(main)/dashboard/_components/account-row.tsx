@@ -2,6 +2,7 @@
 
 import { useEffect, type MouseEvent } from "react";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 import { updateDefaultAccount } from "@/actions/accounts";
@@ -75,11 +76,14 @@ export function AccountRow({ account }: { account: Account }) {
           <span className="mt-0.5 block truncate text-xs text-muted-foreground">
             {type.charAt(0) + type.slice(1).toLowerCase()} account
           </span>
-          <span className="mt-1 flex items-center justify-between gap-2">
+          <span className="mt-1 flex items-center justify-between gap-3 pr-1">
             <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
               {signedUsd(balance)}
             </span>
-            <span className="shrink-0 text-xs text-muted-foreground">click to view</span>
+            <span className="flex shrink-0 translate-y-[1px] items-center gap-1 text-xs text-muted-foreground">
+              click to view
+              <ChevronRight className="size-3" aria-hidden />
+            </span>
           </span>
         </Link>
 
