@@ -22,7 +22,8 @@ type Account = {
 /**
  * One ledger row. The name and the balance are the link, and the default switch
  * sits outside it, so the switch is a real control rather than a click trapped
- * inside an anchor.
+ * inside an anchor. The `click to view` hint in the subtext makes the link
+ * discoverable, since the affordance is only colour-quiet text otherwise.
  */
 export function AccountRow({ account }: { account: Account }) {
   const { id, name, type, balance, isDefault, _count } = account;
@@ -67,6 +68,7 @@ export function AccountRow({ account }: { account: Account }) {
           <span className="mt-0.5 block truncate text-xs text-muted-foreground">
             {type.charAt(0) + type.slice(1).toLowerCase()} account
             {transactions > 0 && ` · ${transactions} ${transactions === 1 ? "entry" : "entries"}`}
+            {" · click to view"}
           </span>
           <span className="mt-1 block font-mono text-sm font-semibold tabular-nums text-foreground">
             {signedUsd(balance)}
