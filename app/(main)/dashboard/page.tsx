@@ -128,10 +128,6 @@ const DashBoardPage = async () => {
 
   return (
     <div className="space-y-4">
-      <Suspense fallback={<YearSkeleton />}>
-        <YearSection />
-      </Suspense>
-
       <div className="--reveal grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Suspense fallback={<BudgetSkeleton />}>
           <BudgetSection defaultAccountId={defaultAccount?.id} />
@@ -144,6 +140,10 @@ const DashBoardPage = async () => {
 
       <Suspense fallback={<ChartsSkeleton />}>
         <OverviewSection accounts={accounts} monthName={format(now, "MMMM")} />
+      </Suspense>
+
+      <Suspense fallback={<YearSkeleton />}>
+        <YearSection />
       </Suspense>
     </div>
   );
