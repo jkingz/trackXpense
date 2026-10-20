@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "Invalid query" }, { status: 400 });
   }
-  const { from, to, format } = parsed.data;
+  const { from, to, format, limit, cursor } = parsed.data;
   const toDate = to ? new Date(to) : new Date();
   const fromDate = from ? new Date(from) : new Date(toDate.getTime() - 30 * DAY);
 
@@ -30,11 +30,17 @@ export async function GET(request: Request) {
   const transactions = await db.transaction.findMany({
     where: { userId: user.id, date: { gte: fromDate, lte: toDate } },
     orderBy: { date: "desc" },
+    include: { account: { select: { name: true, type: true } } },
+    take: limit + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   });
+  const hasMore = transactions.length > limit;
+  const page = hasMore ? transactions.slice(0, limit) : transactions;
+  const nextCursor = hasMore ? page[page.length - 1].id : null;
 
   if (format === "csv") {
     const header = "id,type,amount,description,category,date,accountId\n";
-    const body = transactions
+    const body = page
       .map((t) =>
         [
           t.id,
@@ -55,5 +61,7 @@ export async function GET(request: Request) {
     });
   }
 
-  return NextResponse.json(transactions);
+  const res = NextResponse.json(page);
+  if (nextCursor) res.headers.set("X-Next-Cursor", nextCursor);
+  return res;
 }

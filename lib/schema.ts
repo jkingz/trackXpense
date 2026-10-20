@@ -35,6 +35,8 @@ export const transactionExportSchema = z.object({
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
   format: z.enum(["json", "csv"]).default("json"),
+  limit: z.coerce.number().int().min(1).max(500).default(100),
+  cursor: z.string().optional(),
 });
 
 export type AccountInput = z.input<typeof accountSchema>;
