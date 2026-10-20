@@ -33,6 +33,30 @@ export async function updateDefaultAccount(accountId: string) {
   }
 }
 
+export async function renameAccount(accountId: string, name: string) {
+  // Returned as `{ success, error }` like updateDefaultAccount: a failed rename
+  // is a form-level message, not a thrown render error.
+  try {
+    accountId = parseInput(z.string().min(1), accountId);
+    const nextName = parseInput(
+      z.string().trim().min(1, "Name is required").max(100, "Name is too long"),
+      name,
+    );
+    const user = await checkUser();
+
+    const account = await db.account.update({
+      where: { id: accountId, userId: user.id },
+      data: { name: nextName },
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath(`/account/${accountId}`);
+    return { success: true, data: serializeTransaction(account) };
+  } catch (error) {
+    return { success: false, error: toErrorMessage(error) };
+  }
+}
+
 export async function getAccountsWithTransactions(accountId: string) {
   try {
     const user = await checkUser();
