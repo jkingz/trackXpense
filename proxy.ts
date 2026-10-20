@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { neonAuth } from "@/lib/neon-auth";
+
 // Better Auth prefixes its cookie with `__Secure-` whenever it is served over
 // HTTPS, which is every deployed environment — so the deployed cookie name is
 // `__Secure-better-auth.session_token` and the bare name below never matches.
@@ -11,9 +13,14 @@ const SESSION_COOKIES = ["better-auth.session_token", "__Secure-better-auth.sess
 // Cookie presence is not proof of a session; actions/lib/checkUser.ts validates it.
 const PROTECTED = /^\/(dashboard|account|transaction)(\/|$)/;
 
-export default function proxy(request: NextRequest) {
-  const hasSession = SESSION_COOKIES.some((name) => request.cookies.has(name));
-  if (!hasSession && PROTECTED.test(request.nextUrl.pathname)) {
+export default async function proxy(request: NextRequest) {
+  if (!PROTECTED.test(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+  // Validate the actual session, not just cookie presence, so expired/foreign
+  // cookies fail closed here instead of reaching the app.
+  const session = await neonAuth.api.getSession({ headers: request.headers });
+  if (!session) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
   return NextResponse.next();
