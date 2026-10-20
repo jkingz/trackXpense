@@ -2,9 +2,9 @@
 
 Intent not implemented, or implemented and never run. Requirements for future work.
 
-- **Recurring processing against a DB.** Built (`triggerRecurringTransactions` cron → `transaction.recurring.process` → `processRecurringTransaction`, `balance: { increment }` in `db.$transaction`, `lib/inngest/functions.ts`), served at `/api/inngest`. Never fired here → no occurrence applied. Missing: execution + verification.
-- **Email delivery.** `actions/send-email.ts` calls `resend.emails.send`, invoked by the budget-alert + monthly-report functions, which write `budget.lastAlertSent` (`lib/inngest/functions.ts:86`). Never sent here. `RESEND_API_KEY` present in `.env.local` (measured 2026-10-16) → not the gap; callers are Inngest functions that never fire, and `pnpm email` is unrunnable.
-- **Receipt storage.** Gemini OCR built, reachable (`scanReceipt` → `scan-receipt.tsx`, `add-transaction-form.tsx:160`), verified (browser upload 2026-10-16 → HTTP 200, fields filled). `receiptUrl` stays `null`; no upload endpoint or bucket.
+- **Recurring processing against a DB.** Verified 2026-10-21: Inngest dev server (`INNGEST_DEV=1`) synced `/api/inngest`; manual event `transaction.recurring.process` created a recurring occurrence and incremented balance. `lib/inngest/functions.ts`. Remaining: cloud keys + host decision for prod.
+- **Email delivery.** `actions/send-email.ts` calls `resend.emails.send`, invoked by the budget-alert + monthly-report functions. `pnpm email` now renders `emails/template.tsx` to HTML via `scripts/render-email.ts` (verified 2026-10-21). Sending still depends on Inngest functions firing (see recurring processing) and a valid `RESEND_API_KEY`.
+- **Receipt storage.** Decision (2026-10-21): local disk MVP (`public/uploads` via `/api/receipts`); `receiptUrl` now written from scan flow. S3/R2 deferred until scale requires it.
 - **Analytics dashboard.** Spend-by-category, trends. Only "recent transactions" today.
 - **Tests beyond unit tier.** Only the unit tier (`tests/`, `vp test`). No integration/e2e; no page, action, route, `proxy.ts` or Inngest function covered — app coverage ~0%.
 - **Server-side input validation.** Schemas run client-side only (`zodResolver`); every action trusts its arguments. Plan B's `parseInput`.
@@ -20,6 +20,6 @@ Intent not implemented, or implemented and never run. Requirements for future wo
 - **`components/header.tsx` unowned.** Takes no props (`:82`); the unannotated component signature is Plan B Phase 3.
 - **Env vars read via `as string`** (`lib/arcjet.ts:4`, `actions/transaction.ts:14`, `lib/inngest/functions.ts:214`, `actions/seed.ts:10-11`, `proxy.ts:32` in the commented Arcjet block) — a type-lie. `experimental.typedEnv` or a Zod env schema. Blocks trusting the config surface.
 - **`transactions.status` has no transition logic.** Defaults `COMPLETED`, only read as a filter in `lib/inngest/functions.ts:174`. A state machine waits until a real transition exists.
-- **Where the Inngest job should run is undecided** (local dev, external worker, serverless). Blocks giving `lib/inngest/functions.ts` a schedule that fires.
+- **Inngest host (decided 2026-10-21):** Vercel serverless — serve `/api/inngest`, set `INNGEST_EVENT_KEY` + `INNGEST_SIGNING_KEY` in prod. Local dev uses `INNGEST_DEV=1`.
 - **`proxy.ts` gates on cookie presence, not on a session.** `proxy.ts:8` checks cookie presence across both the bare and `__Secure-` session names, so an expired or foreign cookie reaches the app; `requireUser()` in `actions/lib/checkUser.ts` is what actually redirects. Validating the session in the proxy costs a round trip per request.
 - **A stored dark theme flashes light on hard reload.** Owner declined the blocking theme script (2026-10-17), so `components/theme-provider.tsx:23-37` applies `dark` after hydration instead of before first paint. Restoring it costs one inline `<head>` script; the server-rendered alternative (`cookies()` in the layout) opts every route out of prerender under Cache Components.
