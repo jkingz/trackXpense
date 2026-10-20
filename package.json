@@ -8,6 +8,7 @@
     "start": "next start",
     "db:seed": "node --env-file=.env.local --import tsx scripts/seed-demo.ts",
     "db:migrate": "prisma migrate deploy",
+    "email": "tsx scripts/render-email.ts",
     "prepare": "vp config --no-agent",
     "postinstall": "prisma generate",
     "test": "vp test",
