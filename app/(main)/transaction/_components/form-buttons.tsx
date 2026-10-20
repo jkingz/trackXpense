@@ -4,17 +4,20 @@ const FormButtons = ({
   router,
   transactionLoading,
   editMode,
+  onCancel,
 }: {
   router: { back: () => void };
   transactionLoading: boolean;
   editMode: boolean;
+  // In the dialog the cancel control closes the modal; the page falls back to history.
+  onCancel?: () => void;
 }) => {
   return (
     <div className="flex gap-4">
       <Button
         type="button"
         variant="outline"
-        onClick={() => router.back()}
+        onClick={() => (onCancel ? onCancel() : router.back())}
         className="w-full"
         disabled={transactionLoading}
       >
