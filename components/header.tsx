@@ -94,7 +94,7 @@ async function AuthSlot() {
 
 export default function Header() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-50 w-full border-b border-border/70 bg-background/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl supports-backdrop-filter:bg-background/60">
       <nav className="container mx-auto flex h-16 items-center justify-between gap-6 px-4">
         <Link
           href="/"

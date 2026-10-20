@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { sendEmail } from "@/actions/send-email";
 import EmailTemplate from "@/emails/template";
 import { db } from "@/lib/prisma";
+import { env } from "@/lib/env";
 import { applyRecurringTick, recurringPhase } from "@/lib/recurring-lifecycle";
 
 import { inngest } from "./client";
@@ -213,7 +214,7 @@ type MonthlyStats = {
 };
 
 async function generateFinancialInsights(stats: MonthlyStats, month: string) {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+  const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? "");
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const prompt = `

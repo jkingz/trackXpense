@@ -38,6 +38,7 @@ type ChartTransaction = {
 };
 
 type DailyGroup = {
+  key: string;
   date: string;
   income: number;
   expense: number;
@@ -60,25 +61,25 @@ const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) =>
 
     // group transactions by date and sum amounts
     const grouped = filtered.reduce<Record<string, DailyGroup>>((acc, transaction) => {
-      const date = format(new Date(transaction.date), "MMM dd");
+      const d = new Date(transaction.date);
+      const key = format(d, "yyyy-MM-dd");
+      const label = format(d, "MMM dd");
       // create new object if date doesn't exist in accumulator
-      if (!acc[date]) {
-        acc[date] = { date, income: 0, expense: 0 };
+      if (!acc[key]) {
+        acc[key] = { key, date: label, income: 0, expense: 0 };
       }
 
       // add transaction amount to existing object
       if (transaction.type === "INCOME") {
-        acc[date].income += transaction.amount;
+        acc[key].income += transaction.amount;
       } else {
-        acc[date].expense += transaction.amount;
+        acc[key].expense += transaction.amount;
       }
       return acc;
     }, {});
 
     // convert grouped object to array of objects
-    return Object.values(grouped).sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
-    );
+    return Object.values(grouped).sort((a, b) => a.key.localeCompare(b.key));
   }, [transactions, dateRange]);
 
   // calculate totals
@@ -98,7 +99,7 @@ const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) =>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-base font-normal">Transaction Overview</CardTitle>
           <Select value={dateRange} onValueChange={(value) => setDateRange(value ?? "1M")}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-37.5">
               <SelectValue placeholder="Select range" />
             </SelectTrigger>
             <SelectContent>
@@ -136,7 +137,7 @@ const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) =>
               </p>
             </div>
           </div>
-          <div className="h-[330px]">
+          <div className="h-82.5">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={filteredData}

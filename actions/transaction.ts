@@ -6,12 +6,13 @@ import { revalidatePath } from "next/cache";
 
 import aj from "@/lib/arcjet";
 import { db } from "@/lib/prisma";
+import { env } from "@/lib/env";
 import type { TransactionInput } from "@/lib/schema";
 
 import { calculateNextRecurringDate, checkUser, serializeAmount } from "./lib";
 import { toErrorMessage } from "./lib";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? "");
 
 // Model chosen from measured behaviour against this key, not from a doc page.
 // Census on one receipt image, 3 attempts each: `gemini-2.5-flash` and
@@ -149,8 +150,11 @@ export async function createTransaction(data: TransactionInput) {
       throw new Error("Account not found");
     }
 
+    // Normalise: the form spreads the raw string over the parsed number, so coerce
+    // here rather than trust the caller.
+    const amount = Number(data.amount);
     // calculate balance
-    const balanceChange = data.type === "EXPENSE" ? -data.amount : data.amount;
+    const balanceChange = data.type === "EXPENSE" ? -amount : amount;
     // new balance
     const newBalance = account.balance.toNumber() + balanceChange;
 
@@ -159,6 +163,7 @@ export async function createTransaction(data: TransactionInput) {
       const newTransaction = await tx.transaction.create({
         data: {
           ...data,
+          amount,
           userId: user.id,
           nextRecurringDate:
             data.isRecurring && data.recurringInterval

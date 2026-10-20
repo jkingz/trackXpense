@@ -10,7 +10,7 @@ import { checkUser, toErrorMessage } from "./lib";
 
 export async function createAccount(data: AccountInput) {
   try {
-    // The ledger owner: a Clerk session when there is one, the local identity
+    // The ledger owner: a Neon Auth session when there is one, the local identity
     // otherwise. Throws only if a session points at no row.
     const user = await checkUser();
 
