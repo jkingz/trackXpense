@@ -148,6 +148,9 @@ const AddTransactionForm = ({
         if (scannedData.category) {
           setValue("category", scannedData.category);
         }
+        if (scannedData.receiptUrl) {
+          setValue("receiptUrl", scannedData.receiptUrl);
+        }
       }
     },
     [setValue],

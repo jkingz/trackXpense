@@ -8,7 +8,7 @@ import { scanReceipt } from "@/actions/transaction";
 import { Button } from "@/components/ui/button";
 import useFetch from "@/hooks/use-fetch";
 
-export type ScannedReceipt = Awaited<ReturnType<typeof scanReceipt>>;
+export type ScannedReceipt = Awaited<ReturnType<typeof scanReceipt>> & { receiptUrl?: string };
 
 const ReceiptScanner = ({
   onScanComplete,
@@ -16,6 +16,7 @@ const ReceiptScanner = ({
   onScanComplete: (data: ScannedReceipt) => void | Promise<void>;
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const lastFileRef = useRef<File | null>(null);
   const { loading: scanLoading, data: scannedData, fn: scanFn } = useFetch(scanReceipt);
 
   const handleReceiptScan = async (file: File) => {
@@ -24,13 +25,30 @@ const ReceiptScanner = ({
       toast.error("File size is too large");
       return;
     }
+    lastFileRef.current = file;
     await scanFn(file);
   };
 
   useEffect(() => {
     if (scannedData && !scanLoading) {
-      onScanComplete(scannedData);
-      toast.success("Receipt scanned successfully");
+      const file = lastFileRef.current;
+      if (file) {
+        const form = new FormData();
+        form.append("file", file);
+        fetch("/api/receipts", { method: "POST", body: form })
+          .then((r) => r.json())
+          .then((json: { url?: string }) => {
+            onScanComplete({ ...scannedData, receiptUrl: json.url });
+            toast.success("Receipt scanned successfully");
+          })
+          .catch(() => {
+            onScanComplete(scannedData);
+            toast.success("Receipt scanned successfully");
+          });
+      } else {
+        onScanComplete(scannedData);
+        toast.success("Receipt scanned successfully");
+      }
     }
   }, [scannedData, scanLoading, onScanComplete]);
   return (
