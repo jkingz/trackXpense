@@ -99,7 +99,7 @@ const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) =>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-base font-normal">Transaction Overview</CardTitle>
           <Select value={dateRange} onValueChange={(value) => setDateRange(value ?? "1M")}>
-            <SelectTrigger className="w-[150px]">
+            <SelectTrigger className="w-37.5">
               <SelectValue placeholder="Select range" />
             </SelectTrigger>
             <SelectContent>
@@ -137,7 +137,7 @@ const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) =>
               </p>
             </div>
           </div>
-          <div className="h-[330px]">
+          <div className="h-82.5">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={filteredData}
