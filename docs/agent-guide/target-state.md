@@ -2,7 +2,7 @@
 
 Intent not implemented, or implemented and never run. Requirements for future work.
 
-- **Recurring processing against a DB.** Built (`triggerRecurringTransactions` cron → `transaction.recurring.process` → `processRecurringTransaction`, `balance: { increment }` in `db.$transaction`, `lib/inngest/functions.ts`), served at `/api/inngest`. Never fired here → no occurrence applied. Missing: execution + verification.
+- **Recurring processing against a DB.** Verified 2026-10-21: Inngest dev server (`INNGEST_DEV=1`) synced `/api/inngest`; manual event `transaction.recurring.process` created a recurring occurrence and incremented balance. `lib/inngest/functions.ts`. Remaining: cloud keys + host decision for prod.
 - **Email delivery.** `actions/send-email.ts` calls `resend.emails.send`, invoked by the budget-alert + monthly-report functions, which write `budget.lastAlertSent` (`lib/inngest/functions.ts:86`). Never sent here. `RESEND_API_KEY` present in `.env.local` (measured 2026-10-16) → not the gap; callers are Inngest functions that never fire, and `pnpm email` is unrunnable.
 - **Receipt storage.** Gemini OCR built, reachable (`scanReceipt` → `scan-receipt.tsx`, `add-transaction-form.tsx:160`), verified (browser upload 2026-10-16 → HTTP 200, fields filled). `receiptUrl` stays `null`; no upload endpoint or bucket.
 - **Analytics dashboard.** Spend-by-category, trends. Only "recent transactions" today.
