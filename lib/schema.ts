@@ -15,6 +15,7 @@ export const transactionSchema = z
     date: z.date({ error: "Date is required" }),
     accountId: z.string().min(1, "Account is required"),
     category: z.string().min(1, "Category is required"),
+    receiptUrl: z.string().optional(),
     isRecurring: z.boolean().default(false),
     recurringInterval: z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]).optional(),
   })
