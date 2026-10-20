@@ -6,12 +6,13 @@ import { revalidatePath } from "next/cache";
 
 import aj from "@/lib/arcjet";
 import { db } from "@/lib/prisma";
+import { env } from "@/lib/env";
 import type { TransactionInput } from "@/lib/schema";
 
 import { calculateNextRecurringDate, checkUser, serializeAmount } from "./lib";
 import { toErrorMessage } from "./lib";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY as string);
+const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? "");
 
 // Model chosen from measured behaviour against this key, not from a doc page.
 // Census on one receipt image, 3 attempts each: `gemini-2.5-flash` and
