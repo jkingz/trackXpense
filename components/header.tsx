@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
-import { LayoutDashboard, PenBox, LogOut } from "lucide-react";
+import { SignOutButton } from "@/components/sign-out-button";
+import { LayoutDashboard, PenBox } from "lucide-react";
 import Link from "next/link";
 import { Suspense } from "react";
 
@@ -48,11 +48,6 @@ async function AuthSlot() {
             Sign in
           </Button>
         </Link>
-        <Link href="/sign-up">
-          <Button size="sm" className="px-4">
-            Start tracking
-          </Button>
-        </Link>
       </div>
     );
   }
@@ -78,16 +73,29 @@ async function AuthSlot() {
         action={async () => {
           "use server";
           await neonAuth.api.signOut({ headers: await headers() });
-          // Without this the client router serves the landing page it prefetched
-          // while signed in, and the bar keeps showing the ledger actions.
-          revalidatePath("/", "layout");
           redirect("/");
         }}
       >
-        <Button variant="ghost" size="icon" title="Sign out" type="submit">
-          <LogOut className="size-4" />
-        </Button>
+        <SignOutButton />
       </form>
+    </div>
+  );
+}
+
+async function NavLinks() {
+  const user = await currentUser();
+  if (user) return null;
+  return (
+    <div className="hidden items-center gap-1 lg:flex">
+      {landingLinks.map((link) => (
+        <Link
+          key={link.href}
+          href={link.href}
+          className="rounded-full px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          {link.label}
+        </Link>
+      ))}
     </div>
   );
 }
@@ -109,17 +117,9 @@ export default function Header() {
           </span>
         </Link>
 
-        <div className="hidden items-center gap-1 lg:flex">
-          {landingLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="rounded-full px-3.5 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
+        <Suspense fallback={null}>
+          <NavLinks />
+        </Suspense>
 
         <div className="flex items-center gap-2">
           {/* Suspense boundary for AuthSlot - allows non-blocking render */}
