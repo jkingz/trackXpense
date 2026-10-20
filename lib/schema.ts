@@ -31,6 +31,12 @@ export const transactionSchema = z
 // Shared form value types so server actions and form components agree.
 // Transaction forms parse amount to a number before submitting, so the
 // submitted shape differs from the raw schema input.
+export const transactionExportSchema = z.object({
+  from: z.string().datetime().optional(),
+  to: z.string().datetime().optional(),
+  format: z.enum(["json", "csv"]).default("json"),
+});
+
 export type AccountInput = z.input<typeof accountSchema>;
 export type TransactionInput = Omit<z.input<typeof transactionSchema>, "amount"> & {
   amount: number;
