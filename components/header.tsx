@@ -1,5 +1,3 @@
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 import { SignOutButton } from "@/components/sign-out-button";
 import { LayoutDashboard, PenBox } from "lucide-react";
 import Link from "next/link";
@@ -10,7 +8,6 @@ import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { neonAuth } from "@/lib/neon-auth";
 
 const landingLinks = [
   { label: "What's inside", href: "/#inside" },
@@ -69,15 +66,7 @@ async function AuthSlot() {
           <span className="hidden md:inline">Add Transaction</span>
         </Button>
       </Link>
-      <form
-        action={async () => {
-          "use server";
-          await neonAuth.api.signOut({ headers: await headers() });
-          redirect("/");
-        }}
-      >
-        <SignOutButton />
-      </form>
+      <SignOutButton />
     </div>
   );
 }
