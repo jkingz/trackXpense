@@ -39,3 +39,5 @@ excepted. See `workflow.md` → Build pipeline.
 CI (`.github/workflows/ci.yml`): `vp install --frozen-lockfile` → `vp check` → `vp test` → `vp run build` on Node 24.
 
 - Feature work: create a feature branch off `dev` before committing; open PR against `dev`.
+
+- Each increment ships with its test; a PR adding behaviour without a test is not mergeable.
