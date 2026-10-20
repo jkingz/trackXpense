@@ -54,11 +54,7 @@ const BudgetProgress = ({
     }
   }, [updatedBudget]);
 
-  useEffect(() => {
-    if (error) {
-      toast.error(error.message || "Failed to update budget");
-    }
-  }, [error]);
+  // Error toast lives in useFetch (single source).
 
   return (
     <section
