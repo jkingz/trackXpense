@@ -23,8 +23,9 @@ type Account = {
 /**
  * One ledger row. The name and the balance are the link, and the default switch
  * sits outside it, so the switch is a real control rather than a click trapped
- * inside an anchor. The `click to view` hint sits right of the balance — the
- * row's clickability indicator, aligned with the figure it acts on.
+ * inside an anchor. The right column names the account type and carries the
+ * `click to view ›` affordance above the switch, so both read as belonging to
+ * the row's right side rather than bleeding under it.
  */
 export function AccountRow({ account }: { account: Account }) {
   const { id, name, type, balance, isDefault, _count } = account;
@@ -73,30 +74,29 @@ export function AccountRow({ account }: { account: Account }) {
               </span>
             )}
           </span>
-          <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-            {type.charAt(0) + type.slice(1).toLowerCase()} account
-          </span>
-          <span className="mt-1 flex items-center justify-between gap-3 pr-1">
-            <span className="font-mono text-sm font-semibold tabular-nums text-foreground">
-              {signedUsd(balance)}
-            </span>
-            <span className="flex shrink-0 translate-y-[1px] items-center gap-1 text-xs text-muted-foreground">
-              click to view
-              <ChevronRight className="size-3" aria-hidden />
-            </span>
+          <span className="mt-1 block font-mono text-sm font-semibold tabular-nums text-foreground">
+            {signedUsd(balance)}
           </span>
         </Link>
 
-        <div className="flex shrink-0 items-center gap-2">
-          {isDefault && (
-            <span className="hidden text-xs text-muted-foreground sm:inline">Default</span>
-          )}
-          <Switch
-            checked={isDefault}
-            onClick={handleDefaultAccountChange}
-            disabled={updateAccountLoading}
-            aria-label={`Make ${name} the default account`}
-          />
+        <div className="flex shrink-0 flex-col items-end gap-1.5">
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            {type.charAt(0) + type.slice(1).toLowerCase()} account
+            <span aria-hidden>·</span>
+            click to view
+            <ChevronRight className="size-3" aria-hidden />
+          </span>
+          <div className="flex items-center gap-2">
+            {isDefault && (
+              <span className="hidden text-xs text-muted-foreground sm:inline">Default</span>
+            )}
+            <Switch
+              checked={isDefault}
+              onClick={handleDefaultAccountChange}
+              disabled={updateAccountLoading}
+              aria-label={`Make ${name} the default account`}
+            />
+          </div>
         </div>
       </div>
 
