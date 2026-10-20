@@ -43,3 +43,26 @@ export type AccountInput = z.input<typeof accountSchema>;
 export type TransactionInput = Omit<z.input<typeof transactionSchema>, "amount"> & {
   amount: number;
 };
+
+// Server-side variant: amount arrives as a number (form parses before submit).
+export const transactionServerSchema = z
+  .object({
+    type: z.enum(["INCOME", "EXPENSE"]),
+    amount: z.number().finite(),
+    description: z.string().optional(),
+    date: z.date({ error: "Date is required" }),
+    accountId: z.string().min(1, "Account is required"),
+    category: z.string().min(1, "Account is required"),
+    isRecurring: z.boolean().default(false),
+    recurringInterval: z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]).optional(),
+    receiptUrl: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.isRecurring && !data.recurringInterval) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Recurring interval is required for recurring transactions",
+        path: ["recurringInterval"],
+      });
+    }
+  });

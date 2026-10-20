@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/prisma";
 
 import { checkUser, toErrorMessage } from "./lib";
+import { parseInput } from "./lib/parseInput";
+import { z } from "zod";
 
 export async function getCurrentBudget(accountId: string) {
   try {
@@ -58,6 +60,7 @@ export async function getCurrentBudget(accountId: string) {
 // update budget
 export async function updateBudget(amount: number | string) {
   try {
+    amount = parseInput(z.union([z.number(), z.string().min(1)]), amount);
     const user = await checkUser();
 
     const budget = await db.budget.upsert({
