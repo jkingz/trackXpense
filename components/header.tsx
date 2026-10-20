@@ -93,11 +93,11 @@ export default function Header() {
         </Suspense>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           {/* Suspense boundary for AuthSlot - allows non-blocking render */}
           <Suspense fallback={<AuthSlotSkeleton />}>
             <AuthSlot />
           </Suspense>
-          <ThemeToggle />
         </div>
       </nav>
     </header>
