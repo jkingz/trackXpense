@@ -10,6 +10,7 @@ import PendingRail from "@/components/pending-rail";
 import { Switch } from "@/components/ui/switch";
 import useFetch from "@/hooks/use-fetch";
 import { signedUsd } from "@/lib/money";
+import { cn } from "@/lib/utils";
 
 type Account = {
   id: string;
@@ -26,7 +27,7 @@ type Account = {
  * inside an anchor. Left block: name, type, entry count, balance. Right rail:
  * the switch with the `click to view ›` affordance beneath it.
  */
-export function AccountRow({ account }: { account: Account }) {
+export function AccountRow({ account, active = false }: { account: Account; active?: boolean }) {
   const { id, name, type, balance, isDefault, _count } = account;
   const {
     data: updated,
@@ -60,9 +61,15 @@ export function AccountRow({ account }: { account: Account }) {
 
   return (
     <li className="relative">
-      <div className="flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent/40">
+      <div
+        className={cn(
+          "flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent/40",
+          active && "bg-accent/30",
+        )}
+      >
         <Link
           href={`/account/${id}`}
+          aria-current={active ? "page" : undefined}
           className="block min-w-0 flex-1 rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <span className="flex min-w-0 items-center text-sm font-medium text-card-foreground">
@@ -90,8 +97,8 @@ export function AccountRow({ account }: { account: Account }) {
             />
           </div>
           <span className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-            click to view
-            <ChevronRight className="size-3" aria-hidden />
+            {active ? "viewing" : "click to view"}
+            {!active && <ChevronRight className="size-3" aria-hidden />}
           </span>
         </div>
       </div>
