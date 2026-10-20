@@ -1,7 +1,9 @@
 import arcjet, { tokenBucket } from "@arcjet/next";
 
+import { env } from "@/lib/env";
+
 const aj = arcjet({
-  key: process.env.ARCJET_KEY as string,
+  key: (env.ARCJET_KEY ?? "") as string,
   characteristics: ["userId"], // Track based on Neon Auth userId
   rules: [
     // Rate limiting specifically for collection creation
