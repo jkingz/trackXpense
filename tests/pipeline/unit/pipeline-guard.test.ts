@@ -31,7 +31,6 @@ it("classifies pipeline and doc paths as process", () => {
     "opencode.json",
     ".claude/skills/testing.md",
     ".claude/commands/plan.md",
-    ".opencode/plugins/pipeline.js",
   ]) {
     expect(classifyPath(path)).toBe("process");
   }

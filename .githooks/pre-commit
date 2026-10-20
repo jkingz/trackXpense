@@ -1,0 +1,4 @@
+#!/bin/sh
+# Cross-harness pipeline gate + staged formatting.
+vp staged
+node scripts/pipeline-gate.ts commit 2>/dev/null || npx tsx scripts/pipeline-gate.ts commit

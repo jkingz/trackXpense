@@ -6,9 +6,12 @@ import { db } from "@/lib/prisma";
 import { serializeTransaction } from "@/lib/serialized-transaction";
 
 import { buildTransactionWhere, checkUser, toErrorMessage } from "./lib";
+import { parseInput } from "./lib/parseInput";
+import { z } from "zod";
 
 export async function updateDefaultAccount(accountId: string) {
   try {
+    accountId = parseInput(z.string().min(1), accountId);
     //check if user is logged in
     const user = await checkUser();
     // set all other accounts to false
@@ -52,6 +55,7 @@ export async function getAccountsWithTransactions(accountId: string) {
 
 export async function bulkDeleteTransactions(transactionsIds: string[]) {
   try {
+    transactionsIds = parseInput(z.array(z.string().min(1)).min(1), transactionsIds);
     const user = await checkUser();
 
     //delete the transactions

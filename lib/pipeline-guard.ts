@@ -12,7 +12,7 @@ const PROCESS_PREFIXES = [
   "specs/",
   "docs/",
   ".claude/",
-  ".opencode/",
+  ".pipeline-state.json",
   "AGENTS.md",
   "CLAUDE.md",
   "opencode.json",

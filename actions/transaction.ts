@@ -7,9 +7,11 @@ import { revalidatePath } from "next/cache";
 import aj from "@/lib/arcjet";
 import { db } from "@/lib/prisma";
 import { env } from "@/lib/env";
+import { transactionServerSchema } from "@/lib/schema";
 import type { TransactionInput } from "@/lib/schema";
 
 import { calculateNextRecurringDate, checkUser, serializeAmount } from "./lib";
+import { parseInput } from "./lib/parseInput";
 import { toErrorMessage } from "./lib";
 
 const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? "");
@@ -108,6 +110,7 @@ export async function scanReceipt(file: File) {
 // Create Transaction
 export async function createTransaction(data: TransactionInput) {
   try {
+    data = parseInput(transactionServerSchema, data) as TransactionInput;
     // check if use if logged in
     const user = await checkUser();
 
@@ -213,6 +216,7 @@ export async function getTransactionById(id: string) {
 // update transaction
 export async function updateTransaction(data: TransactionInput, id: string) {
   try {
+    data = parseInput(transactionServerSchema, data) as TransactionInput;
     const user = await checkUser();
     // Get original transaction and calculate balance change
     const originalTransaction = await db.transaction.findUnique({
