@@ -1,6 +1,7 @@
 "use client";
 
 import { Monitor, Moon, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +11,8 @@ import {
   DropdownMenuRadioItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { type Theme, useTheme } from "@/components/theme-provider";
+import { useTheme } from "@/components/theme-provider";
+import { type Theme } from "@/lib/theme";
 
 const OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: "light", label: "Light", icon: Sun },
@@ -19,14 +21,20 @@ const OPTIONS: { value: Theme; label: string; icon: typeof Sun }[] = [
 ];
 
 /**
- * The only place a theme is chosen after load. `theme` starts as "system"
- * because the provider cannot read `localStorage` during render; the head script
- * (`lib/theme.ts`) has already applied the class, so the first paint is right
- * even while this control shows the system icon.
+ * The only place a theme is chosen after load. The head script
+ * (`lib/theme.ts`) has already applied the class before the first paint, so
+ * this control's icon is the only thing that waits for the stored value to be
+ * readable — it renders the system icon until mounted to keep hydration
+ * identical on both sides.
  */
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
-  const Icon = OPTIONS.find((option) => option.value === theme)?.icon ?? Monitor;
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const Icon = mounted
+    ? (OPTIONS.find((option) => option.value === theme)?.icon ?? Monitor)
+    : Monitor;
 
   return (
     <DropdownMenu>

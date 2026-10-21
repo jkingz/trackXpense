@@ -8,6 +8,7 @@ import Footer from "@/components/footer";
 import Header from "@/components/header";
 import { ThemeProviderWrapper } from "@/components/theme-provider";
 import { site } from "@/lib/site";
+import { themeScript } from "@/lib/theme";
 import "./globals.css";
 
 // Type pairs HarmonyOS Sans (where installed — the family many of our readers
@@ -104,6 +105,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       className={`${GeistSans.variable} ${GeistMono.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
+        {/* First in <body> so the theme class lands before the browser paints. */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <div aria-hidden className="app-aurora">
           <span className="blob blob-1" />
           <span className="blob blob-2" />
