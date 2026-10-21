@@ -1,5 +1,3 @@
-import { GeistMono } from "geist/font/mono";
-import { GeistSans } from "geist/font/sans";
 import { type Metadata, type Viewport } from "next";
 import { type ReactNode } from "react";
 import { Toaster } from "sonner";
@@ -9,13 +7,13 @@ import Header from "@/components/header";
 import { ThemeProviderWrapper } from "@/components/theme-provider";
 import { site } from "@/lib/site";
 import { themeScript } from "@/lib/theme";
+import { firaCode, firaSans } from "./fonts";
 import "./globals.css";
 
-// Type pairs HarmonyOS Sans (where installed — the family many of our readers
-// already have) with Geist as the everywhere-else sans, and every figure the
-// product prints — balances, amounts, percentages — goes through Geist Mono so
-// columns of money align on the decimal. Self-hosted via the `geist` package,
-// no runtime font fetch. Exposed as CSS variables, never as a className.
+// Every text run is Fira: Fira Sans for copy, Fira Code for the figures the
+// product prints — balances, amounts, percentages — so columns of money align
+// on the decimal. Both are SIL OFL, vendored in `app/fonts/` and exposed as CSS
+// variables by `app/fonts.ts`, so no request leaves the browser for a font.
 
 /**
  * Site-wide metadata. Icons and social images are NOT listed here: `app/icon.tsx`,
@@ -102,7 +100,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       // The router reads this to keep `scroll-smooth` (globals.css) without
       // logging "Detected scroll-behavior: smooth" on every navigation.
       data-scroll-behavior="smooth"
-      className={`${GeistSans.variable} ${GeistMono.variable}`}
+      className={`${firaSans.variable} ${firaCode.variable}`}
     >
       <body className="min-h-screen bg-background text-foreground antialiased">
         {/* First in <body> so the theme class lands before the browser paints. */}
