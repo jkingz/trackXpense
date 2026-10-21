@@ -3,32 +3,24 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 
-import { THEME_STORAGE_KEY } from "@/lib/theme";
-
-export type Theme = "light" | "dark" | "system";
+import { type Theme, isDarkTheme, readStoredTheme, THEME_STORAGE_KEY } from "@/lib/theme";
 
 const ThemeContext = createContext<{ theme: Theme; setTheme: (theme: Theme) => void }>({
   theme: "system",
   setTheme: () => {},
 });
 
-const readStoredTheme = (): Theme => {
-  const stored = localStorage.getItem(THEME_STORAGE_KEY);
-  return stored === "light" || stored === "dark" ? stored : "system";
-};
-
 export function ThemeProviderWrapper({ children }: { children: ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
-
-  useEffect(() => {
-    setThemeState(readStoredTheme());
-  }, []);
+  // The head script already put the stored choice on <html>, so the first
+  // client render starts from the same value instead of flipping after mount.
+  const [theme, setThemeState] = useState<Theme>(readStoredTheme);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const apply = () => {
-      const dark = theme === "dark" || (theme === "system" && media.matches);
+      const dark = isDarkTheme(theme, media.matches);
       document.documentElement.classList.toggle("dark", dark);
+      document.documentElement.style.colorScheme = dark ? "dark" : "light";
     };
     apply();
     if (theme !== "system") return;

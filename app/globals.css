@@ -7,8 +7,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "HarmonyOS Sans", var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --font-sans: var(--font-fira-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-fira-code), ui-monospace, SFMono-Regular, Menlo, monospace;
   --default-font-family: var(--font-sans);
   --default-mono-font-family: var(--font-mono);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -168,6 +168,11 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+  }
+  /* Fira Code turns `->`-style sequences into ligatures; money and counts must
+     render the literal characters. */
+  .font-mono {
+    font-variant-ligatures: none;
   }
 }
 
