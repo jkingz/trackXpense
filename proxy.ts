@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { neonAuth } from "@/lib/neon-auth";
+import { isGuardedPath, routeDecision } from "@/lib/route-guard";
 
 // Better Auth prefixes its cookie with `__Secure-` whenever it is served over
 // HTTPS, which is every deployed environment — so the deployed cookie name is
@@ -9,21 +10,31 @@ import { neonAuth } from "@/lib/neon-auth";
 // visitor on a production host straight back to /sign-in.
 const SESSION_COOKIES = ["better-auth.session_token", "__Secure-better-auth.session_token"];
 
-// Cheap gate: a missing session cookie redirects before any page renders.
-// Cookie presence is not proof of a session; actions/lib/checkUser.ts validates it.
-const PROTECTED = /^\/(dashboard|account|transaction)(\/|$)/;
-
+// Cheap gate: a missing session cookie skips the validation call. Cookie
+// presence is not proof of a session; actions/lib/checkUser.ts validates it.
 export default async function proxy(request: NextRequest) {
-  if (!PROTECTED.test(request.nextUrl.pathname)) {
+  const { pathname } = request.nextUrl;
+  if (!isGuardedPath(pathname)) {
     return NextResponse.next();
   }
+
+  const hasSessionCookie = SESSION_COOKIES.some((name) => request.cookies.has(name));
   // Validate the actual session, not just cookie presence, so expired/foreign
   // cookies fail closed here instead of reaching the app.
-  const session = await neonAuth.api.getSession({ headers: request.headers });
-  if (!session) {
-    return NextResponse.redirect(new URL("/sign-in", request.url));
+  const signedIn = hasSessionCookie
+    ? Boolean(await neonAuth.api.getSession({ headers: request.headers }))
+    : false;
+
+  switch (routeDecision(pathname, signedIn)) {
+    case "sign-in":
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    // The landing page is marketing: a signed-in visitor belongs in their
+    // ledger, so the page is not reachable from either side of the logo.
+    case "dashboard":
+      return NextResponse.redirect(new URL("/dashboard", request.url));
+    default:
+      return NextResponse.next();
   }
-  return NextResponse.next();
 }
 
 export const config = {
