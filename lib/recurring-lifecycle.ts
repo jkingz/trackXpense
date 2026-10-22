@@ -1,4 +1,4 @@
-import { calculateNextRecurringDate } from "@/actions/lib";
+import { calculateNextRecurringDate } from "@/actions/lib/calculateRecurring";
 
 export type RecurringClock = {
   lastProcessed: Date | null;
