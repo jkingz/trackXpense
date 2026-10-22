@@ -174,7 +174,6 @@ export const triggerRecurringTransactions = inngest.createFunction(
       return await db.transaction.findMany({
         where: {
           isRecurring: true,
-          status: "COMPLETED",
           OR: [
             { lastProcessed: null },
             {
