@@ -4,30 +4,31 @@ import path from "node:path";
 
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-import { env } from "@/lib/env";
-
-const R2_ENDPOINT = env.R2_ENDPOINT;
-const R2_BUCKET = env.R2_BUCKET;
-const R2_ACCESS_KEY_ID = env.R2_ACCESS_KEY_ID;
-const R2_SECRET_ACCESS_KEY = env.R2_SECRET_ACCESS_KEY;
-const R2_PUBLIC_URL = env.R2_PUBLIC_URL;
-
-function useRemoteStorage(): boolean {
-  return Boolean(
-    R2_ENDPOINT && R2_BUCKET && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_PUBLIC_URL,
-  );
+function clean(value: string | undefined): string | undefined {
+  const v = value?.trim();
+  return v ? v : undefined;
 }
 
 let s3: S3Client | null = null;
-function getS3(): S3Client {
+
+function remoteConfig() {
+  const R2_ENDPOINT = clean(process.env.R2_ENDPOINT);
+  const R2_BUCKET = clean(process.env.R2_BUCKET);
+  const R2_ACCESS_KEY_ID = clean(process.env.R2_ACCESS_KEY_ID);
+  const R2_SECRET_ACCESS_KEY = clean(process.env.R2_SECRET_ACCESS_KEY);
+  const R2_PUBLIC_URL = clean(process.env.R2_PUBLIC_URL);
+  const ready = Boolean(
+    R2_ENDPOINT && R2_BUCKET && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_PUBLIC_URL,
+  );
+  return { R2_ENDPOINT, R2_BUCKET, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_PUBLIC_URL, ready };
+}
+
+function getS3(endpoint: string, key: string, secret: string): S3Client {
   if (!s3) {
     s3 = new S3Client({
       region: "auto",
-      endpoint: R2_ENDPOINT,
-      credentials: {
-        accessKeyId: R2_ACCESS_KEY_ID!,
-        secretAccessKey: R2_SECRET_ACCESS_KEY!,
-      },
+      endpoint,
+      credentials: { accessKeyId: key, secretAccessKey: secret },
     });
   }
   return s3;
@@ -38,16 +39,18 @@ export async function uploadReceipt(file: File): Promise<{ url: string }> {
   const name = `${randomUUID()}${ext}`;
   const buf = Buffer.from(await file.arrayBuffer());
 
-  if (useRemoteStorage()) {
-    await getS3().send(
+  const cfg = remoteConfig();
+  if (cfg.ready) {
+    const client = getS3(cfg.R2_ENDPOINT!, cfg.R2_ACCESS_KEY_ID!, cfg.R2_SECRET_ACCESS_KEY!);
+    await client.send(
       new PutObjectCommand({
-        Bucket: R2_BUCKET,
+        Bucket: cfg.R2_BUCKET!,
         Key: name,
         Body: buf,
         ContentType: file.type || "application/octet-stream",
       }),
     );
-    const base = R2_PUBLIC_URL?.replace(/\/$/, "") ?? `${R2_ENDPOINT}/${R2_BUCKET}`;
+    const base = cfg.R2_PUBLIC_URL!.replace(/\/$/, "");
     return { url: `${base}/${name}` };
   }
 
