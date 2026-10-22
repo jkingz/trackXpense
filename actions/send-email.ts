@@ -3,6 +3,8 @@
 import type { ReactNode } from "react";
 import { Resend } from "resend";
 
+import { env } from "@/lib/env";
+
 export async function sendEmail({
   to,
   subject,
@@ -12,7 +14,7 @@ export async function sendEmail({
   subject: string;
   react: ReactNode;
 }) {
-  const resend = new Resend(process.env.RESEND_API_KEY || "");
+  const resend = new Resend(env.RESEND_API_KEY || "");
 
   try {
     const data = await resend.emails.send({
