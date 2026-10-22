@@ -12,11 +12,11 @@ const envSchema = z.object({
   BETTER_AUTH_SECRET: z.string().optional(),
   DEMO_USER_PASSWORD: z.string().optional(),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  R2_ENDPOINT: z.string().url().optional(),
-  R2_BUCKET: z.string().optional(),
-  R2_ACCESS_KEY_ID: z.string().optional(),
-  R2_SECRET_ACCESS_KEY: z.string().optional(),
-  R2_PUBLIC_URL: z.string().url().optional(),
+  R2_ENDPOINT: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional()),
+  R2_BUCKET: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  R2_ACCESS_KEY_ID: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  R2_SECRET_ACCESS_KEY: z.preprocess((v) => (v === "" ? undefined : v), z.string().optional()),
+  R2_PUBLIC_URL: z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional()),
 });
 
 export const env = envSchema.parse(process.env);

@@ -13,7 +13,9 @@ const R2_SECRET_ACCESS_KEY = env.R2_SECRET_ACCESS_KEY;
 const R2_PUBLIC_URL = env.R2_PUBLIC_URL;
 
 function useRemoteStorage(): boolean {
-  return Boolean(R2_ENDPOINT && R2_BUCKET && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY);
+  return Boolean(
+    R2_ENDPOINT && R2_BUCKET && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_PUBLIC_URL,
+  );
 }
 
 let s3: S3Client | null = null;

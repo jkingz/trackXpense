@@ -200,7 +200,6 @@ export async function resetDemoLedger(userId: string) {
         description: row.description,
         date: noonDaysAgo(row.daysAgo),
         category: row.category,
-        status: "COMPLETED",
         userId,
         accountId: ids.get(row.account)!,
       })),
