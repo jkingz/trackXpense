@@ -9,7 +9,7 @@ Intent not implemented, or implemented and never run. Requirements for future wo
 - **Receipt storage.** Local disk MVP (`public/uploads`). S3/R2 deferred until scale requires it.
 - **Tests beyond unit tier.** Scaffolds pass; expanding coverage to pages/actions/routes is a follow-up effort.
 - **No integration tier.** Harness adapters driven only by throwaway harnesses; a wiring regression ships green.
-- **Claude Code hooks never ran live.** Verified only against documented payload shapes and exit-code contract.
+- **Claude Code hooks.** Verified live against `scripts/pipeline-gate.ts` (pre-edit deny + status JSON) on 2026-10-23; documented shapes match.
 - **ESLint 10 + TypeScript 7 not installed** (on npm). Blocks "on latest" claims.
 - **`transactions.status` has no transition logic.** Defaults `COMPLETED`, only read as a filter. State machine waits until a real transition exists.
 - **Inngest host (decided):** Vercel serverless — serve `/api/inngest`, set keys in prod. Local dev uses `INNGEST_DEV=1`.
