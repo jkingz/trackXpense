@@ -21,12 +21,7 @@ const BudgetProgress = ({
   const [isEditing, setIsEditing] = useState(false);
   const [newBudget, setNewBudget] = useState(initialBudget?.amount?.toString() || "");
 
-  const {
-    loading: isLoading,
-    fn: updateBudgetFn,
-    data: updatedBudget,
-    error,
-  } = useFetch(updateBudget);
+  const { loading: isLoading, fn: updateBudgetFn, data: updatedBudget } = useFetch(updateBudget);
 
   const percentUsed = initialBudget ? (currentExpenses / initialBudget.amount) * 100 : 0;
   const headroom = (initialBudget?.amount ?? 0) - currentExpenses;
