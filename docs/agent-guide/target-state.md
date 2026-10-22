@@ -10,7 +10,7 @@ Intent not implemented, or implemented and never run. Requirements for future wo
 - **Tests beyond unit tier.** Scaffolds pass; expanding coverage to pages/actions/routes is a follow-up effort.
 - **No integration tier.** Harness adapters driven only by throwaway harnesses; a wiring regression ships green.
 - **Claude Code hooks.** Verified live against `scripts/pipeline-gate.ts` (pre-edit deny + status JSON) on 2026-10-23; documented shapes match.
-- **TypeScript 7** native preview; typecheck via `tsgo --noEmit`. ESLint dropped in favour of `vp check` (oxlint) via viteplus.
+- **TypeScript 7.0.2** stable; typecheck via `tsc --noEmit`. ESLint dropped in favour of `vp check` (oxlint) via viteplus.
 - **`transactions.status` has no transition logic.** Defaults `COMPLETED`, only read as a filter. State machine waits until a real transition exists.
 - **Inngest host (decided):** Vercel serverless — serve `/api/inngest`, set keys in prod. Local dev uses `INNGEST_DEV=1`.
 - **Counts hand-maintained.** No automated check that docs totals match code. Deferred; not blocking.

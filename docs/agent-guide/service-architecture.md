@@ -93,7 +93,7 @@ No `no-store`/`revalidate` export anywhere; no `revalidateTag`; `revalidatePath(
 ## Verification
 
 ```bash
-pnpm typecheck        # exit 0 — tsgo --noEmit (TS 7 native preview)
+pnpm typecheck        # exit 0 — tsc --noEmit (TS 7.0.2)
 pnpm test             # exit 0 — 107 passed (12 files); passes with and without TZ=UTC
 pnpm lint             # exit 0 — vp check: format + lint 0 errors / 6 no-unused-vars warnings (129 files)
 pnpm verify           # exit 0 — test → typecheck → lint → build, the chain the pipeline gates on

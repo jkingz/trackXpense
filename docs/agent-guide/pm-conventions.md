@@ -23,7 +23,7 @@ Full commit/push/PR discipline: `/git-workflow` skill.
 Authority for the chain. Counts → `service-architecture.md` Verification.
 
 1. `pnpm test` → green (`vp test`).
-2. `pnpm typecheck` → 0 errors (`tsgo --noEmit`, TS 7 native preview).
+2. `pnpm typecheck` → 0 errors (`tsc --noEmit`, TS 7.0.2).
 3. `pnpm lint` → exit 0 (`vp check`). Warnings tolerated, a new error is not. `vp check --fix` is the formatter + pre-commit hook.
 4. `pnpm build` → succeeds (type-checks, does not lint).
 5. Manual verification. `pnpm db:seed` + read-only `curl` prove pages render (measured 2026-10-16: `/dashboard` 200 anonymously with seeded figures and an h1; `?page=2`, `?type=INCOME`, `?search=rent` each return different rows).
