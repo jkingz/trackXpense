@@ -61,7 +61,7 @@ STANDING RULES → `overview.md` → `architecture.md` → `ui.md` → `code-sta
 | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Dev       | `pnpm dev` — Turbopack, :3000. Arcjet out of path (commented in `proxy.ts`); pages answer locally                                                                                         |
 | Seed      | `pnpm db:seed` — `node scripts/seed-demo.ts`. **Destructive:** deletes every `transaction`/`budget`/`account` row (users kept), writes a deterministic seven-month ledger per `users` row |
-| Typecheck | `pnpm typecheck` — `tsc --noEmit` (whole tree). `pnpm build` type-checks the same tree                                                                                                    |
+| Typecheck | `pnpm typecheck` — `tsgo --noEmit` (TS 7 native preview, whole tree). `pnpm build` type-checks the same tree                                                                              |
 | Test      | `pnpm test` — Vitest via Vite+, `tests/**/*.test.ts`                                                                                                                                      |
 | Lint/fmt  | `pnpm lint` — `vp check` (format + lint, non-mutating). Formatter alone: `vp fmt [--fix]`. Pre-commit hook runs `vp check --fix`. Config in `vite.config.ts`; no `eslint.config.mjs`      |
 | Verify    | `pnpm verify` — `test` → `typecheck` → `lint` → `build`, the chain the pipeline records                                                                                                   |

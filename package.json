@@ -15,7 +15,7 @@
     "test:integration": "vp test tests/integration",
     "test:e2e": "playwright test",
     "lint": "vp check",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsgo --noEmit",
     "verify": "pnpm test && pnpm typecheck && pnpm lint && pnpm build"
   },
   "dependencies": {
@@ -55,6 +55,7 @@
     "@types/node": "^24",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "dotenv": "^18.0.8",
     "prisma": "7.10.0",
     "tailwindcss": "^4",
