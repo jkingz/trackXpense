@@ -41,7 +41,7 @@ export async function GET(request: Request) {
   if (format === "csv") {
     const header = "id,type,amount,description,category,date,accountId\n";
     const body = page
-      .map((t) =>
+      .map((t: any) =>
         [
           t.id,
           t.type,

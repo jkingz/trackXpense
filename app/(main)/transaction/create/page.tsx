@@ -21,7 +21,7 @@ const AddTransaction = async ({
   const resolvedSearchParams = await searchParams;
   const editId = await resolvedSearchParams?.edit;
 
-  let initialData = null;
+  let initialData: any = null;
   if (editId) {
     const transaction = await getTransactionById(editId);
     initialData = transaction;
