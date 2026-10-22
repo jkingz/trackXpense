@@ -1,5 +1,5 @@
 import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "../generated/prisma/client";
 
 // Prisma 7 requires a driver adapter; the client no longer opens its own connection.
 const adapter = new PrismaPg({

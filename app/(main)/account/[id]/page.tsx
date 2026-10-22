@@ -46,7 +46,7 @@ const AccountsPage = async ({
 
   if (!accountData) return notFound();
 
-  const { ...account } = accountData;
+  const account = accountData as any;
   const entryCount = account._count?.transactions || total;
   return (
     <div className="space-y-8 px-5">

@@ -1,4 +1,5 @@
-import type { Prisma, TransactionType } from "@prisma/client";
+import type { Prisma } from "../../generated/prisma/client";
+import { TransactionType } from "../../generated/prisma/enums";
 
 export type TransactionFilters = {
   userId: string;

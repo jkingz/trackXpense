@@ -119,7 +119,7 @@ export const processRecurringTransaction = inngest.createFunction(
       if (!transaction || recurringPhase(transaction, now) !== "due") return;
 
       // Create new transaction and update account balance in a transaction
-      await db.$transaction(async (tx) => {
+      await db.$transaction(async (tx: any) => {
         // Create new transaction
         await tx.transaction.create({
           data: {
@@ -188,7 +188,7 @@ export const triggerRecurringTransactions = inngest.createFunction(
 
     // Send event for each recurring transaction in batches
     if (recurringTransactions.length > 0) {
-      const events = recurringTransactions.map((transaction) => ({
+      const events = recurringTransactions.map((transaction: any) => ({
         name: "transaction.recurring.process",
         data: {
           transactionId: transaction.id,
@@ -313,7 +313,7 @@ async function getMonthlyStats(userId: string, month: Date): Promise<MonthlyStat
   });
 
   return transactions.reduce<MonthlyStats>(
-    (stats, t) => {
+    (stats: MonthlyStats, t: any) => {
       const amount = t.amount.toNumber();
       if (t.type === "EXPENSE") {
         stats.totalExpenses += amount;

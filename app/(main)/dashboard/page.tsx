@@ -73,8 +73,8 @@ async function OverviewSection({
   const transactions = await loadTransactions();
   const now = new Date();
   const { slices, total } = spendByCategory(transactions, now);
-  const names = new Map(accounts.map((account) => [account.id, account.name]));
-  const recent = transactions.map((transaction) => ({
+  const names = new Map(accounts.map((account: any) => [account.id, account.name]));
+  const recent = transactions.map((transaction: any) => ({
     ...transaction,
     accountName: names.get(transaction.accountId) ?? "Unknown account",
   }));
@@ -119,7 +119,7 @@ const DashBoardPage = async () => {
   // rendering a page whose first read throws.
   await requireUser();
   const accounts = await getUserAccounts();
-  const defaultAccount = accounts?.find((account) => account.isDefault);
+  const defaultAccount = accounts?.find((account: any) => account.isDefault);
   // Pin this render to a request before consulting the clock. Next refuses an
   // unstable `new Date()` during the prerender pass (blocking-prerender-current-
   // time), and the month names below are genuinely request data.

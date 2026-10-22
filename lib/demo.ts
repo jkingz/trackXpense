@@ -173,7 +173,7 @@ const noonDaysAgo = (daysAgo: number) => {
 
 /** Replaces the user's accounts, transactions and budget with the demo ledger. */
 export async function resetDemoLedger(userId: string) {
-  await db.$transaction(async (tx) => {
+  await db.$transaction(async (tx: any) => {
     await tx.transaction.deleteMany({ where: { userId } });
     await tx.budget.deleteMany({ where: { userId } });
     await tx.account.deleteMany({ where: { userId } });

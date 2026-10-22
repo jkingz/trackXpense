@@ -8,14 +8,14 @@
 | Framework       | Next.js 16.4.1 (Turbopack dev+build)                                                                    | `package.json`, `pnpm build`                                                                               |
 | Database        | PostgreSQL via Prisma 7.10.0 + `@prisma/adapter-pg`                                                     | `prisma/schema.prisma`, `lib/prisma.ts`                                                                    |
 | Auth            | Clerk                                                                                                   | `@clerk/nextjs`, `app/(auth)/`, `proxy.ts`                                                                 |
-| Language        | TypeScript 5.9.3 (`^5`), `strict: true` + `noImplicitAny: false`, `useUnknownInCatchVariables: false`   | `tsconfig.json`                                                                                            |
+| Language        | TypeScript 7.0.2, `strict: true` + `noImplicitAny: false`, `useUnknownInCatchVariables: false`          | `tsconfig.json`                                                                                            |
 | UI              | React 19.3.0 + Tailwind 4 + Base UI (`@base-ui/react`)                                                  | `package.json`, `components/ui/*.tsx` — no `@radix-ui` remains                                             |
 | Forms           | React Hook Form 7.90.0 + Zod 4                                                                          | `package.json`                                                                                             |
 | Tests           | Vitest 5.0.4 via Vite+ (`vp test`); unit tier only                                                      | `vite.config.ts`. Totals → `service-architecture.md` Verification                                          |
 | Background jobs | Inngest                                                                                                 | `inngest@4.24.0`, `lib/inngest/`                                                                           |
 | Email           | Resend                                                                                                  | `actions/send-email.ts`, called from `lib/inngest/functions.ts`                                            |
 | Rate limiting   | Arcjet                                                                                                  | `lib/arcjet.ts`. `tokenBucket` in `actions/transaction.ts` only; `proxy.ts` shield/detectBot commented out |
-| Lint            | ESLint via Vite+ (`vp lint` / `vp check`); types come from `tsc --noEmit` + `pnpm build`                | `vite.config.ts`                                                                                           |
+| Lint            | ESLint via Vite+ (`vp lint` / `vp check`); types come from `tsc --noEmit` (TS 7.0.2) + `pnpm build`     | `vite.config.ts`                                                                                           |
 
 ### Boundaries
 
