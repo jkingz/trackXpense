@@ -73,7 +73,14 @@ function Footer() {
       <div className="border-t">
         <div className="container mx-auto flex flex-col gap-2 px-4 py-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <p>&copy; TrackXpense. Your entries stay yours.</p>
-          <p className="font-mono">Built for people who'd rather type it than track it.</p>
+          <nav className="flex items-center gap-4">
+            <Link href="/terms" className="hover:text-foreground">
+              Terms
+            </Link>
+            <Link href="/privacy" className="hover:text-foreground">
+              Privacy
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>
