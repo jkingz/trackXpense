@@ -26,7 +26,7 @@ Authority for the chain. Counts → `service-architecture.md` Verification.
 2. `pnpm typecheck` → 0 errors (`tsc --noEmit`, TS 7.0.2).
 3. `pnpm lint` → exit 0 (`vp check`). Warnings tolerated, a new error is not. `vp check --fix` is the formatter + pre-commit hook.
 4. `pnpm build` → succeeds (type-checks, does not lint).
-5. Manual verification. `pnpm db:seed` + read-only `curl` prove pages render (measured 2026-10-16: `/dashboard` 200 anonymously with seeded figures and an h1; `?page=2`, `?type=INCOME`, `?search=rent` each return different rows).
+5. Manual verification. `pnpm db:seed` + read-only `curl` prove pages render. Verify signed-out redirects and signed-in ledger separately; latest auth-flow result is unverified unless measured in this change.
    - **Unproven:** no create/update submitted through a browser — money paths exercised only by the seed script. Email + Inngest never fired (`INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` unset; `RESEND_API_KEY` + `GEMINI_API_KEY` present, so untriggered not unconfigured). Receipt scan is the one browser-exercised action (measured 2026-10-16, HTTP 200, fields filled). Account page transaction list not scoped to the account in its heading.
 
 `pnpm verify` runs gates 1–4 as one chain; it is the only command the pipeline

@@ -19,7 +19,7 @@
 
 ## Deferred / open questions
 
-- Exact prop shape depends on auth seam (Clerk vs Neon Auth) — resolve in docs.
+- Auth seam: Better Auth via `actions/lib/checkUser.ts`.
 
 ## Security / permissions
 

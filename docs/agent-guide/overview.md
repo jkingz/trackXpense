@@ -2,9 +2,9 @@
 
 ### What it is
 
-TrackXpense — personal finance dashboard. Visitor opens `/dashboard`, creates accounts (checking/savings), logs transactions (income/expense), tracks spend vs budget. App computes balances + dashboard metrics.
+TrackXpense — personal finance dashboard. User signs in or chooses the demo, creates accounts (checking/savings), logs transactions (income/expense), tracks spend vs budget. App computes balances + dashboard metrics.
 
-Clerk sign-in implemented; a session takes over its ledger. Nothing forces it: no session → local demo owner's ledger.
+Better Auth email/password sign-in and demo sign-in are implemented. Ledger routes require a valid session; the demo button signs visitors into the shared demo account.
 
 ### Goals
 
@@ -14,7 +14,7 @@ Clerk sign-in implemented; a session takes over its ledger. Nothing forces it: n
 
 ### Core flow
 
-1. Open `/dashboard` → ledger, seeded seven-month history (`pnpm db:seed`).
+1. Sign in or choose demo → `/dashboard`; demo ledger has seven-month sample history (`pnpm db:seed`).
 2. Create account (CURRENT/SAVINGS) → dashboard.
 3. Log transaction (type, amount, category, date) → balance updates.
 4. Dashboard → total balance, recent transactions, budget status.
@@ -23,7 +23,7 @@ Clerk sign-in implemented; a session takes over its ledger. Nothing forces it: n
 
 In:
 
-- Clerk auth — present, not enforced on ledger routes.
+- Better Auth email/password auth; ledger routes require a valid session.
 - Multiple accounts per user.
 - Transaction logging — income/expense, one-time + recurring.
 - Budget alerts.
