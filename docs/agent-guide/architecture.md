@@ -6,8 +6,8 @@
 | --------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Runtime         | Node 26.8.2 here; **no `engines`**, `packageManager pnpm@12.11.2`, no `.node-version`/`.nvmrc`/`.npmrc` | `package.json`, `pnpm-lock.yaml`, `node -v` — measured 2026-10-16                                          |
 | Framework       | Next.js 16.4.1 (Turbopack dev+build)                                                                    | `package.json`, `pnpm build`                                                                               |
-| Database        | PostgreSQL via Prisma 7.10.0 + `@prisma/adapter-pg`                                                     | `prisma/schema.prisma`, `lib/prisma.ts`                                                                    |
-| Auth            | Clerk                                                                                                   | `@clerk/nextjs`, `app/(auth)/`, `proxy.ts`                                                                 |
+| Database        | Neon PostgreSQL via Prisma 7.10.0 + `@prisma/adapter-pg`                                                | `prisma/schema.prisma`, `lib/prisma.ts`, `DATABASE_URL`                                                    |
+| Auth            | Better Auth email/password                                                                              | `better-auth`, `lib/neon-auth.ts`, `app/api/auth/[...route]/route.ts`                                      |
 | Language        | TypeScript 7.0.2, `strict: true` + `noImplicitAny: false`, `useUnknownInCatchVariables: false`          | `tsconfig.json`                                                                                            |
 | UI              | React 19.3.0 + Tailwind 4 + Base UI (`@base-ui/react`)                                                  | `package.json`, `components/ui/*.tsx` — no `@radix-ui` remains                                             |
 | Forms           | React Hook Form 7.90.0 + Zod 4                                                                          | `package.json`                                                                                             |
@@ -20,48 +20,46 @@
 ### Boundaries
 
 ```
-Browser → Clerk Auth (external)
-       → Next.js App Router (Server Components, API routes, proxy)
-           (main)/*  — no auth; proxy redirect off
-           (auth)/*  — sign-in/up
-           api/*     — seed (dev), inngest (signature)
-       → Prisma → PostgreSQL
-       → External: Clerk Admin (provisioning), Inngest (never fired), Resend (never sent)
+Browser → Better Auth (email/password; API at /api/auth/*)
+       → proxy.ts (valid-session route gate)
+       → Next.js App Router (Server Components, API routes)
+       → Prisma → Neon PostgreSQL
+       → External: Inngest (never fired), Resend (never sent)
 ```
 
 ### Storage model
 
-- **Users** — one row per Clerk user, synced on first sign-in (`clerkUserId`, `email`, `name`, `imageUrl`). Plus one non-Clerk row: demo owner in `lib/demo-identity.ts`, read by `actions/lib/checkUser.ts`, created on first anonymous request. `scripts/seed-demo.ts` writes a ledger under every users row.
+- **Users** — Better Auth `User` rows (`email`, `emailVerified`, `name`, `image`, `password`) with related `Session`, `AuthAccount`, and `Verification` rows. Demo account is provisioned by `lib/demo.ts` and signed in through `/api/demo`; `scripts/seed-demo.ts` resets only its ledger.
 - **Accounts** — checking/savings, owned by a user. Balance mutated on every transaction insert/update. No append-only log; current balance is truth.
 - **Transactions** — one row per income/expense. `type` decides add/subtract. `isRecurring` + `recurringInterval` supported; processor in `lib/inngest/functions.ts` exists but never runs → no occurrence applied automatically. `status` defaults `COMPLETED`, never transitions.
 - **Budgets** — one per user. `lastAlertSent` gated to prevent spam.
 
 ### Persistence schema
 
-- `users`: `id` uuid PK, `clerkUserId` text UK, `email` text UK, `name`/`imageUrl` nullable, timestamps.
+- `users`: `id` uuid PK, unique `email`, `emailVerified`, nullable `name`/`image`/`password`, timestamps. Better Auth tables: `account`, `session`, `verification`.
 - `accounts`: `id` uuid PK, `name`, `type` (CURRENT/SAVINGS), `balance` decimal, `isDefault`, `userId` FK→users CASCADE, timestamps.
 - `transactions`: `id` uuid PK, `type` (INCOME/EXPENSE), `amount` decimal, `description` nullable, `date`, `category`, `receiptUrl` nullable, `isRecurring`, `recurringInterval` (DAILY/WEEKLY/MONTHLY/YEARLY) nullable, `nextRecurringDate` nullable, `lastProcessed` nullable, `status` (PENDING/COMPLETED/FAILED), `userId` FK→users CASCADE, `accountId` FK→accounts CASCADE, timestamps.
 - `budgets`: `id` uuid PK, `amount` decimal, `lastAlertSent` nullable, `userId` UK FK→users CASCADE, timestamps.
 
 ### Auth & tenancy
 
-- **Identity** — Clerk JWT in cookies, read by `proxy.ts` and the action seam. No session → local demo owner (`lib/demo-identity.ts`).
-- **Authority** — route protection lives in `proxy.ts`, but its `isProtected` matcher + `redirectToSignIn()` are commented out for review (Arcjet client too; restore steps in-file). `lib/checkUser.ts` resolves-or-creates a `users` row, returns `null` on empty session or after a failed read/write (DB failure indistinguishable from signed-out), never redirects. `actions/lib/checkUser.ts` reads `auth()`, resolves that session's row, else demo row; throws `User not found` only when a session has no row. `auth()` read in that one file.
+- **Identity** — Better Auth session cookie validated by `neonAuth.api.getSession()` in `proxy.ts` and `actions/lib/checkUser.ts`.
+- **Authority** — `proxy.ts` gates `/dashboard`, `/account`, and `/transaction` via `lib/route-guard.ts`; anonymous requests redirect to `/sign-in`. `requireUser()` guards ledger pages; `checkUser()` guards actions and API reads. `/api/demo` explicitly signs into the shared demo account.
 - **Ownership** — all reads scoped to the `userId` the seam resolves. No privileged bypass.
-- **Gate** — none in the request path today. `lib/checkUser.ts` `checkUser()` is imported at `components/header.tsx:9`, awaited only inside `AuthSlot` (`:36`), whose Suspense call site (`:111-113`) is commented out — so it never runs, and it changed no access decision when it did. `actions/lib/checkUser.ts` decides whose ledger an action touches, not whether the caller may act.
+- **Demo** — `/api/demo` provisions the shared demo account if needed, then creates a Better Auth session. Demo sign-in is explicit; there is no anonymous ledger fallback.
 
 ### HTTP surface — implemented
 
-| Route                 | Method       | Auth              | Notes                                                       |
-| --------------------- | ------------ | ----------------- | ----------------------------------------------------------- |
-| `/`                   | GET          | None              | Landing                                                     |
-| `/(auth)/sign-in`     | GET          | None              | Clerk                                                       |
-| `/(auth)/sign-up`     | GET          | None              | Clerk                                                       |
-| `/(main)/dashboard`   | GET          | None (gate off)   | Accounts, transactions, budget; renders demo owner's ledger |
-| `/(main)/account`     | GET          | None (gate off)   | Create/manage accounts                                      |
-| `/(main)/transaction` | GET          | None (gate off)   | Create/view transactions                                    |
-| `/api/seed`           | GET          | None (dev)        | Writes rows; unauthenticated — gate in prod                 |
-| `/api/inngest`        | GET/POST/PUT | Inngest signature | `serve()` for 4 functions; never triggered                  |
+| Route                 | Method       | Auth              | Notes                                       |
+| --------------------- | ------------ | ----------------- | ------------------------------------------- |
+| `/`                   | GET          | None              | Landing                                     |
+| `/(auth)/sign-in`     | GET          | None              | Better Auth email/password + demo sign-in   |
+| `/(auth)/sign-up`     | GET          | None              | Better Auth email/password                  |
+| `/(main)/dashboard`   | GET          | Session           | Accounts, transactions, budget              |
+| `/(main)/account`     | GET          | Session           | Create/manage accounts                      |
+| `/(main)/transaction` | GET          | Session           | Create/view transactions                    |
+| `/api/seed`           | GET          | None (dev)        | Writes rows; unauthenticated — gate in prod |
+| `/api/inngest`        | GET/POST/PUT | Inngest signature | `serve()` for 4 functions; never triggered  |
 
 Caching: no `no-store`/`revalidate` export anywhere; Cache Components on (`next.config.ts`). Three ledger pages `export const instant = false`. `revalidatePath()` at 9 sites across 4 action files (`actions/accounts.ts`×3, `budget.ts`×1, `transaction.ts`×4, `dashboard.ts`×1). Build page classes → `service-architecture.md` Pages.
 

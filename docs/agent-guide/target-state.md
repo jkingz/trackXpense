@@ -6,6 +6,7 @@ Intent not implemented, or implemented and never run. Requirements for future wo
 - **Mobile app.** Web-only MVP.
 - **Recurring processing against a DB.** Verified locally via Inngest dev server. Remaining: cloud keys + prod host.
 - **Email delivery.** Sending depends on Inngest functions firing and a valid `RESEND_API_KEY`.
+- **Auth account lifecycle.** Spec `specs/12-auth-account-lifecycle.md`: signup confirmation, forgot/reset password, strength meter, auth form validation + toasts, session cookie cache, database rate limits. Not built; sender domain for `EMAIL_FROM` unresolved.
 - **Receipt storage.** Local disk MVP (`public/uploads`). S3/R2 deferred until scale requires it.
 - **Tests beyond unit tier.** Scaffolds pass; expanding coverage to pages/actions/routes is a follow-up effort.
 - **No integration tier.** Harness adapters driven only by throwaway harnesses; a wiring regression ships green.

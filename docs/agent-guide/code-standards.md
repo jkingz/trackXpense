@@ -22,7 +22,7 @@ TS 5.9.3 (`^5`). All source `.ts`/`.tsx`, but `allowJs: true` — a `.js` added 
 
 - App Router only; routes in `app/`. Server Components default; `'use client'` for browser APIs/hooks/interactivity.
 - API routes: `route.ts` named exports (`GET`, `POST`), not default.
-- Root hook file is **`proxy.ts`** (not `middleware.js`), TS. Chain intends Arcjet→Clerk via `createMiddleware(aj, clerk)`; today exports `clerk` alone, Arcjet + `redirectToSignIn()` commented out with restore steps in-file.
+- Root hook file is **`proxy.ts`** (not `middleware.js`), TS. It validates Better Auth sessions for guarded paths via `neonAuth.api.getSession()`; route decisions live in `lib/route-guard.ts`.
 - Turbopack default dev+build. `next lint` removed upstream; no `eslint.config.mjs`, no `pnpm lint` — config lives in `vite.config.ts`.
 - `params`/`searchParams`/`cookies()`/`headers()` are async-only. `revalidateTag()` needs a second `cacheLife` arg; repo uses `revalidatePath`.
 - Config is `next.config.ts`: `cacheComponents: true`, `partialPrefetching: true`, server-action body limit `5mb`, `@tailwindcss/turbopack` for `*.css`. No `eslint`/`typescript` key → `next build` type-checks the whole tree.
@@ -63,7 +63,7 @@ Two real unfixed deviations: unauthenticated `GET` that writes rows; failure pat
 ### Data access
 
 - Reads via Prisma client (`lib/prisma.ts`), scoped to the session user. No privileged/admin bypass.
-- **Gate:** `actions/lib/checkUser.ts` resolves whose ledger an action touches (session row, else demo owner); a new server action calls it. `lib/checkUser.ts` resolves-or-creates the row and returns `null` — its only caller (`AuthSlot` in `components/header.tsx`) isn't rendered — so it provisions, never gates. Nothing calls either on a route handler; `proxy.ts` keeps no anonymous traffic out.
+- **Gate:** `proxy.ts` validates sessions on guarded page paths; `app/(main)/layout.tsx` redirects signed-out visitors. New server actions call `actions/lib/checkUser.ts`; protected API routes call the same seam. Demo is an explicit sign-in via `/api/demo`.
 
 ### State management
 
@@ -81,7 +81,9 @@ State with more than one status is a reducer: a pure `(state, event) => state` i
 ```
 app/
   (auth)/               — sign-in/up
-  (main)/               — dashboard, accounts, transactions (open: proxy redirect off)
+  (main)/               — dashboard, accounts, transactions (session required)
+  api/auth/[...route]/  — Better Auth endpoints
+  api/demo/             — demo-account sign-in
   api/seed/             — dev seed (GET, unauth)
   api/inngest/          — job receiver (serves 4 functions)
   apple-icon.tsx        — 180px home-screen icon (apple-touch-icon)
@@ -103,8 +105,9 @@ lib/
   async-state.ts        — idle/loading/success/error machine
   auth-form-state.ts    — sign-in idle/submitting/error machine (pure)
   brand-mark.tsx        — brand glyph as next/og primitives (icon + social cards)
-  checkUser.ts          — resolve-or-create users row; returns null, never redirects
-  demo-identity.ts      — demo owner identity
+  neon-auth.ts          — Better Auth configuration backed by Prisma
+  route-guard.ts        — guarded paths + session route decisions
+  demo.ts               — demo account and ledger provisioning
   health.ts             — liveness seam behind /api/health
   og-card.tsx           — shared 1200x630 social card body
   site.ts               — public origin + name/description; metadataBase source
@@ -134,7 +137,7 @@ tsconfig.json  next-env.d.ts  next.config.ts  vite.config.ts
 prisma/                 — schema.prisma + migrations/
 prisma.config.ts        — CLI datasource (DIRECT_URL else DATABASE_URL)
 scripts/                — seed-demo.ts (db:seed) — destructive
-proxy.ts                — root hook (clerkMiddleware alone; Arcjet + redirect commented out)
+proxy.ts                — root hook (Better Auth session validation + redirects)
 public/  .env.local  .env.example
 ```
 
@@ -151,4 +154,4 @@ Runner: **Vitest 5.0.4 via Vite+** — no `vitest.config.ts`, no `test` script; 
 - `tests/platform/` gone → nothing asserts docs/`AGENTS.md`/skills/`.env.example` agree; a green `vp test` only pins the characterisation files.
 - Vitest over `node:test` decided 2026-10-12 (`node:test` didn't resolve `@/*`).
 
-Structure for later (`/testing` skill): `tests/{feature}/{tier}/` (unit only today); mock at boundary (Prisma, Clerk, Resend, Inngest); every route test covers 401/403/400; imports via `@/*`.
+Structure for later (`/testing` skill): `tests/{feature}/{tier}/`; mock at boundary (Prisma, Better Auth, Resend, Inngest); every route test covers 401/403/400; imports via `@/*`.

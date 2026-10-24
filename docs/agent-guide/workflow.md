@@ -81,12 +81,12 @@ The plugin targets the V2 plugin API — default-exports `{ id, setup(ctx) }`, r
 
 ### Where logic goes
 
-- `lib/checkUser.ts` — session→row provisioning; only caller (`AuthSlot`) unrendered → unreachable. Returns `null`, never redirects. `actions/lib/checkUser.ts` — the identity seam: session row, else demo owner (`lib/demo-identity.ts`). `auth()` read only here; no auth logic elsewhere. Keep: fallback is read-then-create, not `upsert` (upsert makes Prisma compute `@default(uuid())` even when the row exists; Cache Components refuses that unstable value during prerender → `blocking-prerender-crypto`, an error boundary per page). A session with no row throws `User not found`.
+- `actions/lib/checkUser.ts` — Better Auth session seam. `currentUser()` reads the session; `checkUser()` throws when signed out; `requireUser()` redirects pages to `/sign-in`.
 - `lib/prisma.ts` — all Prisma calls through this singleton (Prisma 7 needs the `@prisma/adapter-pg` adapter).
-- `app/(main)/` — ledger pages. Read whoever the seam resolves. `app/(main)/layout.tsx` does no auth; `proxy.ts` redirect commented out → nothing protects them.
+- `app/(main)/` — ledger pages. `proxy.ts` validates guarded paths; layout and page guards enforce signed-in access.
 - `app/api/` — `/api/seed` runs no gate (unauth `GET` that writes); `/api/inngest` is signed by Inngest. A new protected route must state its check.
 - `lib/schema.ts` — Zod for forms + API input.
-- `proxy.ts` — root hook (Next 16 renamed from `middleware.js`). Exports `clerkMiddleware` alone; Arcjet + session-less `redirectToSignIn()` commented out with restore steps in-file.
+- `proxy.ts` — root hook (Next 16 renamed from `middleware.js`). Validates Better Auth sessions on guarded paths; decisions are in `lib/route-guard.ts`.
 
 ### Framework drift
 
@@ -102,7 +102,7 @@ Add a column: edit `prisma/schema.prisma` → `pnpm exec prisma migrate dev --na
 
 Two seed paths; only one has run.
 
-- `pnpm db:seed` (`scripts/seed-demo.ts`) — the demo ledger. Wipe is unscoped: deletes every `transaction`/`budget`/`account` row (users kept), then writes a deterministic seven-month ledger (`mulberry32` seeded from each identity) for **every `users` row** — demo owner upserted first, signed-in Clerk identity seeded too (session outranks the fallback). Each identity: four accounts, one budget of 2900, per-account balances recomputed from `opening + income − expense`. Recurring rows get `lastProcessed`, `nextRecurringDate` only when the next occurrence is still future → cron selects none (`lib/inngest/functions.ts:171-185`). All in one `db.$transaction`; failure keeps prior data. Measured 2026-10-16: 2 users, 8 accounts, 402 transactions, 2 budgets; 4 `PENDING`, 0 future-dated, 0 cron-selectable.
+- `pnpm db:seed` (`scripts/seed-demo.ts`) — resets only the demo account's ledger, then writes its deterministic seven-month sample data. See `lib/demo.ts` and `scripts/seed-demo.ts`.
 - `curl /api/seed` (`app/api/seed/route.ts` → `actions/seed.ts`) — unauth `GET` that writes; reads `ACCOUNT_ID`/`USER_ID` via `as string` (`actions/seed.ts:10-11`) declared in `.env.example` but set nowhere here. Never exercised. Unverified — prefer `pnpm db:seed`.
 
 ### Before next unit
