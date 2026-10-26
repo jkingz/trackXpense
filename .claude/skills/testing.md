@@ -36,8 +36,10 @@ tests/
 
 ## Running tests
 
-- All tiers: `<cmd>`
-- One tier only: `<cmd>` — e.g. `pnpm test:unit tests/auth/unit`
+- Unit: `pnpm test`
+- Integration: `pnpm test:integration` — loads `.env.local`, needs `DATABASE_URL`
+- E2E: `pnpm test:e2e` — Playwright builds and starts the app
+- All tiers: `pnpm test && pnpm test:integration && pnpm test:e2e`
 - Prove "run one file": pass a path that must match nothing; the runner must say it collected nothing. If it runs everything and exits 0, the argument never reached the runner.
 
 ## Coverage requirements

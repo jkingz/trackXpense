@@ -4,7 +4,7 @@ import { db } from "./prisma";
 /** Public demo account. The password is only used server-side (see /api/demo). */
 export const DEMO_EMAIL = "demo@trackxpense.local";
 // Better Auth requires at least 8 characters.
-export const DEMO_PASSWORD = process.env.DEMO_USER_PASSWORD || "demo-password";
+export const DEMO_PASSWORD = process.env.DEMO_USER_PASSWORD || "TrackXpense-Demo-9x!Qm2";
 export const DEMO_NAME = "Alex Mercer";
 
 const BUDGET = 1500;

@@ -9,20 +9,20 @@ when: "user finishes implementation and needs to verify; asks what tests to run 
 
 Work is done when, in this order:
 
-1. **Tests pass** — Tests covering changed paths pass. New behavior gets a new test in the same change.
-   - Name which tier it covered — the default command is one tier, not the suite.
-   - Report the command and output.
-
-2. **Typecheck passes** — `<cmd>`
+1. **Unit tests pass** — `pnpm test`. Pure modules, no DB.
+2. **Integration tests pass** — `pnpm test:integration`. Real database.
+3. **E2E tests pass** — `pnpm test:e2e`. Playwright drives the built app.
+   - New behavior gets a test in the same change. Name the tier(s) covered and report the command and output.
+4. **Typecheck passes** — `pnpm typecheck`
    - Proves types, not behavior.
 
-3. **Lint passes** — `<cmd>`
+5. **Lint passes** — `pnpm lint`
    - Code style and forbidden patterns.
 
-4. **Production build passes** — `<cmd>`
+6. **Production build passes** — `pnpm build`
    - Anything the build fetches over the network at build time is a latent CI failure.
 
-5. **Live exercise** (when tests cannot reach it)
+7. **Live exercise** (when tests cannot reach it)
    - A page, a migration, a queue job was exercised for real
    - Report the observation: what you did, what you saw
 
@@ -37,8 +37,14 @@ For each gate:
 Example:
 
 ```
-Tests: pnpm test:unit tests/auth/unit
-→ 12 pass, 0 fail
+Unit: pnpm test
+→ 128 pass, 0 fail
+
+Integration: pnpm test:integration
+→ 6 pass, 0 fail
+
+E2E: pnpm test:e2e
+→ 5 pass, 0 fail
 
 Typecheck: pnpm typecheck
 → No errors

@@ -1,9 +1,8 @@
 name: CI
 
-# Gates (same commands, same order as local verification):
-#   vp install (frozen lockfile) -> vp check -> TZ=UTC vp test -> vp run build
-# Env values below are non-secret placeholders so the build can prerender
-# without real credentials. Never add a repository secret to this job.
+# Gates (same commands, same order as local `pnpm verify`):
+#   install -> check -> unit -> integration -> build -> e2e
+# Postgres service backs the integration and e2e tiers.
 
 on:
   push:
@@ -19,15 +18,32 @@ concurrency:
 
 jobs:
   checks:
-    name: install / check / test / build
+    name: install / check / unit / integration / build / e2e
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     env:
       TZ: UTC
-      # Non-secret placeholders for a credential-free prerender.
-      DATABASE_URL: postgresql://localhost:5432/trackxpense
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/trackxpense
+      BETTER_AUTH_SECRET: ci_placeholder_secret_value_32_chars
+      BETTER_AUTH_URL: http://localhost:3000
+      DEMO_USER_PASSWORD: TrackXpense-Demo-9x!Qm2
       ARCJET_KEY: ajkey_dummy_placeholder_for_ci_build_only
       RESEND_API_KEY: re_dummy_placeholder_for_ci_build_only
       GEMINI_API_KEY: dummy_placeholder_for_ci_build_only
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: trackxpense
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
 
@@ -39,11 +55,42 @@ jobs:
       - name: Install
         run: vp install --frozen-lockfile
 
-      - name: Check (format + lint + types)
+      - name: Check (format + lint)
         run: vp check
 
-      - name: Test
-        run: vp test
+      - name: Typecheck
+        run: vp run typecheck
+
+      - name: Unit tests
+        run: vp run test
+
+      - name: Apply migrations
+        run: vp run db:migrate
+
+      - name: Integration tests
+        run: vp run test:integration
 
       - name: Build
         run: vp run build
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: E2E tests
+        run: vp run test:e2e
+
+      - name: Upload E2E artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            test-results/
+            playwright-report/
+          retention-days: 7

@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth";
 import { haveIBeenPwned } from "better-auth/plugins";
+import { nextCookies } from "better-auth/next-js";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { db } from "./prisma";
 import { env } from "./env";
@@ -44,7 +45,7 @@ export const neonAuth = betterAuth({
   advanced: {
     ipAddress: { ipAddressHeaders: ["x-forwarded-for"] },
   },
-  plugins: process.env.NODE_ENV === "test" ? [] : [haveIBeenPwned()],
+  plugins: [...(process.env.NODE_ENV === "test" ? [] : [haveIBeenPwned()]), nextCookies()],
   session: {
     expiresIn: 60 * 60 * 24 * 7,
     updateAge: 60 * 60 * 24,

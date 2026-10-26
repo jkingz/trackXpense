@@ -11,7 +11,7 @@
 | Language        | TypeScript 7.0.2, `strict: true` + `noImplicitAny: false`, `useUnknownInCatchVariables: false`          | `tsconfig.json`                                                                                            |
 | UI              | React 19.3.0 + Tailwind 4 + Base UI (`@base-ui/react`)                                                  | `package.json`, `components/ui/*.tsx` — no `@radix-ui` remains                                             |
 | Forms           | React Hook Form 7.90.0 + Zod 4                                                                          | `package.json`                                                                                             |
-| Tests           | Vitest 5.0.4 via Vite+ (`vp test`); unit tier only                                                      | `vite.config.ts`. Totals → `service-architecture.md` Verification                                          |
+| Tests           | Vitest 5.0.4 via Vite+ (`vp test`); unit, integration, e2e tiers                                        | `vite.config.ts`, `playwright.config.ts`. Totals → `service-architecture.md` Verification                  |
 | Background jobs | Inngest                                                                                                 | `inngest@4.24.0`, `lib/inngest/`                                                                           |
 | Email           | Resend                                                                                                  | `actions/send-email.ts`, called from `lib/inngest/functions.ts`                                            |
 | Rate limiting   | Arcjet                                                                                                  | `lib/arcjet.ts`. `tokenBucket` in `actions/transaction.ts` only; `proxy.ts` shield/detectBot commented out |
@@ -83,4 +83,4 @@ Caching: no `no-store`/`revalidate` export anywhere; Cache Components on (`next.
 4. **Recurring never auto-applied** — `isRecurring`/`recurringInterval`/`nextRecurringDate` written, processor served (`lib/inngest/functions.ts`, `/api/inngest`), never run.
 5. **`createTransaction` gets a string amount** — `add-transaction-form.tsx:99-101` builds `{amount: parseFloat(data.amount), ...data}`, so the spread re-overwrites the number with the raw string. `actions/transaction.ts:120-122` then concatenates into a Decimal (`100 + "250"` → `"100250"`) and `:143` writes it; fresh accounts hide it (`0 + "250"` → `250`), EXPENSE is accidentally right. `updateTransaction` parses (`:207-208`). No test pins `createTransaction`.
 
-No test covers an invariant — the unit tier opens no database. Totals → `service-architecture.md` Verification.
+No integration test pins `createTransaction`; the unit tier opens no database. Totals → `service-architecture.md` Verification.

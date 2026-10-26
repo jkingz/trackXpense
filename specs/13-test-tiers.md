@@ -1,5 +1,9 @@
 # 13 — Per-feature test tiers
 
+## Status
+
+Implemented: tier selection in `vite.config.ts`, per-feature integration/e2e dirs, integration DB tests, Playwright per-feature specs, docs updated.
+
 ## Goal
 
 Every feature ships with unit, integration, and e2e tests in `tests/{feature}/{unit,integration,e2e}/`. No feature is "done" with only unit coverage.
