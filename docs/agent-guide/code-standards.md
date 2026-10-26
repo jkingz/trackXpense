@@ -72,7 +72,7 @@ State with more than one status is a reducer: a pure `(state, event) => state` i
 - **Async client state — built.** `lib/async-state.ts`: `idle → loading → success | error` via `START`/`SUCCESS`/`ERROR`/`SET_DATA`. `hooks/use-fetch.ts` wraps it, keeps `{ data, loading, error, fn, setData }`, call sites unchanged. Test: `tests/hooks/unit/use-fetch-reducer.test.ts`.
 - **Table UI state — built.** `lib/transaction-table-state.ts`: selection/search/filters/dialog via `TOGGLE_SELECT`/`SET_SELECT_ALL`/`SET_*`/`CLEAR_*`/`SET_DELETE_DIALOG`. `transaction-table.tsx` uses it. Test: `tests/transactions/unit/transaction-table-state.test.ts`.
 - **Recurring lifecycle — built.** `lib/recurring-lifecycle.ts`: `recurringPhase` (`due`/`scheduled`) + `applyRecurringTick` (stamps `lastProcessed`, rolls `nextRecurringDate`). `lib/inngest/functions.ts` calls both. Test: `tests/recurring/unit/recurring-lifecycle.test.ts`.
-- **Build pipeline — built.** `lib/pipeline-state.ts`: `planned → designed → decomposed → building → verified → reviewed` via `PLAN_WRITTEN`/`DESIGN_WRITTEN`/`TICKETS_WRITTEN`/`BUILD_STARTED`/`VERIFY_*`/`REVIEW_*`/`SOURCE_EDITED`/`NEXT_INCREMENT`. `canEditSource`, `canCommit`, `commitBlocker`, `stageBlocker`. Guards in `lib/pipeline-guard.ts` (path class, edit, commit), artifact parsing in `lib/pipeline-artifacts.ts`, I/O in `lib/pipeline-runtime.ts`. Adapters: `.opencode/plugins/pipeline.js` (OpenCode V2) and `scripts/pipeline-gate.ts` (Claude Code hooks). Neither is unit-tested — `tests/` is unit-only. Test: `tests/pipeline/unit/`.
+- **Build pipeline — built.** `lib/pipeline-state.ts`: `planned → designed → decomposed → building → verified → reviewed` via `PLAN_WRITTEN`/`DESIGN_WRITTEN`/`TICKETS_WRITTEN`/`BUILD_STARTED`/`VERIFY_*`/`REVIEW_*`/`SOURCE_EDITED`/`NEXT_INCREMENT`. `canEditSource`, `canCommit`, `commitBlocker`, `stageBlocker`. Guards in `lib/pipeline-guard.ts` (path class, edit, commit), artifact parsing in `lib/pipeline-artifacts.ts`, I/O in `lib/pipeline-runtime.ts`. Adapters: `.opencode/plugins/pipeline.js` (OpenCode V2) and `scripts/pipeline-gate.ts` (Claude Code hooks). Neither is unit-tested. Test: `tests/pipeline/unit/`.
 - **Sign-in form — built.** `lib/auth-form-state.ts`: `idle → submitting | error` via `START`/`FAIL`, with `pending: "submit" | "demo"`. A `FAIL` whose `action` is no longer `pending` is dropped, so a double-fired request cannot relabel the button the user is using. `app/(auth)/sign-in/[[...sign-in]]/page.tsx` dispatches it and derives `busy` from `status`. Test: `tests/auth/unit/auth-form-state.test.ts`.
 - **`transactions.status`** (`PENDING`/`COMPLETED`/`FAILED`) has no transition logic — defaults `COMPLETED`, only read as a filter. Modelling it would be invention; leave until a transition exists.
 
@@ -123,7 +123,7 @@ lib/
   serialized-transaction.ts — Decimal→number row serializer
   transaction-table-state.ts — table reducer
   utils.ts              — cn
-tests/                  — auth, hooks, money, pipeline, recurring, transactions, validation under {feature}/unit/; no runner beyond vp
+tests/                  — {feature}/{unit,integration,e2e}/; unit + integration via vp, e2e via Playwright
   platform/             — DELETED (instruction-layer checker); not in tree
 scripts/                — pipeline-gate.ts (Claude Code hook CLI); seed-demo.ts
 .opencode/              — plugins/pipeline.js (V2 gate enforcer); pipeline-state.json gitignored
@@ -149,7 +149,7 @@ Runner: **Vitest 5.0.4 via Vite+** — no `vitest.config.ts`, no `test` script; 
 
 - Files: `tests/money/unit/serialize-amount.test.ts` (shallow-spread contract — nested `Decimal` stays `Decimal` across the boundary), `tests/money/unit/calculate-next-recurring.test.ts` (4 intervals + month-end/leap carry `2026-01-31`+1mo → `2026-03-03`), `tests/validation/unit/schemas.test.ts` (both money fields are `z.string().min(1)` — no numeric rule, so a non-numeric amount validates; Plan B `parseInput` closes this), `tests/hooks/unit/use-fetch-reducer.test.ts`, `tests/transactions/unit/transaction-table-state.test.ts`, `tests/recurring/unit/recurring-lifecycle.test.ts`.
 - `TZ=UTC` was part of a deleted `test` script; `vp test` sets no zone. Recurrence test passed in local zone and under `TZ=UTC` (measured 2026-10-16) — pin the zone if you depend on it.
-- Nothing mocked (unit tier needs none). No integration/e2e. `hooks/use-fetch.ts` wrapper has no render test — needs `jsdom` + `@testing-library/react`, not installed.
+- Unit tier mocks nothing. Integration tier hits the real database (`tests/{feature}/integration/`, `pnpm test:integration`). E2E tier drives the built app (`tests/{feature}/e2e/`, `pnpm test:e2e`). `hooks/use-fetch.ts` wrapper has no render test — needs `jsdom` + `@testing-library/react`, not installed.
 - Server actions: zero coverage; no runner and no decision on which DB a test may touch (`DATABASE_URL` resolves, `scripts/seed-demo.ts` writes through it).
 - `tests/platform/` gone → nothing asserts docs/`AGENTS.md`/skills/`.env.example` agree; a green `vp test` only pins the characterisation files.
 - Vitest over `node:test` decided 2026-10-12 (`node:test` didn't resolve `@/*`).

@@ -10,8 +10,12 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["tests/**/*.test.ts"],
-    exclude: ["tests/integration/**"],
+    include:
+      process.env.VITEST_TIER === "integration"
+        ? ["tests/**/integration/**/*.test.ts"]
+        : ["tests/**/unit/**/*.test.ts"],
+    exclude: ["tests/**/e2e/**"],
+    setupFiles: process.env.VITEST_TIER === "integration" ? ["tests/setup.integration.ts"] : [],
   },
   resolve: {
     alias: {

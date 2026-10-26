@@ -49,7 +49,7 @@ Command names: `/review` is a bundled **alias** of `/code-review`, and `/reset` 
 
 Escape hatch: disable the hook group in `.claude/settings.json` — a hook cannot read an env switch, since a command that could set the switch could also disable the gate. For cross-harness enforcement, add a git `pre-commit` hook running `scripts/pipeline-gate.ts`.
 
-Machine: `lib/pipeline-*.ts`. Tests: `tests/pipeline/unit/` (the pure modules only). The adapter is I/O and has no committed tests — `tests/` is unit-only.
+Machine: `lib/pipeline-*.ts`. Tests: `tests/pipeline/unit/` (the pure modules only). The adapter is I/O and has no committed tests.
 
 ### Read order
 
@@ -62,9 +62,9 @@ STANDING RULES → `overview.md` → `architecture.md` → `ui.md` → `code-sta
 | Dev       | `pnpm dev` — Turbopack, :3000. Arcjet out of path (commented in `proxy.ts`); pages answer locally                                                                                         |
 | Seed      | `pnpm db:seed` — `node scripts/seed-demo.ts`. **Destructive:** deletes every `transaction`/`budget`/`account` row (users kept), writes a deterministic seven-month ledger per `users` row |
 | Typecheck | `pnpm typecheck` — `tsc --noEmit` (TS 7.0.2, whole tree). `pnpm build` type-checks the same tree                                                                                          |
-| Test      | `pnpm test` — Vitest via Vite+, `tests/**/*.test.ts`                                                                                                                                      |
+| Test      | `pnpm test` — unit tier; `pnpm test:integration` — real DB; `pnpm test:e2e` — Playwright                                                                                                  |
 | Lint/fmt  | `pnpm lint` — `vp check` (format + lint, non-mutating). Formatter alone: `vp fmt [--fix]`. Pre-commit hook runs `vp check --fix`. Config in `vite.config.ts`; no `eslint.config.mjs`      |
-| Verify    | `pnpm verify` — `test` → `typecheck` → `lint` → `build`, the chain the pipeline records                                                                                                   |
+| Verify    | `pnpm verify` — `test` → `test:integration` → `typecheck` → `lint` → `build` → `test:e2e`, the chain the pipeline records                                                                 |
 | Build     | `pnpm build` — Turbopack; type-checks, does not lint                                                                                                                                      |
 | Prisma    | `pnpm exec prisma generate`; `prisma migrate dev --name migration_name`; `prisma studio`                                                                                                  |
 | Email dev | Not runnable — no `email` script, `@react-email/ui` not installed                                                                                                                         |

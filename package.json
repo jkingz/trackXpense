@@ -12,11 +12,11 @@
     "prepare": "vp config --no-agent",
     "postinstall": "prisma generate",
     "test": "vp test",
-    "test:integration": "vp test tests/integration",
+    "test:integration": "VITEST_TIER=integration vp test",
     "test:e2e": "playwright test",
     "lint": "vp check",
     "typecheck": "tsc --noEmit",
-    "verify": "pnpm test && pnpm typecheck && pnpm lint && pnpm build"
+    "verify": "pnpm test && pnpm test:integration && pnpm typecheck && pnpm lint && pnpm build && pnpm test:e2e"
   },
   "dependencies": {
     "@arcjet/next": "1.14.1",

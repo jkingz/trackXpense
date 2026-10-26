@@ -28,6 +28,7 @@ when: "user needs to commit, push, open a PR, or asks about git workflows"
   - **How it was verified** (each gate + any live check)
   - **What wasn't covered** (real credentials, third-party webhooks, host-specific behavior)
 - One PR per feature/unit. No grab-bag PRs.
+- Before opening a PR: all three test tiers green — `pnpm test`, `pnpm test:integration`, `pnpm test:e2e` — plus `pnpm typecheck`, `pnpm lint`, `pnpm build`.
 - Keep draft until CI is green; request review after the suite passes.
 
 ## Review process

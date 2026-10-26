@@ -22,22 +22,24 @@ Full commit/push/PR discipline: `/git-workflow` skill.
 
 Authority for the chain. Counts → `service-architecture.md` Verification.
 
-1. `pnpm test` → green (`vp test`).
-2. `pnpm typecheck` → 0 errors (`tsc --noEmit`, TS 7.0.2).
-3. `pnpm lint` → exit 0 (`vp check`). Warnings tolerated, a new error is not. `vp check --fix` is the formatter + pre-commit hook.
-4. `pnpm build` → succeeds (type-checks, does not lint).
-5. Manual verification. `pnpm db:seed` + read-only `curl` prove pages render. Verify signed-out redirects and signed-in ledger separately; latest auth-flow result is unverified unless measured in this change.
+1. `pnpm test` → green (unit tier, `vp test`).
+2. `pnpm test:integration` → green (real DB, `VITEST_TIER=integration vp test`).
+3. `pnpm typecheck` → 0 errors (`tsc --noEmit`, TS 7.0.2).
+4. `pnpm lint` → exit 0 (`vp check`). Warnings tolerated, a new error is not. `vp check --fix` is the formatter + pre-commit hook.
+5. `pnpm build` → succeeds (type-checks, does not lint).
+6. `pnpm test:e2e` → green (Playwright).
+7. Manual verification. `pnpm db:seed` + read-only `curl` prove pages render. Verify signed-out redirects and signed-in ledger separately; latest auth-flow result is unverified unless measured in this change.
    - **Unproven:** no create/update submitted through a browser — money paths exercised only by the seed script. Email + Inngest never fired (`INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` unset; `RESEND_API_KEY` + `GEMINI_API_KEY` present, so untriggered not unconfigured). Receipt scan is the one browser-exercised action (measured 2026-10-16, HTTP 200, fields filled). Account page transaction list not scoped to the account in its heading.
 
-`pnpm verify` runs gates 1–4 as one chain; it is the only command the pipeline
+`pnpm verify` runs gates 1–6 as one chain; it is the only command the pipeline
 records as a gate pass.
 
-Before a commit, gates 1–4 plus the `/review` report must be clean —
+Before a commit, gates 1–6 plus the `/review` report must be clean —
 `.opencode/plugins/pipeline.js` refuses `git commit` otherwise, docs-only
 excepted. See `workflow.md` → Build pipeline.
 
-CI (`.github/workflows/ci.yml`): `vp install --frozen-lockfile` → `vp check` → `vp test` → `vp run build` on Node 24.
+CI (`.github/workflows/ci.yml`): `vp install --frozen-lockfile` → `vp check` → `pnpm verify` on Node 24 (all three tiers).
 
 - Feature work: create a feature branch off `dev` before committing; open PR against `dev`.
 
-- Each increment ships with its test; a PR adding behaviour without a test is not mergeable.
+- Each increment ships with unit, integration, and e2e tests; a PR adding behaviour without all three is not mergeable.
