@@ -26,6 +26,7 @@ jobs:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/trackxpense
       BETTER_AUTH_SECRET: ci_placeholder_secret_value_32_chars
       BETTER_AUTH_URL: http://localhost:3000
+      DEMO_USER_PASSWORD: TrackXpense-Demo-9x!Qm2
       ARCJET_KEY: ajkey_dummy_placeholder_for_ci_build_only
       RESEND_API_KEY: re_dummy_placeholder_for_ci_build_only
       GEMINI_API_KEY: dummy_placeholder_for_ci_build_only
