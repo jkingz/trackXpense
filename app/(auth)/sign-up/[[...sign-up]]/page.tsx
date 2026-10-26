@@ -1,59 +1,66 @@
 "use client";
 
 import Link from "next/link";
-import { useReducer, useState } from "react";
+import { useReducer } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 
 import { BackLink } from "@/components/auth/back-link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { authFormReducer, initialAuthFormState } from "@/lib/auth-form-state";
+import { PasswordStrength } from "@/components/auth/password-strength";
+import { type AuthAction, authFormReducer, initialAuthFormState } from "@/lib/auth-form-state";
+import { mapAuthError, retryAfterFromResponse } from "@/lib/auth-errors";
+import { signUpSchema, type SignUpInput } from "@/lib/schema";
 
 export default function SignUpPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
   const [state, dispatch] = useReducer(authFormReducer, initialAuthFormState);
   const busy = state.status === "submitting";
+  const form = useForm<SignUpInput>({ resolver: zodResolver(signUpSchema), mode: "onBlur" });
+  const password = form.watch("password") ?? "";
 
-  /**
-   * The session cookie is set by the fetch above, so a client-side push can
-   * land on a dashboard rendered from a pre-auth server cache. A hard
-   * navigation makes the first dashboard request carry the cookie.
-   */
-  const goToDashboard = () => window.location.assign("/dashboard");
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = form.handleSubmit(async (values) => {
     if (busy) return;
     dispatch({ type: "START", action: "submit" });
-
     try {
       const res = await fetch("/api/auth/sign-up/email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, name }),
+        body: JSON.stringify(values),
       });
-
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.message || "Sign up failed");
+        const data = await res.json().catch(() => ({}));
+        const msg = mapAuthError({
+          status: res.status,
+          code: data.code,
+          retryAfter: retryAfterFromResponse(res),
+        });
+        if (res.status >= 500 || res.status === 429) toast.error(msg);
+        else dispatch({ type: "FAIL", action: "submit", message: msg });
+        dispatch({ type: "FAIL", action: "submit", message: msg });
+        return;
       }
-
-      goToDashboard();
-    } catch (err) {
-      dispatch({
-        type: "FAIL",
-        action: "submit",
-        message: err instanceof Error ? err.message : "An error occurred",
-      });
+      const data = await res.json().catch(() => ({}));
+      if (data.token === null) {
+        dispatch({ type: "AWAITING" });
+        toast.success("Check your email to verify your account.");
+        return;
+      }
+      window.location.assign("/dashboard");
+    } catch {
+      const msg = "Network error. Try again.";
+      toast.error(msg);
+      dispatch({ type: "FAIL", action: "submit", message: msg });
     }
-  };
+  });
+
+  const errors = form.formState.errors;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">
       <BackLink />
-      <h2 className="text-2xl font-bold">Create Account</h2>
-
+      <h2 className="text-2xl font-bold">Sign Up</h2>
       {state.error && (
         <div
           role="alert"
@@ -62,33 +69,26 @@ export default function SignUpPage() {
           {state.error}
         </div>
       )}
+      {state.status === "awaiting-verification" && (
+        <div className="rounded-md border bg-muted p-3 text-sm">
+          Check your email to verify your account.
+        </div>
+      )}
 
       <div className="space-y-1.5">
         <label htmlFor="name" className="block text-sm font-medium">
-          Full Name
+          Name
         </label>
-        <Input
-          id="name"
-          type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
+        <Input id="name" aria-invalid={!!errors.name} {...form.register("name")} />
+        {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
       </div>
-
       <div className="space-y-1.5">
         <label htmlFor="email" className="block text-sm font-medium">
           Email
         </label>
-        <Input
-          id="email"
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-        />
+        <Input id="email" type="email" aria-invalid={!!errors.email} {...form.register("email")} />
+        {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
       </div>
-
       <div className="space-y-1.5">
         <label htmlFor="password" className="block text-sm font-medium">
           Password
@@ -96,16 +96,30 @@ export default function SignUpPage() {
         <Input
           id="password"
           type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
+          aria-invalid={!!errors.password}
+          {...form.register("password")}
         />
+        {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+        <PasswordStrength password={password} />
+      </div>
+      <div className="space-y-1.5">
+        <label htmlFor="confirmPassword" className="block text-sm font-medium">
+          Confirm password
+        </label>
+        <Input
+          id="confirmPassword"
+          type="password"
+          aria-invalid={!!errors.confirmPassword}
+          {...form.register("confirmPassword")}
+        />
+        {errors.confirmPassword && (
+          <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
+        )}
       </div>
 
-      <Button type="submit" loading={busy} className="w-full">
-        {busy ? "Creating account…" : "Create Account"}
+      <Button type="submit" loading={busy} disabled={busy} className="w-full">
+        Sign Up
       </Button>
-
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
         <Link href="/sign-in" className="text-brand hover:underline">
