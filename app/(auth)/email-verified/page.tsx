@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 
-export default function EmailVerifiedPage() {
+function EmailVerifiedContent() {
   const params = useSearchParams();
   const error = params.get("error");
 
@@ -29,5 +30,15 @@ export default function EmailVerifiedPage() {
         Sign in
       </Link>
     </div>
+  );
+}
+
+export default function EmailVerifiedPage() {
+  return (
+    <Suspense
+      fallback={<div className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">Loading…</div>}
+    >
+      <EmailVerifiedContent />
+    </Suspense>
   );
 }

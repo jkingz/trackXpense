@@ -1,5 +1,6 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useReducer } from "react";
 import { useForm } from "react-hook-form";
@@ -13,7 +14,7 @@ import { authFormReducer, initialAuthFormState } from "@/lib/auth-form-state";
 import { mapAuthError, retryAfterFromResponse } from "@/lib/auth-errors";
 import { resetPasswordSchema, type ResetPasswordInput } from "@/lib/schema";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const params = useSearchParams();
   const token = params.get("token");
   const error = params.get("error");
@@ -110,5 +111,15 @@ export default function ResetPasswordPage() {
         Reset password
       </Button>
     </form>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={<div className="space-y-4 rounded-lg border bg-card p-6 shadow-sm">Loading…</div>}
+    >
+      <ResetPasswordContent />
+    </Suspense>
   );
 }
