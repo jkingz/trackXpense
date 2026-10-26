@@ -240,6 +240,10 @@ export async function ensureDemoUser() {
     user ??= await db.user.findUniqueOrThrow({ where: { email: DEMO_EMAIL } });
   }
 
+  if (!user.emailVerified) {
+    user = await db.user.update({ where: { id: user.id }, data: { emailVerified: true } });
+  }
+
   const owned = await db.account.count({ where: { userId: user.id } });
   if (owned === 0) await resetDemoLedger(user.id);
   return user;

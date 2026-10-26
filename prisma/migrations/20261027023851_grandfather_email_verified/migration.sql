@@ -1,1 +1,1 @@
-UPDATE "User" SET "emailVerified" = true;
+UPDATE "users" SET "emailVerified" = true;

@@ -49,6 +49,25 @@ export default function SignInPage() {
     }
   });
 
+  const handleDemo = async () => {
+    if (busy) return;
+    dispatch({ type: "START", action: "demo" });
+    try {
+      const res = await fetch("/api/demo", { method: "POST" });
+      if (!res.ok) {
+        const msg = "Demo is unavailable right now";
+        toast.error(msg);
+        dispatch({ type: "FAIL", action: "demo", message: msg });
+        return;
+      }
+      goToDashboard();
+    } catch {
+      const msg = "Network error. Try again.";
+      toast.error(msg);
+      dispatch({ type: "FAIL", action: "demo", message: msg });
+    }
+  };
+
   const label = (action: AuthAction, idle: string, pending: string) =>
     state.pending === action ? pending : idle;
 
@@ -106,6 +125,16 @@ export default function SignInPage() {
 
       <Button type="submit" loading={busy} disabled={busy} className="w-full">
         {label("submit", "Sign In", "Signing in…")}
+      </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        loading={busy}
+        onClick={handleDemo}
+        className="w-full"
+      >
+        {label("demo", "Try the demo", "Opening the demo…")}
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
