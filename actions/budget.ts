@@ -10,6 +10,7 @@ import { z } from "zod";
 
 export async function getCurrentBudget(accountId: string) {
   try {
+    accountId = parseInput(z.string().min(1), accountId);
     const user = await checkUser();
 
     //get the current budget

@@ -21,7 +21,7 @@ Browser (Better Auth session, or none)
 | `actions/lib/checkUser.ts`       | `currentUser()` validates the Better Auth session and loads `User`; `checkUser()` throws when signed out; `requireUser()` redirects pages to `/sign-in`. Request-scoped `cache()`.                                                                                                                                |
 | `lib/route-guard.ts`             | Pure route decision for guarded paths; tested.                                                                                                                                                                                                                                                                    |
 | `lib/prisma.ts`                  | Singleton Prisma client via `@prisma/adapter-pg`. All data access.                                                                                                                                                                                                                                                |
-| `lib/schema.ts`                  | Zod `accountSchema` + `transactionSchema` (no `userSchema`). **Client-side only** via `zodResolver`; no action validates input.                                                                                                                                                                                   |
+| `lib/schema.ts`                  | Zod `accountSchema` + `transactionSchema` + `transactionServerSchema`. Client forms use `zodResolver`; server actions validate via `parseInput`.                                                                                                                                                                  |
 | `lib/serialized-transaction.ts`  | `Decimal`→number row serializer, generic over row (`T` + structural `DecimalLike`); typed seam at `:9-11`.                                                                                                                                                                                                        |
 | `lib/arcjet.ts`                  | Arcjet `tokenBucket` client, imported by `actions/transaction.ts`. `proxy.ts` shield/detectBot commented out → rate limiting is the only Arcjet rule in path.                                                                                                                                                     |
 | `lib/async-state.ts`             | `idle/loading/success/error` reducer; `hooks/use-fetch.ts` wraps it. Tested.                                                                                                                                                                                                                                      |
@@ -46,7 +46,7 @@ Anything not built gets no row.
 
 - **Auth gate:** `proxy.ts` validates Better Auth sessions for guarded routes. `requireUser()` guards ledger pages; `checkUser()` guards server actions and user-scoped API routes. Demo access signs into the shared demo account through `/api/demo`.
 - **Database access:** `lib/prisma.ts` singleton. No other module instantiates Prisma; no raw SQL.
-- **Validation:** `lib/schema.ts` schemas run only in client forms; the claim "all submissions validate before DB access" is **false** today. Server-side enforcement is Plan B's `parseInput`.
+- **Validation:** `lib/schema.ts` schemas run in client forms and server actions via `parseInput` (`actions/lib/parseInput.ts`); all write paths now validate before DB access.
 
 ## HTTP surface (exists)
 
@@ -71,7 +71,7 @@ Anything not built gets no row.
 | `/apple-icon`         | GET          | None              | 180px brand mark; static                                                                |
 | `/llms.txt`           | GET          | None              | `public/llms.txt`; static                                                               |
 
-**Planned, absent:** transaction export, budget-alert email delivery (written, never sent), recurring processing against a real DB, any server-side input validation.
+**Planned, absent:** transaction export, budget-alert email delivery (written, never sent), recurring processing against a real DB.
 
 **Measured end to end (2026-10-16):** receipt OCR runs, fills the form. `scanReceipt` (`actions/transaction.ts:27`) sends to `gemini-3.1-flash-lite` (`RECEIPT_MODEL`, `:24`); `scan-receipt.tsx` renders inside the form (`add-transaction-form.tsx:160`, non-edit). One 1.6 MB upload → HTTP 200 in ~4s, `{amount: 19.56, date, category: "groceries", ...}`, form filled, 0 console errors. Two fixes needed: retired model name (`gemini-2.5-flash` 404s against this key though `GET /v1beta/models/gemini-2.5-flash` returns 200), and `categories-form.tsx` used `defaultValue` (read once, so a post-mount category never reached the trigger) — now controlled `value={category ?? null}` + `items`. `receiptUrl` still never written.
 

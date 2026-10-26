@@ -4,12 +4,16 @@ import { revalidatePath } from "next/cache";
 
 import { db } from "@/lib/prisma";
 import type { AccountInput } from "@/lib/schema";
+import { accountSchema } from "@/lib/schema";
 import { serializeTransaction } from "@/lib/serialized-transaction";
 
 import { checkUser, toErrorMessage } from "./lib";
+import { parseInput } from "./lib/parseInput";
+import { z } from "zod";
 
 export async function createAccount(data: AccountInput) {
   try {
+    data = parseInput(accountSchema, data) as AccountInput;
     // The ledger owner: a Neon Auth session when there is one, the local identity
     // otherwise. Throws only if a session points at no row.
     const user = await checkUser();

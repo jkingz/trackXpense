@@ -143,6 +143,7 @@ export async function getPaginatedTransactions({
   sortField?: string;
   sortDirection?: string;
 }) {
+  accountId = parseInput(z.string().min(1), accountId);
   const user = await checkUser();
 
   const skip = (page - 1) * itemsPerPage;
