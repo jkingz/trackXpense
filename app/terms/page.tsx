@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
 
-export const metadata: Metadata = {
+import { socialCard } from "@/lib/social-card";
+
+/** Its own card, not the landing page's: a shared legal link should say which
+ *  document it is. `socialCard` fills `og:*`, `twitter:*`, `og:url` and the
+ *  canonical from this one title. */
+export const metadata: Metadata = socialCard({
   title: "Terms & Conditions",
   description: "Terms and Conditions for using trackXpense.",
-};
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

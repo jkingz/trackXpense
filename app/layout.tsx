@@ -49,10 +49,15 @@ export const metadata: Metadata = {
   // the tree, so a canonical declared in the root layout is inherited by every
   // route — which would tell crawlers /dashboard and /account are duplicates of
   // the homepage. The home page declares its own canonical in `app/page.tsx`.
+  // The home page inherits these values and declares only its canonical in
+  // `app/page.tsx`; `/terms` and `/privacy` replace the whole block through
+  // `socialCard`, because a child that sets `openGraph` replaces the parent's
+  // rather than merging key by key. What stays here is what is true of every
+  // route that sets nothing: the site identity. Auth routes and the 404 still
+  // emit these values — increments 3 and 4 of spec 14 change that.
   openGraph: {
     type: "website",
     locale: site.locale,
-    url: site.url,
     siteName: site.name,
     title: site.title,
     description: site.description,
