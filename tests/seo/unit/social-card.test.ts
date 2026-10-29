@@ -73,3 +73,15 @@ it("carries a card image, which the file convention does not add once a page dec
   });
   expect(metadata.twitter).toMatchObject({ images: ["/twitter-image"] });
 });
+
+/**
+ * The home page is the one route whose title is the site title, so it is also
+ * the one where a helper bug is invisible: `title` and `site.title` are the same
+ * string. These pin that the card is authored for `/` rather than inherited.
+ */
+it("gives the home page its own og:url at the origin", () => {
+  const metadata = socialCard({ title: site.title, path: "/" });
+
+  expect(metadata.openGraph?.url).toBe("/");
+  expect(metadata.alternates?.canonical).toBe("/");
+});
