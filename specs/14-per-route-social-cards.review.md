@@ -69,3 +69,59 @@ uncommitted working tree on 2026-10-27. Fixed point: no commit yet.
 ## Verdict
 
 Verdict: pass
+
+---
+
+# Review — per-route social cards, increment 2
+
+Read-only `reviewer` subagent, two axes, against `HEAD` (8943639) plus the
+uncommitted working tree on 2026-10-28.
+
+## Standards
+
+- [x] **High** `app/page.tsx:13` — comment claimed `/` is "the only route that
+      should claim the site title". False while `app/(auth)/layout.tsx` and
+      `app/not-found.tsx` export no metadata and inherit `app/layout.tsx:30`. Fixed:
+      the comment now states what this page earns (`og:url` of its own) and names
+      increments 3 and 4 as the reason the layout defaults are still shared.
+- [x] **High** `docs/agent-guide/service-architecture.md:36` — "Called by
+      `app/terms/page.tsx` and `app/privacy/page.tsx`" omitted the new caller. Fixed:
+      now names all three. AGENTS.md rule 10 — the doc is the defect.
+- [x] **Medium** n/a — `app/page.tsx` is a strict superset of the block it
+      replaced: every key it set before is set again, and `og:image`/`twitter:image`
+      are now added where they used to be inherited.
+- [x] **Low** `app/page.tsx:14-16` claimed the helper makes it impossible to set
+      one field and forget another. Narrowed to "fills ... from one argument"; the
+      helper does not carry `robots`, which stays a layout-inherited key.
+- [x] **Declined** `tests/seo/unit/social-card.test.ts:77-87` — reviewer called it
+      redundant with `:42-50`. Not acting: it is the only assertion that pins
+      `path: "/"`, the exact value this increment's Done-when depends on, while
+      `:42-50` asserts `/privacy`. Deleting it would let a regression on the home
+      route pass.
+- [x] **High** n/a — no doubled `<title>`. `title.template` does not apply to a
+      page in the same segment (Next docs, `generate-metadata.md:287`), measured:
+      `/` renders the landing title once.
+- [x] **High** n/a — no auth or tenancy surface touched; no env var, no secret.
+- [x] **n/a** AGENTS.md rule 11 — no state added.
+
+## Spec
+
+- [x] Increment 1 — still met; `/terms` and `/privacy` output re-measured
+      unchanged after this change.
+- [x] Increment 2 — met. `/` authors its card through `socialCard`; `og:url` and
+      canonical are the bare origin; `og:image` present.
+- [ ] Increment 3 — not started, as expected.
+- [ ] Increment 4 — not started, as expected.
+- [x] Shipped beyond the spec: the doc row and the comment correction, both
+      required by rules 10 and 12 rather than new scope.
+
+## Gates
+
+| Command             | Result                                                                                                                     |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm verify`       | exit 0 — unit 18 files/135 tests, integration 4/6, typecheck clean, lint 0 errors/3 warnings, build ✓, e2e 6 passed (7.8s) |
+| `pnpm start` + curl | `/` → landing title once, canonical and `og:url` both `http://localhost:3000`; `/terms` and `/privacy` unchanged           |
+
+## Verdict
+
+Verdict: pass

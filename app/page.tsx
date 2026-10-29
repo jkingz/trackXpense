@@ -7,16 +7,22 @@ import LandingFlow from "@/components/landing-flow";
 import type { Metadata } from "next";
 import { featuresData } from "@/data/landing";
 import { site } from "@/lib/site";
+import { socialCard } from "@/lib/social-card";
 
-/** Home-page canonical. Declared here, not in the root layout: a canonical in
- *  the layout is inherited by every route, which would point /dashboard,
- *  /transaction and /account back at this page. `metadataBase` from the layout
- *  is what turns this root-relative path into an absolute URL. */
-export const metadata: Metadata = {
-  alternates: {
-    canonical: "/",
-  },
-};
+/** Home-page card. Authored here rather than inherited from the root layout
+ *  because this is the one public route whose card should be written down rather
+ *  than defaulted, and `socialCard` fills title, og:*, twitter:* and canonical
+ *  from one argument. `metadataBase` in the layout turns `path` into an absolute
+ *  URL.
+ *
+ *  Inheriting the layout's title would render the same string — `title.template`
+ *  does not apply to a page in the same segment — but it would leave this page
+ *  with no `og:url` of its own until increments 3 and 4 stop the auth routes and
+ *  the 404 sharing the layout's values. */
+export const metadata: Metadata = socialCard({
+  title: site.title,
+  path: "/",
+});
 
 /**
  * schema.org JSON-LD for the marketing page. This is the part an AI answer
