@@ -182,3 +182,54 @@ uncommitted working tree on 2026-10-30.
 ## Verdict
 
 Verdict: pass
+
+---
+
+# Review — per-route social cards, increment 4
+
+Read-only `reviewer` subagent, two axes, against `HEAD` (29ed241) plus the
+uncommitted working tree on 2026-10-30.
+
+## Standards
+
+- [x] **Low** `docs/agent-guide/service-architecture.md:88` — the 404 metadata
+      changed but the implemented-surface body recorded nothing. Fixed: new
+      `app/not-found.tsx` row in the module table.
+- [x] **Low** `specs/14-per-route-social-cards.md:148-159` — the unverified list
+      did not name the segment `notFound()` path. Fixed: labelled unexercised.
+- [x] **High** n/a — duplicate `noindex` is not a defect: Next auto-injects one
+      for a 404, and the explicit `robots: { index: false }` stops the child
+      inheriting the root's `index: true`, so the two agree rather than
+      contradict (`not-found.md:15,189`).
+- [x] **High** n/a — losing `og:image` is sanctioned: the declared `openGraph`
+      bypasses the file convention, `twitter:card "summary"` mirrors increment 3,
+      and per-route card art is ruled out by the design.
+- [x] **High** n/a — `app/layout.tsx:55-57` stays true: only the six metadata
+      exports exist, so "the authenticated ledger routes still inherit it" holds.
+- [x] **High** n/a — no auth/tenancy surface, no secret, no env var, no state
+      (rule 11), no money path touched.
+
+## Spec
+
+- [x] Increment 1 — met (merged #29).
+- [x] Increment 2 — met (merged #30).
+- [x] Increment 3 — met (merged #31).
+- [x] Increment 4 — met. Unmatched path → `404`,
+      `<title>Page Not Found — TrackXpense</title>`, `robots: noindex` (Next
+      injects a second agreeing one), `og:title`/`twitter:title`
+      `Page Not Found — TrackXpense`, no `og:url`.
+- [x] No extra scope: the restated `openGraph` fields are required because a
+      child block replaces the root's wholesale.
+- [x] Blast-radius truth-fixes (`app/layout.tsx:55-57`, the
+      `service-architecture.md` row) are accurate and minimal.
+
+## Gates
+
+| Command       | Result                                                                                                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm verify` | exit 0 — unit 18 files/135 tests, integration 4/6, typecheck clean, lint 0 errors/3 warnings (184 files), build ✓, e2e 12 passed (8.7s)                             |
+| built HTML    | unmatched path → `404`, `<title>Page Not Found — TrackXpense</title>`, two `robots noindex`, `og:title`/`twitter:title` `Page Not Found — TrackXpense`, no `og:url` |
+
+## Verdict
+
+Verdict: pass

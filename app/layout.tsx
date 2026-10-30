@@ -52,9 +52,9 @@ export const metadata: Metadata = {
   // `/terms` and `/privacy` through `socialCard`, which replaces this whole
   // block because a child that sets `openGraph` replaces the parent's rather
   // than merging key by key. What stays here is what is true of every route
-  // that sets nothing: the site identity. `app/(auth)/layout.tsx` now overrides
-  // it too (`noindex`, spec 14 increment 3); the 404 still inherits these
-  // values — increment 4 changes that.
+  // that sets nothing: the site identity. `app/(auth)/layout.tsx` and
+  // `app/not-found.tsx` override it (`noindex`, spec 14 increments 3-4); the
+  // authenticated ledger routes still inherit it.
   openGraph: {
     type: "website",
     locale: site.locale,
