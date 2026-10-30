@@ -3,10 +3,11 @@
 ## Status
 
 Written 2026-10-27 from a live check of production. Designed in
-`specs/14-per-route-social-cards.design.md`. Increments 1–2 merged (#29, #30).
-Increment 3 built 2026-10-30: auth routes drop the landing `og:title` (neutral
-`TrackXpense` title, `summary` card, no image) and carry `noindex` — this spec's
-Done-when beats the design table's "root values kept".
+`specs/14-per-route-social-cards.design.md`. Increments 1–3 merged (#29, #30,
+#31). Increment 3: auth routes drop the landing `og:title` (neutral `TrackXpense`
+title, `summary` card, no image) and carry `noindex` — this spec's Done-when
+beats the design table's "root values kept". Increment 4 built 2026-10-30: the
+404 gets its own title and `noindex`, and no `og:url`.
 
 ## Goal
 
@@ -102,6 +103,7 @@ Each one builds, carries its own test, and commits without the next.
   a custom domain is one env var plus a redeploy; no code change.
 - Does the owner want auth routes carded at all?
 - Whether the 404 keeps the root `og:url` is a product call, not a defect.
+  Increment 4 answers it: no `og:url` on the 404.
 
 ## Security / permissions
 
@@ -134,6 +136,15 @@ Increment 3, measured 2026-10-30 (`pnpm verify`):
   `TrackXpense`, `twitter:card summary`, no card image. Same on `/sign-up`,
   `/forgot-password`, `/reset-password`, `/email-verified` (e2e).
 
+Increment 4, measured 2026-10-30 (`pnpm verify`):
+
+- `pnpm verify` → exit 0. Unit `18 files / 135 tests`, integration `4 files / 6
+  tests`, typecheck clean, lint `0 errors / 3 warnings` in 184 files, build
+  `✓ Compiled successfully`, e2e `12 passed (8.7s)` — 1 new not-found case.
+- Unmatched path → `404`, `<title>Page Not Found — TrackXpense</title>`,
+  `<meta name="robots" content="noindex">` (Next also injects one),
+  `og:title`/`twitter:title` `Page Not Found — TrackXpense`, no `og:url`.
+
 Still unverified:
 
 - Not deployed. The production curl against `track-xpense-lake.vercel.app`
@@ -144,3 +155,7 @@ Still unverified:
   untouched by it.
 - Increment 3 is local only: the auth routes were read from the build output,
   not production, and no real unfurl was exercised for them either.
+- Increment 4 is local only too: the 404 was read from the built
+  `_not-found.html`, not production.
+- Only the unmatched-URL 404 was exercised. Whether the same metadata reaches a
+  `notFound()` thrown from a route segment (e.g. `account/[id]`) is unexercised.
