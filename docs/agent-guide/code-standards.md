@@ -38,22 +38,23 @@ Read `node_modules/next/dist/docs/` before touching server-component boundaries.
 
 ### HTTP handlers
 
-`app/api/seed/route.ts:GET` is the only hand-written handler, canonical shape:
+`app/api/transactions/route.ts:GET` is the canonical hand-written handler — session check, Zod parse, real status codes:
 
 ```typescript
-import { seedTransactions } from "@/actions/seed";
+import { NextResponse } from "next/server";
 
-export async function GET() {
-  try {
-    const result = await seedTransactions();
-    return Response.json(result);
-  } catch (error) {
-    return Response.json({ success: false, error: error.message });
-  }
+import { checkUser } from "@/actions/lib/checkUser";
+import { transactionExportSchema } from "@/lib/schema";
+
+export async function GET(request: Request) {
+  const parsed = transactionExportSchema.safeParse(/* query params */);
+  if (!parsed.success) return NextResponse.json({ error: "Invalid query" }, { status: 400 });
+  await checkUser(); // 401 when signed out
+  // ...return the export as JSON or CSV
 }
 ```
 
-Two real unfixed deviations: unauthenticated `GET` that writes rows; failure path returns 200 with `error.message`. Gating is a deferred security item.
+`app/api/receipts/route.ts:POST` has no session check.
 
 - **Status precedence:** 400 (bad input) → 401 (no auth) → 403 (forbidden) → 500 (server).
 - **Failure:** JSON `{ error: "message" }`, real HTTP status.
@@ -84,7 +85,8 @@ app/
   (main)/               — dashboard, accounts, transactions (session required)
   api/auth/[...route]/  — Better Auth endpoints
   api/demo/             — demo-account sign-in
-  api/seed/             — dev seed (GET, unauth)
+  api/receipts/         — receipt upload (POST, no session check)
+  api/transactions/     — date-range export (GET, session)
   api/inngest/          — job receiver (serves 4 functions)
   apple-icon.tsx        — 180px home-screen icon (apple-touch-icon)
   icon.tsx              — brand mark at 32/192/512 (favicon + search + tile)

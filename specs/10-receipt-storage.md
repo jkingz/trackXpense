@@ -1,5 +1,9 @@
 # Receipt Storage
 
+## Status
+
+Shipped: `POST /api/receipts` → `lib/storage.ts` (R2 when configured, else `public/uploads`); `scan-receipt.tsx` uploads and `add-transaction-form.tsx` writes `receiptUrl`.
+
 ## Goal
 
 Uploaded receipts are stored and `transaction.receiptUrl` is written.
