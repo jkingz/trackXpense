@@ -1,5 +1,9 @@
 # Seed Endpoint Gate
 
+## Status
+
+Resolved by deletion: `app/api/seed` and `actions/seed.ts` no longer exist (measured 2026-10-30). No gate needed.
+
 ## Goal
 
 `GET /api/seed` no longer writes rows in production; it is disabled (or gated) outside local dev.

@@ -84,7 +84,7 @@ The plugin targets the V2 plugin API — default-exports `{ id, setup(ctx) }`, r
 - `actions/lib/checkUser.ts` — Better Auth session seam. `currentUser()` reads the session; `checkUser()` throws when signed out; `requireUser()` redirects pages to `/sign-in`.
 - `lib/prisma.ts` — all Prisma calls through this singleton (Prisma 7 needs the `@prisma/adapter-pg` adapter).
 - `app/(main)/` — ledger pages. `proxy.ts` validates guarded paths; layout and page guards enforce signed-in access.
-- `app/api/` — `/api/seed` runs no gate (unauth `GET` that writes); `/api/inngest` is signed by Inngest. A new protected route must state its check.
+- `app/api/` — `/api/transactions` gates via `checkUser`; `/api/receipts` has no session check; `/api/inngest` is signed by Inngest. A new protected route must state its check.
 - `lib/schema.ts` — Zod for forms + API input.
 - `proxy.ts` — root hook (Next 16 renamed from `middleware.js`). Validates Better Auth sessions on guarded paths; decisions are in `lib/route-guard.ts`.
 
@@ -100,10 +100,9 @@ Add a column: edit `prisma/schema.prisma` → `pnpm exec prisma migrate dev --na
 
 ### Data today
 
-Two seed paths; only one has run.
+One seed path:
 
 - `pnpm db:seed` (`scripts/seed-demo.ts`) — resets only the demo account's ledger, then writes its deterministic seven-month sample data. See `lib/demo.ts` and `scripts/seed-demo.ts`.
-- `curl /api/seed` (`app/api/seed/route.ts` → `actions/seed.ts`) — unauth `GET` that writes; reads `ACCOUNT_ID`/`USER_ID` via `as string` (`actions/seed.ts:10-11`) declared in `.env.example` but set nowhere here. Never exercised. Unverified — prefer `pnpm db:seed`.
 
 ### Before next unit
 

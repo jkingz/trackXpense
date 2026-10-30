@@ -50,22 +50,21 @@ Browser → Better Auth (email/password; API at /api/auth/*)
 
 ### HTTP surface — implemented
 
-| Route                 | Method       | Auth              | Notes                                       |
-| --------------------- | ------------ | ----------------- | ------------------------------------------- |
-| `/`                   | GET          | None              | Landing                                     |
-| `/(auth)/sign-in`     | GET          | None              | Better Auth email/password + demo sign-in   |
-| `/(auth)/sign-up`     | GET          | None              | Better Auth email/password                  |
-| `/(main)/dashboard`   | GET          | Session           | Accounts, transactions, budget              |
-| `/(main)/account`     | GET          | Session           | Create/manage accounts                      |
-| `/(main)/transaction` | GET          | Session           | Create/view transactions                    |
-| `/api/seed`           | GET          | None (dev)        | Writes rows; unauthenticated — gate in prod |
-| `/api/inngest`        | GET/POST/PUT | Inngest signature | `serve()` for 4 functions; never triggered  |
+| Route                 | Method       | Auth              | Notes                                                    |
+| --------------------- | ------------ | ----------------- | -------------------------------------------------------- |
+| `/`                   | GET          | None              | Landing                                                  |
+| `/(auth)/sign-in`     | GET          | None              | Better Auth email/password + demo sign-in                |
+| `/(auth)/sign-up`     | GET          | None              | Better Auth email/password                               |
+| `/(main)/dashboard`   | GET          | Session           | Accounts, transactions, budget                           |
+| `/(main)/account`     | GET          | Session           | Create/manage accounts                                   |
+| `/(main)/transaction` | GET          | Session           | Create/view transactions                                 |
+| `/api/transactions`   | GET          | Session           | Date-range export, JSON or CSV; `checkUser` session gate |
+| `/api/inngest`        | GET/POST/PUT | Inngest signature | `serve()` for 4 functions; never triggered               |
 
 Caching: no `no-store`/`revalidate` export anywhere; Cache Components on (`next.config.ts`). Three ledger pages `export const instant = false`. `revalidatePath()` at 9 sites across 4 action files (`actions/accounts.ts`×3, `budget.ts`×1, `transaction.ts`×4, `dashboard.ts`×1). Build page classes → `service-architecture.md` Pages.
 
 ### HTTP surface — planned, not built
 
-- `GET /api/transactions` — date-range JSON export
 - `POST /api/budget/alert` — manual budget-alert email
 - `PATCH /api/transactions/:id/recurring` — reschedule
 - `DELETE /api/transactions/:id` — soft delete
