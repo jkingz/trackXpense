@@ -125,3 +125,60 @@ uncommitted working tree on 2026-10-28.
 ## Verdict
 
 Verdict: pass
+
+---
+
+# Review — per-route social cards, increment 3
+
+Read-only `reviewer` subagent, two axes, against `HEAD` (2575fe0) plus the
+uncommitted working tree on 2026-10-30.
+
+## Standards
+
+- [x] **Low** `app/(auth)/layout.tsx:29-33` — `twitter.card: "summary_large_image"`
+      with no `images` declared a large-image card a platform cannot render, and
+      dropped the product image the route used to inherit. Fixed: `card: "summary"`,
+      no image, comment records the choice.
+- [x] **Low** `tests/seo/e2e/auth-metadata.spec.ts:25-27` — only `og:title` was
+      pinned; deleting the `twitter.title` override would have stayed green.
+      Fixed: the test asserts `twitter:title` too.
+- [x] **Low** `docs/agent-guide/service-architecture.md:42` — the `tests/` row
+      omitted `seo`. Fixed: features list now names it.
+- [x] **Declined** `tests/seo/e2e/auth-metadata.spec.ts:10-16` — a hardcoded
+      route list could miss a sixth auth page. Not acting: the spec names exactly
+      these five; a new auth route is a new increment with its own test, and the
+      layout applies to it regardless. A filesystem-derived list would couple the
+      test to the route tree for no behavioural gain.
+- [x] **High** n/a — no auth or tenancy surface added: metadata is build-time
+      constants, no request value reaches `og:*`/`robots`, no session read.
+- [x] **High** n/a — no secret added or printed; no env var touched.
+- [x] **High** n/a — AGENTS.md rule 11: no multi-status state introduced.
+- [x] **High** n/a — money invariants untouched: no Prisma/Decimal/balance write.
+
+## Spec
+
+- [x] Increment 1 — still met; `/terms` and `/privacy` output unchanged.
+- [x] Increment 2 — still met; `/` still authors its own card.
+- [x] Increment 3 — met. `/sign-in` and the other four auth routes serve
+      `<title>TrackXpense</title>`, `robots: noindex`, `og:title`/`twitter:title`
+      `TrackXpense` (never `site.title`), `twitter:card summary`, no card image.
+- [ ] Increment 4 — not started, as expected.
+- [x] Resolved decision recorded: the spec Done-when beats the design table's
+      "root values kept"; `specs/14-per-route-social-cards.design.md:44` and the
+      spec's Status now say so.
+- [x] Blast-radius truth-fixes (`app/layout.tsx:48-57`,
+      `docs/agent-guide/service-architecture.md:38`) match the built output and
+      are minimal.
+- [x] `follow: false` dropped: the spec asks only for `noindex`, so `robots`
+      emits `noindex` alone.
+
+## Gates
+
+| Command       | Result                                                                                                                                                       |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `pnpm verify` | exit 0 — unit 18 files/135 tests, integration 4/6, typecheck clean, lint 0 errors/3 warnings (183 files), build ✓, e2e 11 passed (9.5s)                      |
+| built HTML    | `/sign-in` → `<title>TrackXpense</title>`, `robots noindex`, `og:title`/`twitter:title` `TrackXpense`, `twitter:card summary`, no `og:image`/`twitter:image` |
+
+## Verdict
+
+Verdict: pass

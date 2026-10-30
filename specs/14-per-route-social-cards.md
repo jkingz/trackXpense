@@ -2,8 +2,11 @@
 
 ## Status
 
-Not started. Written 2026-10-27 from a live check of production. Designed in
-`specs/14-per-route-social-cards.design.md`. Increment 1 built 2026-10-27.
+Written 2026-10-27 from a live check of production. Designed in
+`specs/14-per-route-social-cards.design.md`. Increments 1–2 merged (#29, #30).
+Increment 3 built 2026-10-30: auth routes drop the landing `og:title` (neutral
+`TrackXpense` title, `summary` card, no image) and carry `noindex` — this spec's
+Done-when beats the design table's "root values kept".
 
 ## Goal
 
@@ -121,6 +124,16 @@ Increment 1, measured 2026-10-27 (`pnpm start` after `pnpm build`):
 - `/sign-in` and an unmatched path → still the root title (increments 3 and 4).
 - Port 3000 released; no orphan server or Playwright process.
 
+Increment 3, measured 2026-10-30 (`pnpm verify`):
+
+- `pnpm verify` → exit 0. Unit `18 files / 135 tests`, integration `4 files / 6
+  tests`, typecheck clean, lint `0 errors / 3 warnings` in 183 files, build
+  `✓ Compiled successfully`, e2e `11 passed (9.5s)` — 5 new auth-metadata cases.
+- Served `/sign-in` → `<title>TrackXpense</title>`,
+  `<meta name="robots" content="noindex">`, `og:title`/`twitter:title`
+  `TrackXpense`, `twitter:card summary`, no card image. Same on `/sign-up`,
+  `/forgot-password`, `/reset-password`, `/email-verified` (e2e).
+
 Still unverified:
 
 - Not deployed. The production curl against `track-xpense-lake.vercel.app`
@@ -129,3 +142,5 @@ Still unverified:
   platform that already scraped a URL keeps its cached card.
 - `/opengraph-image` was not re-fetched this increment; the image pipeline is
   untouched by it.
+- Increment 3 is local only: the auth routes were read from the build output,
+  not production, and no real unfurl was exercised for them either.
