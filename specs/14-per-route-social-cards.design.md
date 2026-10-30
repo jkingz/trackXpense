@@ -37,12 +37,12 @@ All `file:line` below are as of 2026-10-27; `/build` re-reads before editing.
 The card surface has no runtime state: it is metadata in prerendered HTML. The
 states are per route, and each is a build output rather than a render branch.
 
-| State      | Route                                                                            | Today (measured)                         | After                                   |
-| ---------- | -------------------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------- |
-| Home       | `/`                                                                              | own title, root OG values                | unchanged                               |
-| Legal page | `/terms`, `/privacy`                                                             | `<title>` own, `og:title` root           | title + description + `og:url` own      |
-| Auth page  | `/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`, `/email-verified` | root everywhere; no page metadata at all | root values kept, `noindex` added       |
-| Not found  | any unmatched path                                                               | `404` + root OG, root `og:url`           | `noindex`, own title, no `og:url` claim |
+| State      | Route                                                                            | Today (measured)                         | After                                                  |
+| ---------- | -------------------------------------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------ |
+| Home       | `/`                                                                              | own title, root OG values                | unchanged                                              |
+| Legal page | `/terms`, `/privacy`                                                             | `<title>` own, `og:title` root           | title + description + `og:url` own                     |
+| Auth page  | `/sign-in`, `/sign-up`, `/forgot-password`, `/reset-password`, `/email-verified` | root everywhere; no page metadata at all | own neutral title, `noindex`; landing headline dropped |
+| Not found  | any unmatched path                                                               | `404` + root OG, root `og:url`           | `noindex`, own title, no `og:url` claim                |
 
 Crawler-cached state: a platform that already scraped a URL keeps its old card
 until the cache expires. No code state; called out so a stale unfurl is not
