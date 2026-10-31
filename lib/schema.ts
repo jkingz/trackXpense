@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+/** Upload cap for receipt images, shared by the upload route and the client guard. */
+export const MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
+
 export const accountSchema = z.object({
   name: z.string().min(1, "Name is required").max(100),
   type: z.enum(["CURRENT", "SAVINGS"]),

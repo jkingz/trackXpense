@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { scanReceipt } from "@/actions/transaction";
 import { Button } from "@/components/ui/button";
 import useFetch from "@/hooks/use-fetch";
+import { MAX_RECEIPT_BYTES } from "@/lib/schema";
 
 export type ScannedReceipt = Awaited<ReturnType<typeof scanReceipt>> & { receiptUrl?: string };
 
@@ -20,8 +21,8 @@ const ReceiptScanner = ({
   const { loading: scanLoading, data: scannedData, fn: scanFn } = useFetch(scanReceipt);
 
   const handleReceiptScan = async (file: File) => {
-    // check if file is more than 5mb
-    if (file.size > 5 * 1024 * 1024) {
+    // The route caps at the same constant; this only avoids a wasted round-trip.
+    if (file.size > MAX_RECEIPT_BYTES) {
       toast.error("File size is too large");
       return;
     }
@@ -36,14 +37,15 @@ const ReceiptScanner = ({
         const form = new FormData();
         form.append("file", file);
         fetch("/api/receipts", { method: "POST", body: form })
-          .then((r) => r.json())
+          .then((r) => (r.ok ? r.json() : Promise.reject(new Error("upload failed"))))
           .then((json: { url?: string }) => {
             onScanComplete({ ...scannedData, receiptUrl: json.url });
             toast.success("Receipt scanned successfully");
           })
           .catch(() => {
+            // The extraction succeeded even when the image was not stored.
             onScanComplete(scannedData);
-            toast.success("Receipt scanned successfully");
+            toast.error("Receipt scanned, but the image could not be saved");
           });
       } else {
         onScanComplete(scannedData);
