@@ -84,7 +84,7 @@ The plugin targets the V2 plugin API — default-exports `{ id, setup(ctx) }`, r
 - `actions/lib/checkUser.ts` — Better Auth session seam. `currentUser()` reads the session; `checkUser()` throws when signed out; `requireUser()` redirects pages to `/sign-in`.
 - `lib/prisma.ts` — all Prisma calls through this singleton (Prisma 7 needs the `@prisma/adapter-pg` adapter).
 - `app/(main)/` — ledger pages. `proxy.ts` validates guarded paths; layout and page guards enforce signed-in access.
-- `app/api/` — `/api/transactions` gates via `checkUser`; `/api/receipts` has no session check; `/api/inngest` is signed by Inngest. A new protected route must state its check.
+- `app/api/` — `/api/transactions` and `/api/receipts` gate via `checkUser`; `/api/inngest` is signed by Inngest. A new protected route must state its check.
 - `lib/schema.ts` — Zod for forms + API input.
 - `proxy.ts` — root hook (Next 16 renamed from `middleware.js`). Validates Better Auth sessions on guarded paths; decisions are in `lib/route-guard.ts`.
 

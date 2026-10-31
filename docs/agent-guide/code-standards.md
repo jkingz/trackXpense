@@ -54,9 +54,9 @@ export async function GET(request: Request) {
 }
 ```
 
-`app/api/receipts/route.ts:POST` has no session check.
+`app/api/receipts/route.ts:POST` is the upload variant: it checks the session before reading the multipart body.
 
-- **Status precedence:** 400 (bad input) → 401 (no auth) → 403 (forbidden) → 500 (server).
+- **Status precedence:** 400 (bad input) → 401 (no auth) → 403 (forbidden) → 413 (too large) → 500 (server). Upload routes check `401` before reading the body, so there it wins over `400`.
 - **Failure:** JSON `{ error: "message" }`, real HTTP status.
 - **Cache headers:** none set; Next defaults (ISR).
 - **Success shapes:** vary; no envelope.
@@ -85,7 +85,7 @@ app/
   (main)/               — dashboard, accounts, transactions (session required)
   api/auth/[...route]/  — Better Auth endpoints
   api/demo/             — demo-account sign-in
-  api/receipts/         — receipt upload (POST, no session check)
+  api/receipts/         — receipt upload (POST, session)
   api/transactions/     — date-range export (GET, session)
   api/inngest/          — job receiver (serves 4 functions)
   apple-icon.tsx        — 180px home-screen icon (apple-touch-icon)
@@ -151,7 +151,7 @@ Runner: **Vitest 5.0.4 via Vite+** — no `vitest.config.ts`, no `test` script; 
 
 - Files: `tests/money/unit/serialize-amount.test.ts` (shallow-spread contract — nested `Decimal` stays `Decimal` across the boundary), `tests/money/unit/calculate-next-recurring.test.ts` (4 intervals + month-end/leap carry `2026-01-31`+1mo → `2026-03-03`), `tests/validation/unit/schemas.test.ts` (both money fields are `z.string().min(1)` — no numeric rule, so a non-numeric amount validates; Plan B `parseInput` closes this), `tests/hooks/unit/use-fetch-reducer.test.ts`, `tests/transactions/unit/transaction-table-state.test.ts`, `tests/recurring/unit/recurring-lifecycle.test.ts`.
 - `TZ=UTC` was part of a deleted `test` script; `vp test` sets no zone. Recurrence test passed in local zone and under `TZ=UTC` (measured 2026-10-16) — pin the zone if you depend on it.
-- Unit tier mocks nothing. Integration tier hits the real database (`tests/{feature}/integration/`, `pnpm test:integration`). E2E tier drives the built app (`tests/{feature}/e2e/`, `pnpm test:e2e`). `hooks/use-fetch.ts` wrapper has no render test — needs `jsdom` + `@testing-library/react`, not installed.
+- Unit tier mocks only boundaries (Better Auth session, storage, fs/S3) and opens no database. Integration tier hits the real database (`tests/{feature}/integration/`, `pnpm test:integration`). E2E tier drives the built app (`tests/{feature}/e2e/`, `pnpm test:e2e`). `hooks/use-fetch.ts` wrapper has no render test — needs `jsdom` + `@testing-library/react`, not installed.
 - Server actions: zero coverage; no runner and no decision on which DB a test may touch (`DATABASE_URL` resolves, `scripts/seed-demo.ts` writes through it).
 - `tests/platform/` gone → nothing asserts docs/`AGENTS.md`/skills/`.env.example` agree; a green `vp test` only pins the characterisation files.
 - Vitest over `node:test` decided 2026-10-12 (`node:test` didn't resolve `@/*`).

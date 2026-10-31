@@ -2,7 +2,7 @@
 
 ## Status
 
-Shipped: `POST /api/receipts` → `lib/storage.ts` (R2 when configured, else `public/uploads`); `scan-receipt.tsx` uploads and `add-transaction-form.tsx` writes `receiptUrl`.
+Shipped: `POST /api/receipts` (session-gated via `checkUser`; `image/*` capped at `MAX_RECEIPT_BYTES`) → `lib/storage.ts` (R2 when configured, else `public/uploads`); `scan-receipt.tsx` uploads and `add-transaction-form.tsx` writes `receiptUrl`.
 
 ## Goal
 
@@ -19,13 +19,12 @@ Uploaded receipts are stored and `transaction.receiptUrl` is written.
 ### First increment scope
 
 - **Files**: `app/api/receipts/route.ts`
-- **Test**: `tests/api/receipts.test.ts`
+- **Test**: `tests/api/unit/receipts-route.test.ts`
 - **Done when**: POST returns a URL string
 
 ## Deferred / open questions
 
 - Storage provider (local disk vs S3/R2) — owner decision.
-- Auth gating.
 
 ## Security / permissions
 

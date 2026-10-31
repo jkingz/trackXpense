@@ -38,9 +38,9 @@ Browser (Better Auth session, or none)
 | `app/(auth)/`                    | Better Auth email/password sign-in/up pages; demo sign-in button. `layout.tsx` emits `noindex` and a neutral non-landing title (spec 14 increment 3).                                                                     |
 | `app/(main)/`                    | Dashboard, account, transaction pages; session required.                                                                                                                                                                  |
 | `app/not-found.tsx`              | Root 404 page for unmatched URLs; own title, `noindex`, no `og:url` (spec 14 increment 4).                                                                                                                                |
-| `app/api/receipts/`              | `POST` receipt upload; R2 when `R2_*` set, else `public/uploads`. No auth gate.                                                                                                                                           |
+| `app/api/receipts/`              | `POST` receipt upload (session-gated, `image/*` ≤ `MAX_RECEIPT_BYTES`); R2 when `R2_*` set, else `public/uploads`.                                                                                                        |
 | `app/api/inngest/`               | `serve()` GET/POST/PUT for the 4 functions. Not connected to a running Inngest account.                                                                                                                                   |
-| `tests/`                         | Three tiers per feature: `{feature}/unit` (pure), `{feature}/integration` (real DB), `{feature}/e2e` (Playwright). Features: auth, dashboard, money, pipeline, recurring, seo, transactions, validation.                  |
+| `tests/`                         | Three tiers per feature: `{feature}/unit` (pure), `{feature}/integration` (real DB), `{feature}/e2e` (Playwright). Features: api, auth, dashboard, money, pipeline, recurring, seo, transactions, validation.             |
 
 Anything not built gets no row.
 
@@ -119,4 +119,4 @@ pnpm db:seed          # deletes every transaction/budget/account row, re-seeds e
 
 These are the **only** home for totals this body's `architecture.md`/`code-standards.md`/`workflow.md`/`pm-conventions.md` defer to. `AGENTS.md` quotes none. Hand-maintained.
 
-App test coverage: effectively 0% — the unit tests cover money serialisers, the recurrence helper, two Zod schemas, three app reducers and the build-pipeline machine, not any page/action/route.
+App test coverage: effectively 0% — the unit tests cover money serialisers, the recurrence helper, two Zod schemas, three app reducers, the receipts route and the build-pipeline machine; no page or component render tests.
