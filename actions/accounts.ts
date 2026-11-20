@@ -63,16 +63,11 @@ export async function getAccountsWithTransactions(accountId: string) {
 
   const account = await db.account.findFirst({
     where: { id: accountId, userId: user.id },
-    include: {
-      transactions: true,
-      _count: { select: { transactions: true } },
-    },
+    // Only the count: the page lists entries via getPaginatedTransactions.
+    include: { _count: { select: { transactions: true } } },
   });
   if (!account) return null;
-  return {
-    ...serializeTransaction(account),
-    transactions: account.transactions.map(serializeTransaction),
-  };
+  return serializeTransaction(account);
 }
 
 export async function bulkDeleteTransactions(transactionsIds: string[]) {
