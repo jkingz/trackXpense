@@ -1,6 +1,7 @@
 "use client";
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
 import { Check, Pencil, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { updateBudget } from "@/actions/budget";
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import useFetch from "@/hooks/use-fetch";
-import { usd } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 const BudgetProgress = ({
@@ -18,6 +19,7 @@ const BudgetProgress = ({
   initialBudget: { amount: number } | null | undefined;
   currentExpenses: number;
 }) => {
+  const currency = useContext(CurrencyContext);
   const [isEditing, setIsEditing] = useState(false);
   const [newBudget, setNewBudget] = useState(initialBudget?.amount?.toString() || "");
 
@@ -52,10 +54,7 @@ const BudgetProgress = ({
   // Error toast lives in useFetch (single source).
 
   return (
-    <section
-      aria-labelledby="budget-heading"
-      className="glass-panel flex h-full flex-col px-4 py-3"
-    >
+    <section aria-labelledby="budget-heading" className="ledger-panel flex flex-col p-5">
       <header className="flex items-center justify-between gap-4">
         <h2
           id="budget-heading"
@@ -82,6 +81,7 @@ const BudgetProgress = ({
             value={newBudget}
             onChange={(e) => setNewBudget(e.target.value)}
             className="w-full"
+            aria-label={`Monthly budget (${currency})`}
             placeholder="New budget"
             autoFocus
             disabled={isLoading}
@@ -107,12 +107,12 @@ const BudgetProgress = ({
         </div>
       ) : (
         <>
-          <p className="mt-3 font-mono text-xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
-            ${usd(currentExpenses)}
+          <p className="mt-3 break-words font-mono text-xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
+            {formatMoney(currentExpenses, currency)}
             {initialBudget && (
               <span className="text-base font-medium text-muted-foreground">
                 {" "}
-                / ${usd(initialBudget.amount)}
+                / {formatMoney(initialBudget.amount, currency)}
               </span>
             )}
           </p>
@@ -123,11 +123,13 @@ const BudgetProgress = ({
                 value={percentUsed}
                 aria-label="Budget used"
                 extraStyles={
-                  percentUsed >= 90 ? "bg-expense" : percentUsed >= 75 ? "bg-warn" : "bg-income"
+                  percentUsed >= 90 ? "bg-expense" : percentUsed >= 75 ? "bg-warn" : "bg-primary"
                 }
               />
               <p className="text-xs text-muted-foreground">
-                {headroom >= 0 ? `$${usd(headroom)} left` : `$${usd(Math.abs(headroom))} over`}
+                {headroom >= 0
+                  ? `${formatMoney(headroom, currency)} left`
+                  : `${formatMoney(Math.abs(headroom), currency)} over`}
                 <span aria-hidden> · </span>
                 <span className={cn("font-mono tabular-nums", percentUsed >= 90 && "text-expense")}>
                   {percentUsed.toFixed(1)}% used
@@ -136,7 +138,7 @@ const BudgetProgress = ({
             </div>
           ) : (
             <p className="mt-3 text-sm text-muted-foreground">
-              No budget yet. Set one and this rail tracks the default account against it.
+              Set a budget to track spending from your default account.
             </p>
           )}
         </>

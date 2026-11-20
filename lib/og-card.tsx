@@ -84,7 +84,7 @@ export function OgCard() {
             fontWeight: 800,
             lineHeight: 1.05,
             letterSpacing: -2.5,
-            // A flat brand tint, not the landing page's `.--gradient-title`:
+            // Flat brand tint for Satori:
             // satori has no `background-clip: text`, so a gradient here paints
             // the whole box instead of the glyphs.
             color: "#2dd4bf",

@@ -1,3 +1,5 @@
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
+import { useContext } from "react";
 import CreateAccountDrawer from "@/components/create-account-drawer";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { signedUsd } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import type { FieldErrors, UseFormGetValues, UseFormSetValue } from "react-hook-form";
 
 import type { SerializedAccount, TransactionFormValues } from "./add-transaction-form";
@@ -23,6 +25,7 @@ const AccountsForm = ({
   getValues: UseFormGetValues<TransactionFormValues>;
   errors: FieldErrors<TransactionFormValues>;
 }) => {
+  const currency = useContext(CurrencyContext);
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">Account</label>
@@ -39,10 +42,10 @@ const AccountsForm = ({
         <SelectContent className="w-full">
           {accounts.map((account) => (
             <SelectItem key={account.id} value={account.id}>
-              {account.name} ({signedUsd(account.balance)})
+              {account.name} ({formatMoney(account.balance, currency)})
             </SelectItem>
           ))}
-          <CreateAccountDrawer>
+          <CreateAccountDrawer currency={currency}>
             <Button
               className="w-full select-none items-center text-sm outline-none"
               variant="ghost"

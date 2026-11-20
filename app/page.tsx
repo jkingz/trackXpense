@@ -1,11 +1,9 @@
 import ClosingCta from "@/components/landing/closing-cta";
-import CategoriesBand from "@/components/landing/categories-band";
-import FeatureBento from "@/components/landing/feature-bento";
-import MetricsBand from "@/components/landing/metrics-band";
 import HeroSection from "@/components/hero";
 import LandingFlow from "@/components/landing-flow";
 import type { Metadata } from "next";
-import { featuresData } from "@/data/landing";
+import { featureTitles } from "@/data/landing";
+import { defaultCurrency } from "@/lib/money";
 import { site } from "@/lib/site";
 import { socialCard } from "@/lib/social-card";
 
@@ -30,9 +28,7 @@ export const metadata: Metadata = socialCard({
  * only the og:description to go on.
  *
  * Two entities, not one: `WebSite` names the host, `SoftwareApplication`
- * describes the product. `featureList` is read from `featuresData` so the JSON-LD
- * cannot drift from the feature titles rendered below it. `public/llms.txt` is a
- * separate hand-written copy and is not kept in sync automatically.
+ * describes the product. `public/llms.txt` provides the longer feature descriptions.
  */
 const structuredData = {
   "@context": "https://schema.org",
@@ -53,11 +49,11 @@ const structuredData = {
       applicationCategory: "FinanceApplication",
       operatingSystem: "Any",
       url: site.url,
-      featureList: featuresData.map((feature) => feature.title),
+      featureList: featureTitles,
       offers: {
         "@type": "Offer",
         price: "0",
-        priceCurrency: "USD",
+        priceCurrency: defaultCurrency,
       },
     },
   ],
@@ -65,9 +61,7 @@ const structuredData = {
 
 export default function Home() {
   return (
-    // max-w-full + the html-level overflow-x-hidden keep the scroll-linked
-    // transforms from ever widening the page.
-    <div className="w-full max-w-full">
+    <div className="pocket-log w-full bg-background">
       <script
         type="application/ld+json"
         // Serialised once at build time from module constants — no user input
@@ -76,13 +70,6 @@ export default function Home() {
       />
 
       <HeroSection />
-
-      <MetricsBand className="mt-6 md:mt-10" />
-
-      <div className="--mesh-veil">
-        <FeatureBento />
-        <CategoriesBand />
-      </div>
 
       <LandingFlow />
 

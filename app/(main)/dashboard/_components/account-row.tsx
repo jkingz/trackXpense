@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, type MouseEvent } from "react";
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
+import { useContext, useEffect, type MouseEvent } from "react";
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 import { updateDefaultAccount } from "@/actions/accounts";
 import PendingRail from "@/components/pending-rail";
 import { Switch } from "@/components/ui/switch";
 import useFetch from "@/hooks/use-fetch";
-import { signedUsd } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 type Account = {
@@ -22,12 +22,10 @@ type Account = {
 };
 
 /**
- * One ledger row. The name and the balance are the link, and the default switch
- * sits outside it, so the switch is a real control rather than a click trapped
- * inside an anchor. Left block: name, type, entry count, balance. Right rail:
- * the switch with the `click to view ›` affordance beneath it.
+ * The account name and balance are one link, with a separate default switch.
  */
 export function AccountRow({ account, active = false }: { account: Account; active?: boolean }) {
+  const currency = useContext(CurrencyContext);
   const { id, name, type, balance, isDefault, _count } = account;
   const {
     data: updated,
@@ -63,8 +61,8 @@ export function AccountRow({ account, active = false }: { account: Account; acti
     <li className="relative">
       <div
         className={cn(
-          "flex items-center gap-4 px-5 py-4 transition-colors hover:bg-accent/40",
-          active && "bg-accent/30",
+          "flex items-center gap-2 px-2 py-2.5 transition-colors hover:bg-sidebar-accent",
+          active && "bg-sidebar-accent",
         )}
       >
         <Link
@@ -79,27 +77,19 @@ export function AccountRow({ account, active = false }: { account: Account; acti
             {type.charAt(0) + type.slice(1).toLowerCase()} account
             {transactions > 0 && ` · ${transactions} ${transactions === 1 ? "entry" : "entries"}`}
           </span>
-          <span className="mt-1 block font-mono text-sm font-semibold tabular-nums text-foreground">
-            {signedUsd(balance)}
+          <span className="mt-1 block font-mono text-sm font-semibold tabular-nums break-words text-foreground">
+            {formatMoney(balance, currency)}
           </span>
         </Link>
 
-        <div className="flex shrink-0 flex-col items-end gap-1.5">
-          <div className="flex items-center gap-2">
-            {isDefault && (
-              <span className="hidden text-xs text-muted-foreground sm:inline">Default</span>
-            )}
-            <Switch
-              checked={isDefault}
-              onClick={handleDefaultAccountChange}
-              disabled={updateAccountLoading}
-              aria-label={`Make ${name} the default account`}
-            />
-          </div>
-          <span className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
-            {active ? "viewing" : "click to view"}
-            {!active && <ChevronRight className="size-3" aria-hidden />}
-          </span>
+        <div className="flex shrink-0 flex-col items-center gap-1">
+          <Switch
+            checked={isDefault}
+            onClick={handleDefaultAccountChange}
+            disabled={updateAccountLoading}
+            aria-label={`Make ${name} the default account`}
+          />
+          {isDefault && <span className="text-xs text-muted-foreground">Default</span>}
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 "use client";
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
 import { endOfDay, format, startOfDay, subDays } from "date-fns";
-import { useMemo, useState } from "react";
+import { useContext, useMemo, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -20,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { signedUsd, usd } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 const DATE_RANGES = {
@@ -45,6 +46,7 @@ type DailyGroup = {
 };
 
 const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) => {
+  const currency = useContext(CurrencyContext);
   const [dateRange, setDateRange] = useState("1M");
 
   const filteredData = useMemo(() => {
@@ -116,13 +118,13 @@ const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) =>
             <div className="text-center">
               <p className="text-muted-foreground">Total Income</p>
               <p className="font-mono text-lg font-bold text-income tabular-nums">
-                ${usd(totals.income)}
+                {formatMoney(totals.income, currency)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-muted-foreground">Total Expenses</p>
               <p className="font-mono text-lg font-bold text-expense tabular-nums">
-                ${usd(totals.expense)}
+                {formatMoney(totals.expense, currency)}
               </p>
             </div>
             <div className="text-center">
@@ -133,7 +135,7 @@ const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) =>
                   totals.income > totals.expense ? "text-income" : "text-expense",
                 )}
               >
-                {signedUsd(totals.income - totals.expense)}
+                {formatMoney(totals.income - totals.expense, currency)}
               </p>
             </div>
           </div>
@@ -154,9 +156,9 @@ const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) =>
                   font-size={12}
                   tickLine={false}
                   axisLine={false}
-                  tickFormatter={(value) => `$${value}`}
+                  tickFormatter={(value) => formatMoney(Number(value), currency)}
                 />
-                <Tooltip formatter={(value) => [`$${value}`, undefined]} />
+                <Tooltip formatter={(value) => [formatMoney(Number(value), currency), undefined]} />
                 <Legend />
                 <Bar
                   dataKey="income"

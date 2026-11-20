@@ -1,22 +1,24 @@
-import { usd } from "@/lib/money";
+import { formatMoney, type LedgerCurrency } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 /** This year's spend against last year's, one line. */
 export function YearCard({
+  year,
   thisYear,
   lastYear,
   deltaPct,
+  currency,
 }: {
+  year: number;
   thisYear: number;
   lastYear: number;
   deltaPct: number | null;
+  currency: LedgerCurrency;
 }) {
-  const year = new Date().getFullYear();
-
   return (
     <section
       aria-labelledby="year-heading"
-      className="glass-panel flex flex-wrap items-center gap-x-8 gap-y-3 px-5 py-4"
+      className="ledger-panel flex flex-wrap items-center gap-x-8 gap-y-3 px-5 py-4"
     >
       <div>
         <h2 id="year-heading" className="text-sm font-semibold tracking-tight text-card-foreground">
@@ -34,17 +36,17 @@ export function YearCard({
           </p>
         )}
       </div>
-      <dl className="ml-auto flex items-baseline gap-8">
-        <div className="text-right">
+      <dl className="flex flex-wrap items-baseline gap-4 sm:ml-auto sm:gap-8">
+        <div className="sm:text-right">
           <dt className="text-xs text-muted-foreground">{year} spent</dt>
           <dd className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-card-foreground">
-            ${usd(thisYear)}
+            {formatMoney(thisYear, currency)}
           </dd>
         </div>
-        <div className="text-right">
+        <div className="sm:text-right">
           <dt className="text-xs text-muted-foreground">{year - 1} spent</dt>
           <dd className="mt-0.5 font-mono text-lg font-semibold tabular-nums text-muted-foreground">
-            ${usd(lastYear)}
+            {formatMoney(lastYear, currency)}
           </dd>
         </div>
       </dl>

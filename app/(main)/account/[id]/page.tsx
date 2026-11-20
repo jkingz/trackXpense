@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { getAccountsWithTransactions, getPaginatedTransactions } from "@/actions/accounts";
-import { signedUsd } from "@/lib/money";
+import { requireUser } from "@/actions/lib/checkUser";
+import { formatMoney } from "@/lib/money";
 
 import AccountChart from "../_components/account-chart";
 import { RenameAccountDialog } from "../_components/rename-account-dialog";
@@ -18,6 +19,7 @@ const AccountsPage = async ({
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | undefined>>;
 }) => {
+  const { currency } = await requireUser();
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
 
@@ -71,7 +73,7 @@ const AccountsPage = async ({
         <div className="text-right">
           <p className="text-xs text-muted-foreground">Balance</p>
           <p className="mt-1 font-mono text-xl font-semibold tabular-nums text-foreground sm:text-2xl">
-            {signedUsd(account.balance)}
+            {formatMoney(account.balance, currency)}
           </p>
         </div>
       </div>

@@ -114,7 +114,7 @@ lib/
   og-card.tsx           — shared 1200x630 social card body
   site.ts               — public origin + name/description; metadataBase source
   inngest/              — client + 4 functions
-  money.ts              — usd/signedUsd (grouping, decimals, sign)
+  money.ts              — ledger currency and formatMoney (grouping, decimals, sign)
   pipeline-artifacts.ts — spec/review/verify-output parsing (pure)
   pipeline-guard.ts     — path class + edit/commit decisions (pure)
   pipeline-runtime.ts   — pipeline state on disk + git facts + stage checks (I/O; harness adapters call it)

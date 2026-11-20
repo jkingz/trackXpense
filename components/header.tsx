@@ -81,9 +81,7 @@ export default function Header() {
           aria-label="TrackXpense home"
         >
           <Logo className="size-7 text-brand-deep transition-colors group-hover:text-foreground" />
-          {/* The wordmark is the first thing to go when the bar runs out of room:
-            the icon plus the two CTAs plus the toggle do not fit at 390px. */}
-          <span className="hidden text-base font-bold tracking-tight text-foreground sm:inline">
+          <span className="hidden text-base font-bold tracking-tight text-foreground in-[body:has(.pocket-log)]:inline sm:inline">
             TrackXpense
           </span>
         </Link>

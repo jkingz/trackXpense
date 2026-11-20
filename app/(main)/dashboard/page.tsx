@@ -5,6 +5,7 @@ import { cache, Suspense } from "react";
 import { getCurrentBudget } from "@/actions/budget";
 import { getDashboardData, getUserAccounts } from "@/actions/dashboard";
 import { requireUser } from "@/actions/lib/checkUser";
+import type { LedgerCurrency } from "@/lib/money";
 import {
   cashflow,
   expenseDeltaPct,
@@ -17,11 +18,11 @@ import {
 
 import BudgetProgress from "./_components/budget-progress";
 import { CashflowPanel } from "./_components/cashflow-panel";
-import { CategoryDonut } from "./_components/category-donut";
+import { CategoryBreakdown } from "./_components/category-breakdown";
 import {
   BudgetSkeleton,
   ChartsSkeleton,
-  KpiCardsSkeleton,
+  KpiSkeleton,
   YearSkeleton,
 } from "./_components/dashboard-skeleton";
 import { KpiRow } from "./_components/kpi-row";
@@ -41,9 +42,16 @@ const loadTransactions = cache(() => getDashboardData());
 
 type Account = Awaited<ReturnType<typeof getUserAccounts>>[number];
 
-async function KpiSection({ accounts, monthName }: { accounts: Account[]; monthName: string }) {
+async function KpiSection({
+  accounts,
+  now,
+  currency,
+}: {
+  accounts: Account[];
+  now: Date;
+  currency: LedgerCurrency;
+}) {
   const transactions = await loadTransactions();
-  const now = new Date();
   const { income, expense } = monthTotals(transactions, now);
   const previous = monthTotals(
     transactions,
@@ -52,74 +60,81 @@ async function KpiSection({ accounts, monthName }: { accounts: Account[]; monthN
 
   return (
     <KpiRow
+      currency={currency}
       accountCount={accounts.length}
       totalBalance={accounts.reduce((total, account) => total + account.balance, 0)}
       income={income}
       expense={expense}
       savings={savingsRate(income, expense)}
       expenseDelta={expenseDeltaPct(expense, previous)}
-      monthName={monthName}
     />
   );
 }
 
 async function OverviewSection({
   accounts,
-  monthName,
+  now,
+  currency,
+  defaultAccountId,
 }: {
   accounts: Account[];
-  monthName: string;
+  now: Date;
+  currency: LedgerCurrency;
+  defaultAccountId?: string;
 }) {
   const transactions = await loadTransactions();
-  const now = new Date();
   const { slices, total } = spendByCategory(transactions, now);
-  const names = new Map(accounts.map((account: any) => [account.id, account.name]));
-  const recent = transactions.map((transaction: any) => ({
+  const names = new Map(accounts.map((account) => [account.id, account.name]));
+  const recent = transactions.map((transaction) => ({
     ...transaction,
     accountName: names.get(transaction.accountId) ?? "Unknown account",
   }));
 
   return (
-    <div className="--reveal grid items-start gap-4 lg:grid-cols-3">
-      <CategoryDonut slices={slices} total={total} monthName={monthName} />
+    <>
       <CashflowPanel days={cashflow(transactions, now)} week={spendByWeekday(transactions, now)} />
-      <RecentActivity transactions={recent} />
-    </div>
+      <div className="grid items-start gap-4 xl:grid-cols-2">
+        <CategoryBreakdown slices={slices} total={total} currency={currency} />
+        {defaultAccountId && (
+          <Suspense fallback={<BudgetSkeleton />}>
+            <BudgetSection defaultAccountId={defaultAccountId} />
+          </Suspense>
+        )}
+      </div>
+      <RecentActivity transactions={recent} currency={currency} />
+    </>
   );
 }
 
-async function YearSection() {
+async function YearSection({ currency, now }: { currency: LedgerCurrency; now: Date }) {
   const transactions = await loadTransactions();
-  const { thisYear, lastYear, deltaPct } = yearComparison(transactions, new Date());
+  const { thisYear, lastYear, deltaPct } = yearComparison(transactions, now);
 
   return (
-    <div className="--reveal">
-      <YearCard thisYear={thisYear} lastYear={lastYear} deltaPct={deltaPct} />
-    </div>
+    <YearCard
+      currency={currency}
+      year={now.getFullYear()}
+      thisYear={thisYear}
+      lastYear={lastYear}
+      deltaPct={deltaPct}
+    />
   );
 }
 
-async function BudgetSection({ defaultAccountId }: { defaultAccountId?: string }) {
-  if (!defaultAccountId) return null;
-
+async function BudgetSection({ defaultAccountId }: { defaultAccountId: string }) {
   const budget = await getCurrentBudget(defaultAccountId);
 
   return (
-    <div className="--reveal">
-      <BudgetProgress
-        initialBudget={budget?.budget}
-        currentExpenses={budget?.currentExpenses || 0}
-      />
-    </div>
+    <BudgetProgress initialBudget={budget?.budget} currentExpenses={budget?.currentExpenses ?? 0} />
   );
 }
 
 const DashBoardPage = async () => {
   // Before its data work: a signed-out visitor is sent to sign-in instead of
   // rendering a page whose first read throws.
-  await requireUser();
+  const { currency } = await requireUser();
   const accounts = await getUserAccounts();
-  const defaultAccount = accounts?.find((account: any) => account.isDefault);
+  const defaultAccount = accounts.find((account) => account.isDefault);
   // Pin this render to a request before consulting the clock. Next refuses an
   // unstable `new Date()` during the prerender pass (blocking-prerender-current-
   // time), and the month names below are genuinely request data.
@@ -127,23 +142,25 @@ const DashBoardPage = async () => {
   const now = new Date();
 
   return (
-    <div className="space-y-4">
-      <div className="--reveal grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Suspense fallback={<BudgetSkeleton />}>
-          <BudgetSection defaultAccountId={defaultAccount?.id} />
-        </Suspense>
+    <div className="flex min-w-0 flex-col gap-4">
+      <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h1>
+        <p className="text-sm font-medium text-muted-foreground">{format(now, "MMMM yyyy")}</p>
+      </header>
 
-        <Suspense fallback={<KpiCardsSkeleton />}>
-          <KpiSection accounts={accounts} monthName={format(now, "MMMM")} />
-        </Suspense>
-      </div>
-
-      <Suspense fallback={<ChartsSkeleton />}>
-        <OverviewSection accounts={accounts} monthName={format(now, "MMMM")} />
+      <Suspense fallback={<KpiSkeleton />}>
+        <KpiSection currency={currency} accounts={accounts} now={now} />
       </Suspense>
-
+      <Suspense fallback={<ChartsSkeleton showBudget={Boolean(defaultAccount)} />}>
+        <OverviewSection
+          currency={currency}
+          accounts={accounts}
+          now={now}
+          defaultAccountId={defaultAccount?.id}
+        />
+      </Suspense>
       <Suspense fallback={<YearSkeleton />}>
-        <YearSection />
+        <YearSection currency={currency} now={now} />
       </Suspense>
     </div>
   );

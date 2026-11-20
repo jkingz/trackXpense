@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import Link from "next/link";
 
-import { usd } from "@/lib/money";
+import { formatMoney, type LedgerCurrency } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 import { categoryColor, categoryLabel } from "./category-helpers";
@@ -17,13 +17,19 @@ export type RecentTransaction = {
 };
 
 /** Latest entries across every account — the account name is the scope, so no filter is needed. */
-export function RecentActivity({ transactions }: { transactions: RecentTransaction[] }) {
+export function RecentActivity({
+  transactions,
+  currency,
+}: {
+  transactions: RecentTransaction[];
+  currency: LedgerCurrency;
+}) {
   const recent = [...transactions]
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 6);
 
   return (
-    <section aria-labelledby="activity-heading" className="h-full glass-panel">
+    <section aria-labelledby="activity-heading" className="ledger-panel">
       <header className="flex items-center justify-between gap-4 border-b px-5 py-4">
         <h2
           id="activity-heading"
@@ -39,7 +45,7 @@ export function RecentActivity({ transactions }: { transactions: RecentTransacti
           <p className="text-sm text-muted-foreground">Nothing logged yet.</p>
           <Link
             href="/transaction/create"
-            className="mt-2 inline-block text-sm font-medium text-brand-deep underline-offset-4 hover:underline"
+            className="mt-2 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
           >
             Add the first entry
           </Link>
@@ -51,14 +57,14 @@ export function RecentActivity({ transactions }: { transactions: RecentTransacti
             return (
               <li
                 key={transaction.id}
-                className="flex items-center gap-4 px-5 py-3 transition-colors hover:bg-accent/40"
+                className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 transition-colors hover:bg-accent/40"
               >
                 <span
                   aria-hidden
                   className="size-2 shrink-0 rounded-full"
                   style={{ backgroundColor: categoryColor(transaction.category) }}
                 />
-                <span className="min-w-0 flex-1">
+                <span className="min-w-24 flex-1">
                   <span className="block truncate text-sm font-medium text-card-foreground">
                     {transaction.description || categoryLabel(transaction.category)}
                   </span>
@@ -73,7 +79,8 @@ export function RecentActivity({ transactions }: { transactions: RecentTransacti
                     isExpense ? "text-expense" : "text-income",
                   )}
                 >
-                  {isExpense ? "−" : "+"}${usd(transaction.amount)}
+                  {isExpense ? "−" : "+"}
+                  {formatMoney(transaction.amount, currency)}
                 </span>
               </li>
             );

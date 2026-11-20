@@ -9,10 +9,5 @@ export const contentType = "image/png";
  *  treats this convention as `apple-touch-icon`. iOS does not round the corners
  *  and masks them itself, so the tile renders square here. */
 export default async function AppleIcon() {
-  return new ImageResponse(
-    <div style={{ display: "flex" }}>
-      <BrandMark size={180} />
-    </div>,
-    { ...size },
-  );
+  return new ImageResponse(<BrandMark size={size.width} square />, size);
 }

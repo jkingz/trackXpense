@@ -46,13 +46,17 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* Landing accent scale: derived from the sky→teal identity already used by
-   .--gradient-title, expressed as tokens so no inline hex or arbitrary values
-   appear in markup. These are the LIGHT values; `.dark` re-declares the ones
-   that need a different lightness, because a single value cannot be legible on
-   both `--background` values. Every pair below is >=4.5:1 on white and on the
-   #f5f5f5 secondary; the progress-bar fills are >=3:1 as non-text graphics. */
 @theme {
+  --color-pocket-stage: #342bc4;
+  --color-pocket-orbit: #a29afa;
+  --color-pocket-slip: #fffdfb;
+  --color-pocket-slip-rule: #e0def1;
+  --color-pocket-ink: #14163b;
+  --color-pocket-shadow: #17116f;
+  --color-pocket-saved: #eaf68a;
+  --shadow-pocket-entry: 0.5rem 0.5625rem 0 var(--color-pocket-shadow);
+  --shadow-pocket-confirmation: 0.3125rem 0.3125rem 0 var(--color-pocket-shadow);
+
   --color-brand: oklch(0.5 0.1 196);
   --color-brand-deep: oklch(0.47 0.1 208);
   --color-brand-veil: oklch(0.955 0.022 196);
@@ -155,6 +159,53 @@
   --color-warn: oklch(0.72 0.15 70);
 }
 
+/* The homepage shares its palette with the global navigation and footer. */
+body:has(.pocket-log) {
+  --background: #f2f0ff;
+  --foreground: var(--color-pocket-ink);
+  --muted-foreground: #484c75;
+  --primary: #3128b8;
+  --primary-foreground: white;
+  --accent: #e4e0ff;
+  --accent-foreground: var(--foreground);
+  --border: #cecced;
+  --ring: var(--primary);
+  --color-brand-deep: var(--primary);
+}
+
+.dark body:has(.pocket-log) {
+  --background: #19172d;
+  --foreground: #f2f0ff;
+  --muted-foreground: #c1bde5;
+  --primary: #c4bcff;
+  --primary-foreground: var(--color-pocket-ink);
+  --accent: #242043;
+  --border: #3e3861;
+}
+
+:root:not(.dark) .daily-ledger {
+  --background: oklch(0.978 0.008 250);
+  --foreground: oklch(0.275 0.039 252);
+  --card-foreground: var(--foreground);
+  --primary: oklch(0.49 0.19 260);
+  --muted: oklch(0.955 0.013 250);
+  --muted-foreground: oklch(0.48 0.034 252);
+  --accent: oklch(0.945 0.025 252);
+  --accent-foreground: var(--foreground);
+  --border: oklch(0.895 0.019 251);
+  --input: var(--border);
+  --ring: var(--primary);
+  --sidebar: oklch(0.945 0.025 249);
+  --sidebar-foreground: var(--foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-accent: oklch(0.915 0.033 252);
+  --sidebar-border: var(--border);
+}
+
+.ledger-panel {
+  @apply min-w-0 rounded-lg border bg-card;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -180,36 +231,10 @@
   @apply bg-linear-to-br from-sky-600 to-teal-700 font-extrabold text-transparent tracking-tighter pr-2 pb-2 bg-clip-text;
 }
 
-.--capture-stage {
-  perspective: 1400px;
-}
-
-/* Ambient layers for the landing page. Decorative, always rendered aria-hidden. */
+/* Decorative dot grid for the auth panel. */
 .--dot-grid {
   background-image: radial-gradient(var(--border) 1px, transparent 1px);
   background-size: 16px 16px;
-}
-
-.--mesh-veil {
-  background-image:
-    radial-gradient(36rem 36rem at 14% 6%, var(--color-brand-veil), transparent 70%),
-    radial-gradient(30rem 30rem at 86% 24%, var(--color-brand-veil), transparent 72%);
-}
-
-@keyframes livePulse {
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.35;
-    transform: scale(0.8);
-  }
-}
-
-.--live-dot {
-  animation: livePulse 1.9s ease-in-out infinite;
 }
 
 /* Applied to content that arrives by replacing a Suspense skeleton. The
@@ -265,69 +290,6 @@
   --glass-border-hover: rgba(255, 255, 255, 0.22);
   --glass-specular: 0 1px 0 0 rgba(255, 255, 255, 0.2) inset;
   --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-}
-
-/* Signature element: the Total Balance tile carries the iridescent hero wash
-   (cyan → indigo → magenta) with a slow sheen sweep. The only gradient fill
-   on the page; everything else stays white-neutral glass. */
-.glass-hero {
-  position: relative;
-  overflow: hidden;
-  background:
-    linear-gradient(
-      135deg,
-      rgba(34, 211, 238, 0.22) 0%,
-      rgba(129, 140, 248, 0.26) 45%,
-      rgba(232, 121, 249, 0.22) 75%,
-      rgba(52, 211, 153, 0.16) 100%
-    ),
-    var(--glass-fill);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  box-shadow:
-    0 8px 40px rgba(129, 140, 248, 0.35),
-    0 1px 0 0 rgba(255, 255, 255, 0.25) inset;
-  border-radius: 20px;
-}
-.glass-hero::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(
-    115deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.14) 50%,
-    transparent 70%
-  );
-  transform: translateX(-100%);
-  animation: hero-sheen 6s ease-in-out infinite;
-}
-@keyframes hero-sheen {
-  0%,
-  55% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-/* The rail date glows like caught light so today reads at a glance. The text
-   itself follows the theme (deep brand ink on light, bright brand on dark);
-   only the glow stays constant. Static — the pulse lives on the dot beside it. */
-.date-glow {
-  color: var(--color-brand-deep);
-  text-shadow:
-    0 0 10px color-mix(in oklab, var(--color-brand) 45%, transparent),
-    0 0 30px color-mix(in oklab, var(--color-brand) 25%, transparent);
-}
-.dark .date-glow {
-  color: var(--color-brand);
-  text-shadow:
-    0 0 10px color-mix(in oklab, var(--color-brand) 60%, transparent),
-    0 0 30px color-mix(in oklab, var(--color-brand) 35%, transparent);
 }
 
 /* Ambient wash the glass refracts. Three skill-spec blobs: 90px blur, slow
@@ -401,26 +363,18 @@
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .glass-panel,
-  .glass-hero {
+  .glass-panel {
     background: var(--color-card);
-  }
-  .glass-hero::after {
-    display: none;
   }
 }
 @media (prefers-reduced-transparency: reduce) {
   .app-aurora {
     display: none;
   }
-  .glass-panel,
-  .glass-hero {
+  .glass-panel {
     background: var(--color-card);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
-  }
-  .glass-hero::after {
-    display: none;
   }
 }
 
@@ -439,38 +393,14 @@
   animation: pendingRail 1.2s ease-in-out infinite;
 }
 
-.--marquee-track {
-  animation: marquee 48s linear infinite;
-}
-
 /* Category bars grow to their share. A named class, because a Tailwind
    transition-* pair cannot be reached by the reduced-motion query below. */
 .--share-bar {
   transition: width 500ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.--marquee-track-reverse {
-  animation: marquee 56s linear infinite reverse;
-}
-
-@keyframes marquee {
-  to {
-    transform: translateX(-50%);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .--marquee-track {
-    animation: none;
-  }
-  .--marquee-track-reverse {
-    animation: none;
-  }
-  .app-aurora .blob,
-  .glass-hero::after {
-    animation: none;
-  }
-  .--live-dot {
+  .app-aurora .blob {
     animation: none;
   }
   .--reveal {

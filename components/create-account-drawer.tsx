@@ -25,11 +25,18 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import useFetch from "@/hooks/use-fetch";
+import type { LedgerCurrency } from "@/lib/money";
 import { accountSchema } from "@/lib/schema";
 
 type AccountFormValues = z.input<typeof accountSchema>;
 
-const CreateAccountDrawer = ({ children }: { children: ReactNode }) => {
+const CreateAccountDrawer = ({
+  children,
+  currency,
+}: {
+  children: ReactNode;
+  currency: LedgerCurrency;
+}) => {
   const [open, setOpen] = useState(false);
 
   const {
@@ -114,7 +121,7 @@ const CreateAccountDrawer = ({ children }: { children: ReactNode }) => {
                 htmlFor="balance"
                 className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Initial Balance
+                Initial balance ({currency})
               </label>
               <Input
                 id="balance"
