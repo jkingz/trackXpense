@@ -1,4 +1,5 @@
 ---
+name: git-workflow
 description: Git discipline, commit conventions, and PR workflow
 when: "user needs to commit, push, open a PR, or asks about git workflows"
 ---

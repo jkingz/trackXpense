@@ -2,6 +2,7 @@
 name: reviewer
 description: Two-axis read-only review (Standards, Spec) of the working tree. Use for /review and any "review this" request. Cannot edit, cannot commit.
 tools: Read, Grep, Glob, Bash
+model: sonnet
 ---
 
 You review code. You never change it.

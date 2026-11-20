@@ -31,12 +31,7 @@ Authority for the chain. Counts → `service-architecture.md` Verification.
 7. Manual verification. `pnpm db:seed` + read-only `curl` prove pages render. Verify signed-out redirects and signed-in ledger separately; latest auth-flow result is unverified unless measured in this change.
    - **Unproven:** no create/update submitted through a browser — money paths exercised only by the seed script. Email + Inngest never fired (`INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` unset; `RESEND_API_KEY` + `GEMINI_API_KEY` present, so untriggered not unconfigured). Receipt scan is the one browser-exercised action (measured 2026-10-16, HTTP 200, fields filled). Account page transaction list not scoped to the account in its heading.
 
-`pnpm verify` runs gates 1–6 as one chain; it is the only command the pipeline
-records as a gate pass.
-
-Before a commit, gates 1–6 plus the `/review` report must be clean —
-`.opencode/plugins/pipeline.js` refuses `git commit` otherwise, docs-only
-excepted. See `workflow.md` → Build pipeline.
+`pnpm verify` runs gates 1–6 as one chain. Run it and the `/code-review` skill before a commit; nothing blocks the commit mechanically.
 
 CI (`.github/workflows/ci.yml`): `vp install --frozen-lockfile` → `vp check` → `pnpm verify` on Node 24 (all three tiers).
 

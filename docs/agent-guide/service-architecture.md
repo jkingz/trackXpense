@@ -40,7 +40,7 @@ Browser (Better Auth session, or none)
 | `app/not-found.tsx`              | Root 404 page for unmatched URLs; own title, `noindex`, no `og:url` (spec 14 increment 4).                                                                                                                                |
 | `app/api/receipts/`              | `POST` receipt upload (session-gated, `image/*` ≤ `MAX_RECEIPT_BYTES`); R2 when `R2_*` set, else `public/uploads`.                                                                                                        |
 | `app/api/inngest/`               | `serve()` GET/POST/PUT for the 4 functions. Not connected to a running Inngest account.                                                                                                                                   |
-| `tests/`                         | Three tiers per feature: `{feature}/unit` (pure), `{feature}/integration` (real DB), `{feature}/e2e` (Playwright). Features: api, auth, dashboard, money, pipeline, recurring, seo, transactions, validation.             |
+| `tests/`                         | Three tiers per feature: `{feature}/unit` (pure), `{feature}/integration` (real DB), `{feature}/e2e` (Playwright). Features: api, auth, dashboard, money, recurring, seo, transactions, validation.                       |
 
 Anything not built gets no row.
 
@@ -98,9 +98,9 @@ No `no-store`/`revalidate` export anywhere; no `revalidateTag`; `revalidatePath(
 
 ```bash
 pnpm typecheck        # exit 0 — tsc --noEmit (TS 7.0.2)
-pnpm test             # exit 0 — 107 passed (12 files); passes with and without TZ=UTC
+pnpm test             # exit 0 — 83 passed (16 files); passes with and without TZ=UTC
 pnpm lint             # exit 0 — vp check: format + lint 0 errors / 6 no-unused-vars warnings (129 files)
-pnpm verify           # exit 0 — test → typecheck → lint → build, the chain the pipeline gates on
+pnpm verify           # exit 0 — test → test:integration → typecheck → lint → build → test:e2e
 pnpm build            # exit 0 — compiles, "Running TypeScript ...", 13 routes (/api/health dynamic)
 pnpm db:seed          # deletes every transaction/budget/account row, re-seeds each users row
 /usr/bin/curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/dashboard                    # signed-out request redirects to /sign-in
@@ -110,13 +110,8 @@ pnpm db:seed          # deletes every transaction/budget/account row, re-seeds e
 # Exercised in a browser (2026-10-16): receipt scan on /transaction/create. NOT exercised: no form write (create/update), no Inngest function.
 # Fixed 2026-10-17: getPaginatedTransactions takes a required accountId and scopes via buildTransactionWhere
 # (actions/lib/transactionWhere.ts, tested) — account + owner travel together, so each account page renders its own ledger.
-# Measured 2026-10-17: pipeline gate layer — 58/58 checks green across two throwaway harnesses (not committed:
-# no integration tier in tests/) — 34/34 driving .opencode/plugins/pipeline.js through its V2 hooks and commands,
-# 24/24 driving scripts/pipeline-gate.ts through real Claude Code hook payloads. Plus one live opencode v2.0.30
-# session (source write refused at stage planned, specs/ write allowed). Claude Code 2.1.300 hooks NOT exercised
-# live: its API was unreachable here (ECONNREFUSED). See target-state.md.
 ```
 
 These are the **only** home for totals this body's `architecture.md`/`code-standards.md`/`workflow.md`/`pm-conventions.md` defer to. `AGENTS.md` quotes none. Hand-maintained.
 
-App test coverage: effectively 0% — the unit tests cover money serialisers, the recurrence helper, two Zod schemas, three app reducers, the receipts route and the build-pipeline machine; no page or component render tests.
+App test coverage: effectively 0% — the unit tests cover money serialisers, the recurrence helper, two Zod schemas, three app reducers and the receipts route; no page or component render tests.

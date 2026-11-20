@@ -1,4 +1,5 @@
 ---
+name: development-workflow
 description: Development workflow, scoping, and the work loop per unit of work
 when: "user starts a new task, needs to scope work, or asks about development process"
 ---

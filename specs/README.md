@@ -21,6 +21,4 @@ Each spec describes:
 
 Specs live here; implementations live in the codebase. When a spec and code disagree, code is truth.
 
-The `.review.md` format is parsed by `lib/pipeline-artifacts.ts`: a `Verdict:` line
-decides pass/fail and `- [ ] **High**` lines count as open findings. Keep the shape
-from `/review-changes`.
+`.review.md` files are past review reports: a `Verdict:` line plus `- [ ] **High**`-style findings.

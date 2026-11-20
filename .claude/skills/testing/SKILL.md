@@ -1,4 +1,5 @@
 ---
+name: testing
 description: Test organization, tier definitions, and how to run tests
 when: "user needs to write, run, or update tests; asks about test structure, coverage, or mocking"
 ---
