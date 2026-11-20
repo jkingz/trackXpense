@@ -36,7 +36,7 @@ export const checkedBudgetAlert = inngest.createFunction(
         // current month expenses
         const currentDate = new Date();
         const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
         // Calculate total expenses for the default account only
         const expenses = await db.transaction.aggregate({
           where: {
@@ -45,7 +45,7 @@ export const checkedBudgetAlert = inngest.createFunction(
             type: "EXPENSE",
             date: {
               gte: startOfMonth,
-              lte: endOfMonth,
+              lt: nextMonth, // exclusive: the last day runs until midnight
             },
           },
           _sum: {
@@ -307,14 +307,14 @@ export const generateMonthlyReports = inngest.createFunction(
 // Utility functions
 async function getMonthlyStats(userId: string, month: Date): Promise<MonthlyStats> {
   const startDate = new Date(month.getFullYear(), month.getMonth(), 1);
-  const endDate = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+  const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
 
   const transactions = await db.transaction.findMany({
     where: {
       userId,
       date: {
         gte: startDate,
-        lte: endDate,
+        lt: nextMonth, // exclusive: the last day runs until midnight
       },
     },
   });

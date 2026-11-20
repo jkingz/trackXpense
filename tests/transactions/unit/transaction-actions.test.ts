@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 const { mockCheckUser, db, tx, generateContent } = vi.hoisted(() => {
   const tx = {
-    transaction: { update: vi.fn() },
+    transaction: { update: vi.fn(), create: vi.fn() },
     account: { update: vi.fn() },
   };
   return {
@@ -10,7 +10,8 @@ const { mockCheckUser, db, tx, generateContent } = vi.hoisted(() => {
     generateContent: vi.fn(),
     tx,
     db: {
-      transaction: { findUnique: vi.fn() },
+      transaction: { findUnique: vi.fn(), aggregate: vi.fn() },
+      budget: { findFirst: vi.fn() },
       account: { findUnique: vi.fn() },
       $transaction: vi.fn((fn: (t: typeof tx) => unknown) => fn(tx)),
     },
@@ -31,7 +32,8 @@ vi.mock("@google/generative-ai", () => ({
   },
 }));
 
-import { scanReceipt, updateTransaction } from "@/actions/transaction";
+import { getCurrentBudget } from "@/actions/budget";
+import { createTransaction, scanReceipt, updateTransaction } from "@/actions/transaction";
 
 const decimal = (n: number) => ({ toNumber: () => n });
 const input = (accountId: string) => ({
@@ -101,5 +103,35 @@ describe("scanReceipt", () => {
     const huge = new File([new Uint8Array(5 * 1024 * 1024 + 1)], "big.png", { type: "image/png" });
     await expect(scanReceipt(huge)).rejects.toThrow("file too large");
     expect(generateContent).not.toHaveBeenCalled();
+  });
+});
+
+describe("createTransaction", () => {
+  it("moves the balance with an atomic increment, not a stale read", async () => {
+    db.account.findUnique.mockResolvedValue({ id: "a", balance: decimal(999) });
+    tx.transaction.create.mockResolvedValue({ id: "t2", accountId: "a", amount: decimal(30) });
+
+    await createTransaction(input("a"));
+
+    expect(tx.account.update).toHaveBeenCalledWith({
+      where: { id: "a" },
+      data: { balance: { increment: -30 } },
+    });
+  });
+});
+
+describe("getCurrentBudget", () => {
+  it("counts the whole last day of the month", async () => {
+    vi.useFakeTimers({ now: new Date(2026, 10, 30, 15) });
+    db.budget.findFirst.mockResolvedValue(null);
+    db.transaction.aggregate.mockResolvedValue({ _sum: { amount: null } });
+
+    await getCurrentBudget("a");
+
+    expect(db.transaction.aggregate.mock.calls[0][0].where.date).toEqual({
+      gte: new Date(2026, 10, 1),
+      lt: new Date(2026, 11, 1),
+    });
+    vi.useRealTimers();
   });
 });

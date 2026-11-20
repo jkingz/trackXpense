@@ -166,8 +166,6 @@ export async function createTransaction(data: TransactionInput) {
     const amount = Number(data.amount);
     // calculate balance
     const balanceChange = data.type === "EXPENSE" ? -amount : amount;
-    // new balance
-    const newBalance = account.balance.toNumber() + balanceChange;
 
     // create transaction
     const transaction = await db.$transaction(async (tx) => {
@@ -188,9 +186,8 @@ export async function createTransaction(data: TransactionInput) {
         where: {
           id: data.accountId,
         },
-        data: {
-          balance: newBalance,
-        },
+        // increment, not read-then-write: concurrent entries would lose each other.
+        data: { balance: { increment: balanceChange } },
       });
       return newTransaction;
     });
