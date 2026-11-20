@@ -54,7 +54,7 @@ const ReceiptScanner = ({
     }
   }, [scannedData, scanLoading, onScanComplete]);
   return (
-    <div>
+    <div className="shrink-0">
       <input
         type="file"
         className="hidden"
@@ -68,13 +68,13 @@ const ReceiptScanner = ({
       />
       <Button
         type="button"
-        variant="outline"
-        className="w-full h-10 bg-gradient-to-br from-orange-500 via-pink-500 to-purple-500 --animate-gradient hover:opacity-90 transition-opacity text-white hover:text-white"
+        variant="ghost"
+        className="h-10 rounded-xl border border-dashed border-indigo/50 px-4 font-semibold text-indigo hover:bg-indigo/5 hover:text-indigo dark:border-indigo-soft/50 dark:text-indigo-soft"
         onClick={() => fileInputRef.current?.click()}
         loading={scanLoading}
       >
-        <Camera className="mr-2" />
-        <span>{scanLoading ? "Scanning" : "Scan Receipt with AI"}</span>
+        <Camera aria-hidden className="size-4" />
+        <span>{scanLoading ? "Reading receipt" : "Fill from a receipt"}</span>
       </Button>
     </div>
   );

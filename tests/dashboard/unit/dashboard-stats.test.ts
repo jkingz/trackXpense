@@ -4,10 +4,8 @@ import {
   cashflow,
   expenseDeltaPct,
   monthTotals,
-  savingsRate,
   spendByCategory,
-  spendByWeekday,
-  yearComparison,
+  spendSeries,
 } from "@/lib/dashboard-stats";
 
 // Fixed clock: Friday 2026-10-16 noon UTC. Requires TZ=UTC: the source buckets
@@ -49,11 +47,6 @@ it("compares this month's spend against last month's", () => {
   expect(expenseDeltaPct(100, 0)).toBeNull();
 });
 
-it("rates savings as kept income, null when there is none", () => {
-  expect(savingsRate(5800, 1760)).toBeCloseTo(0.6966, 3);
-  expect(savingsRate(0, 100)).toBeNull();
-});
-
 it("ranks month categories and folds the tail into one slice", () => {
   expect(spendByCategory(LEDGER, NOW, 2)).toEqual({
     total: 1760,
@@ -77,22 +70,31 @@ it("buckets the last 30 days oldest-first with day labels", () => {
   expect(byLabel.get("16 Oct")).toEqual({ label: "16 Oct", income: 0, expense: 0 });
 });
 
-it("spends the last 7 days by weekday, flagging the peak", () => {
-  expect(spendByWeekday(LEDGER, NOW, 7)).toEqual([
-    { weekday: "Sat", amount: 60, isPeak: false },
-    { weekday: "Sun", amount: 0, isPeak: false },
-    { weekday: "Mon", amount: 0, isPeak: false },
-    { weekday: "Tue", amount: 0, isPeak: false },
-    { weekday: "Wed", amount: 0, isPeak: false },
-    { weekday: "Thu", amount: 80, isPeak: true },
-    { weekday: "Fri", amount: 0, isPeak: false },
-  ]);
+it("ranks the clock year's categories when scoped to the year", () => {
+  expect(spendByCategory(LEDGER, NOW, Infinity, "year")).toEqual({
+    total: 3460,
+    slices: [
+      { key: "housing", amount: 3000 },
+      { key: "groceries", amount: 400 },
+      { key: "transportation", amount: 60 },
+    ],
+  });
 });
 
-it("compares this year's spend against last year's", () => {
-  const year = yearComparison(LEDGER, NOW);
-  expect(year.thisYear).toBe(3460);
-  expect(year.lastYear).toBe(3000);
-  expect(year.deltaPct).toBeCloseTo(15.33, 1);
-  expect(yearComparison([], NOW)).toEqual({ thisYear: 0, lastYear: 0, deltaPct: null });
+it("series 7d/30d as daily spend ending today", () => {
+  const week = spendSeries(LEDGER, NOW, "7d");
+  expect(week.map((bar) => bar.amount)).toEqual([60, 0, 0, 0, 0, 80, 0]);
+  expect(week.at(-1)?.label).toBe("16 Oct");
+  expect(spendSeries(LEDGER, NOW, "30d")).toHaveLength(30);
+});
+
+it("series 6m as monthly spend ending this month", () => {
+  expect(spendSeries(LEDGER, NOW, "6m")).toEqual([
+    { label: "May", amount: 0 },
+    { label: "Jun", amount: 0 },
+    { label: "Jul", amount: 0 },
+    { label: "Aug", amount: 0 },
+    { label: "Sep", amount: 1700 },
+    { label: "Oct", amount: 1760 },
+  ]);
 });
