@@ -10,27 +10,32 @@ export const accountSchema = z.object({
   isDefault: z.boolean().default(false),
 });
 
-export const transactionSchema = z
-  .object({
-    type: z.enum(["INCOME", "EXPENSE"]),
-    amount: z.string().min(1, "Amount is required"),
-    description: z.string().optional(),
-    date: z.date({ error: "Date is required" }),
-    accountId: z.string().min(1, "Account is required"),
-    category: z.string().min(1, "Category is required"),
-    receiptUrl: z.string().optional(),
-    isRecurring: z.boolean().default(false),
-    recurringInterval: z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]).optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.isRecurring && !data.recurringInterval) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Recurring interval is required for recurring transactions",
-        path: ["recurringInterval"],
-      });
-    }
-  });
+const transactionFields = z.object({
+  type: z.enum(["INCOME", "EXPENSE"]),
+  amount: z.string().min(1, "Amount is required"),
+  description: z.string().optional(),
+  date: z.date({ error: "Date is required" }),
+  accountId: z.string().min(1, "Account is required"),
+  category: z.string().min(1, "Category is required"),
+  receiptUrl: z.string().optional(),
+  isRecurring: z.boolean().default(false),
+  recurringInterval: z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]).optional(),
+});
+
+function requireRecurringInterval(
+  data: { isRecurring: boolean; recurringInterval?: string },
+  ctx: z.RefinementCtx,
+) {
+  if (data.isRecurring && !data.recurringInterval) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Recurring interval is required for recurring transactions",
+      path: ["recurringInterval"],
+    });
+  }
+}
+
+export const transactionSchema = transactionFields.superRefine(requireRecurringInterval);
 
 // Shared form value types so server actions and form components agree.
 // Transaction forms parse amount to a number before submitting, so the
@@ -49,27 +54,9 @@ export type TransactionInput = Omit<z.input<typeof transactionSchema>, "amount">
 };
 
 // Server-side variant: amount arrives as a number (form parses before submit).
-export const transactionServerSchema = z
-  .object({
-    type: z.enum(["INCOME", "EXPENSE"]),
-    amount: z.number().finite().positive("Amount must be greater than 0"),
-    description: z.string().optional(),
-    date: z.date({ error: "Date is required" }),
-    accountId: z.string().min(1, "Account is required"),
-    category: z.string().min(1, "Account is required"),
-    isRecurring: z.boolean().default(false),
-    recurringInterval: z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY"]).optional(),
-    receiptUrl: z.string().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.isRecurring && !data.recurringInterval) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Recurring interval is required for recurring transactions",
-        path: ["recurringInterval"],
-      });
-    }
-  });
+export const transactionServerSchema = transactionFields
+  .extend({ amount: z.number().finite().positive("Amount must be greater than 0") })
+  .superRefine(requireRecurringInterval);
 
 export const signUpSchema = z
   .object({
