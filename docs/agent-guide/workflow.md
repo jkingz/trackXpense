@@ -11,73 +11,29 @@
 
 Full loop + scoping rules: `/development-workflow` skill.
 
-### Build pipeline
-
-Stages, one command each. Enforced by the harness, not by convention.
-
-| Stage      | Command                  | Leaves behind                                            |
-| ---------- | ------------------------ | -------------------------------------------------------- |
-| planned    | `/plan specs/NN-slug.md` | `specs/NN-slug.md`                                       |
-| designed   | `/design`                | `specs/NN-slug.design.md`, or `UI: n/a` in the spec      |
-| decomposed | `/tickets`               | ordered increments in the spec                           |
-| building   | `/build <n>`             | the increment + its unit test                            |
-| verified   | `/verify`                | a green `pnpm verify`                                    |
-| reviewed   | `/review-changes`        | `specs/NN-slug.review.md`, `Verdict: pass`, no open High |
-
-Then commit, then `/next` for the next increment. `/pipeline` prints the stage; `/pipeline-reset` clears it. State lives in `.opencode/pipeline-state.json` (gitignored).
-
-Enforced: product-source edits are refused before `building`; `git commit` is refused until `pnpm verify` is green for the current code and a review report postdates that code with no open High. Docs-only trees (`specs/`, `docs/`, `AGENTS.md`, `CLAUDE.md`, `.claude/`, `opencode.json`, `.pipeline-state.json`) are exempt from the commit gate and editable at any stage.
-
-### Harness support
-
-One adapter: `scripts/pipeline-gate.ts` (Claude Code hooks) over `lib/pipeline-*.ts`. OpenCode adapter removed; Codex and other harnesses have no hook enforcement (advisory).
-
-|              | Claude Code                                                          |
-| ------------ | -------------------------------------------------------------------- |
-| Machine      | `lib/pipeline-state.ts`, `-guard.ts`, `-artifacts.ts`, `-runtime.ts` |
-| Adapter      | `scripts/pipeline-gate.ts` (hook CLI)                                |
-| Wiring       | hooks in `.claude/settings.json`                                     |
-| Stage gate   | `UserPromptExpansion`, matched on command name                       |
-| Edit gate    | `PreToolUse` on `Write\|Edit`                                        |
-| Commit gate  | `PreToolUse` on `Bash` with `if: Bash(git commit *)`                 |
-| Verify gate  | `PostToolUse` / `PostToolUseFailure`                                 |
-| Permissions  | `.claude/settings.json` → `permissions.allow/deny/ask`               |
-| Review agent | `.claude/agents/reviewer.md`                                         |
-| Commands     | discovered natively from `.claude/commands/*.md`                     |
-
-Command names: `/review` is a bundled **alias** of `/code-review`, and `/reset` is a built-in alias — Claude Code replaces a built-in but never its aliases, so both names would silently keep running the bundled behaviour. `/review-changes` and `/pipeline-reset` are unclaimed.
-
-Escape hatch: disable the hook group in `.claude/settings.json` — a hook cannot read an env switch, since a command that could set the switch could also disable the gate. For cross-harness enforcement, add a git `pre-commit` hook running `scripts/pipeline-gate.ts`.
-
-Machine: `lib/pipeline-*.ts`. Tests: `tests/pipeline/unit/` (the pure modules only). The adapter is I/O and has no committed tests.
-
 ### Read order
 
 STANDING RULES → `overview.md` → `architecture.md` → `ui.md` → `code-standards.md` → this file → `pm-conventions.md`. Then `service-architecture.md`.
 
 ### Commands
 
-| Need      | Command                                                                                                                                                                                   |
-| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dev       | `pnpm dev` — Turbopack, :3000. Arcjet out of path (commented in `proxy.ts`); pages answer locally                                                                                         |
-| Seed      | `pnpm db:seed` — `node scripts/seed-demo.ts`. **Destructive:** deletes every `transaction`/`budget`/`account` row (users kept), writes a deterministic seven-month ledger per `users` row |
-| Typecheck | `pnpm typecheck` — `tsc --noEmit` (TS 7.0.2, whole tree). `pnpm build` type-checks the same tree                                                                                          |
-| Test      | `pnpm test` — unit tier; `pnpm test:integration` — real DB; `pnpm test:e2e` — Playwright                                                                                                  |
-| Lint/fmt  | `pnpm lint` — `vp check` (format + lint, non-mutating). Formatter alone: `vp fmt [--fix]`. Pre-commit hook runs `vp check --fix`. Config in `vite.config.ts`; no `eslint.config.mjs`      |
-| Verify    | `pnpm verify` — `test` → `test:integration` → `typecheck` → `lint` → `build` → `test:e2e`, the chain the pipeline records                                                                 |
-| Build     | `pnpm build` — Turbopack; type-checks, does not lint                                                                                                                                      |
-| Prisma    | `pnpm exec prisma generate`; `prisma migrate dev --name migration_name`; `prisma studio`                                                                                                  |
-| Email dev | Not runnable — no `email` script, `@react-email/ui` not installed                                                                                                                         |
+| Need      | Command                                                                                                                                                                                                    |
+| --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dev       | `pnpm dev` — Turbopack, :3000. Arcjet out of path (commented in `proxy.ts`); pages answer locally                                                                                                          |
+| Seed      | `pnpm db:seed` — `node scripts/seed-demo.ts`. **Destructive:** deletes every `transaction`/`budget`/`account` row (users kept), writes a deterministic seven-month ledger per `users` row                  |
+| Typecheck | `pnpm typecheck` — `tsc --noEmit` (TS 7.0.2, whole tree). `pnpm build` type-checks the same tree                                                                                                           |
+| Test      | `pnpm test` — unit tier; `pnpm test:integration` — real DB; `pnpm test:e2e` — Playwright                                                                                                                   |
+| Lint/fmt  | `pnpm lint` — `vp check` (format + lint, non-mutating). Formatter alone: `vp fmt` (writes; `--check` to only report). Pre-commit hook runs `vp staged`. Config in `vite.config.ts`; no `eslint.config.mjs` |
+| Verify    | `pnpm verify` — `test` → `test:integration` → `typecheck` → `lint` → `build` → `test:e2e` — the full gate chain                                                                                            |
+| Build     | `pnpm build` — Turbopack; type-checks, does not lint                                                                                                                                                       |
+| Prisma    | `pnpm exec prisma generate`; `prisma migrate dev --name migration_name`; `prisma studio`                                                                                                                   |
+| Email dev | Not runnable — no `email` script, `@react-email/ui` not installed                                                                                                                                          |
 
 Totals for test/check → `service-architecture.md` Verification.
 
 `package.json`: **no `engines`**, `packageManager pnpm@12.11.2`; `.node-version`/`.nvmrc`/`.npmrc` absent → no version pin, no `engine-strict`. Here: pnpm 12.11.2 on Node 26.8.2 (measured 2026-10-16). Vite+ (`vp`, `vite-plus`) owns install/format/lint/test; Next driven by `pnpm dev`/`pnpm build`. CI: `vp install --frozen-lockfile` → `vp check` → `vp test` → `vp run build` on Node 24.
 
-Harness: `opencode.json` holds the permission ladder (`permissions` array of `{action, resource, effect}`; deny destructive git/`rm`/`--no-verify`, ask the rest) and the read-only `reviewer` subagent under `agents`. Claude Code: `.claude/settings.json` (hooks + `permissions.allow/deny/ask`) and `.claude/agents/reviewer.md`. Shared prompt bodies: `.claude/commands/*.md`.
-
-The plugin targets the V2 plugin API — default-exports `{ id, setup(ctx) }`, registers hooks with `ctx.tool.hook("execute.before" | "execute.after", ...)`, commands with `ctx.command.transform`. A V1 plugin function does not run in V2. Two V2 facts the guards depend on: the shell tool is named `shell` (not `bash`) and edit tools carry `input.path` (not `filePath`). V2 has no global `command.execute.before` hook, so the plugin owns the commands and reads each prompt body from `.claude/commands/`. `Plugin.define` is only a typed identity helper, so nothing is imported and the plugin stays dependency-free. It is `.js` on purpose: `tsconfig.json` includes `**/*.ts`, so a typed plugin would drag `@opencode/plugin` into `pnpm typecheck`.
-
-`scripts/pipeline-gate.ts` is `.ts` run directly by `node`, which strips types natively (measured on Node 26.8.2). Relative imports inside `lib/` therefore carry explicit `.ts` extensions — Node will not resolve them otherwise. Hooks pass `--disable-warning=MODULE_TYPELESS_PACKAGE_JSON` because the root `package.json` has no `"type"`.
+Harness: `.claude/settings.json` (`permissions.allow/deny/ask`), `.claude/agents/reviewer.md` (read-only reviewer), `.claude/skills/*/SKILL.md`. No hooks gate edits or commits.
 
 ### Where logic goes
 

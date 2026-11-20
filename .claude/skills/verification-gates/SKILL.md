@@ -1,4 +1,5 @@
 ---
+name: verification-gates
 description: Verification gates, the chain that must pass before work is complete
 when: "user finishes implementation and needs to verify; asks what tests to run or how to verify a change"
 ---

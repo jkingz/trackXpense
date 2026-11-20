@@ -1,26 +1,19 @@
 # Tests
 
-Unit tier only: `tests/**/*.test.ts`, run with `pnpm test` (`vp test` — Vitest 5 via Vite+, config in `vite.config.ts`, `environment: node`). No `integration`/`e2e` tier.
+Three tiers, one folder per feature: `tests/{feature}/{unit,integration,e2e}/`.
 
-```
-tests/
-├── hooks/unit/          # use-fetch reducer
-├── money/unit/          # calculateNextRecurringDate, serializeAmount
-├── pipeline/unit/       # stage machine, path/commit guards, artifact parsers
-├── recurring/unit/      # recurring lifecycle
-├── transactions/unit/   # transaction-table reducer
-└── validation/unit/     # Zod schemas
-```
+| Tier        | Glob                                | Command                 |
+| ----------- | ----------------------------------- | ----------------------- |
+| unit        | `tests/**/unit/**/*.test.ts`        | `pnpm test`             |
+| integration | `tests/**/integration/**/*.test.ts` | `pnpm test:integration` |
+| e2e         | `tests/**/e2e/**/*.spec.ts`         | `pnpm test:e2e`         |
+
+Vitest via Vite+ (`vp test`, config in `vite.config.ts`); e2e via Playwright (`playwright.config.ts`). `tests/integration/` holds cross-feature DB checks.
 
 ## Rules
 
-- One folder per feature; tiers are `unit`/`integration`/`e2e` — only `unit` exists.
 - Tests never sit beside source files.
 - Import through the `@` alias (repo root), never relatively.
-- No test imports a harness adapter (`.opencode/plugins/pipeline.js`,
-  `scripts/pipeline-gate.ts`). Their decisions are tested here through the
-  `lib/pipeline-*.ts` reducers they call; the adapters only do I/O. See
-  `docs/agent-guide/target-state.md` for what that leaves unproven.
 
 ## Adding tests
 

@@ -30,7 +30,7 @@ Never print values — names only. `env` files stay out of git; commit names + e
 
 ### 7. Git discipline
 
-Commit/push/PR only when asked. Before push: pull main, merge, resolve, then commit/push. No `--no-verify`, no skipped hooks/signing. No force-push shared branches, no destructive commands over others' work. Externally visible actions need explicit authorization. Skill: `.claude/skills/git-workflow.md`.
+Commit/push/PR only when asked. Before push: pull main, merge, resolve, then commit/push. No `--no-verify`, no skipped hooks/signing. No force-push shared branches, no destructive commands over others' work. Externally visible actions need explicit authorization. Skill: `.claude/skills/git-workflow/SKILL.md`.
 
 ### 8. Pull-request babysitting
 
@@ -54,24 +54,16 @@ Every line in `AGENTS.md` and `docs/agent-guide/` earns its place: one fact per 
 
 ## Skills
 
-| When                                      | Load                                         |
-| ----------------------------------------- | -------------------------------------------- |
-| Start/scope any task, work loop           | `.claude/skills/development-workflow.md`     |
-| Write/run/update tests                    | `.claude/skills/testing.md`                  |
-| Verify change (tests, types, lint, build) | `.claude/skills/verification-gates.md`       |
-| Commit, push, open PR                     | `.claude/skills/git-workflow.md`             |
-| Watch PR, handle review/CI feedback       | `.claude/skills/babysitting-a-pr/SKILL.md`   |
-| Post any PR/issue comment                 | `.claude/skills/leaving-pr-comment/SKILL.md` |
+| When                                      | Load                                           |
+| ----------------------------------------- | ---------------------------------------------- |
+| Start/scope any task, work loop           | `.claude/skills/development-workflow/SKILL.md` |
+| Write/run/update tests                    | `.claude/skills/testing/SKILL.md`              |
+| Verify change (tests, types, lint, build) | `.claude/skills/verification-gates/SKILL.md`   |
+| Commit, push, open PR                     | `.claude/skills/git-workflow.md`               |
+| Watch PR, handle review/CI feedback       | `.claude/skills/babysitting-a-pr/SKILL.md`     |
+| Post any PR/issue comment                 | `.claude/skills/leaving-pr-comment/SKILL.md`   |
 
 Rule 9 applies: if a row matches, load that skill before acting.
-
-## Build pipeline
-
-Feature work runs seven stages, one command each: `/plan` → `/design` → `/tickets` → `/build` → `/verify` → `/review-changes` → commit → `/next`. `/pipeline` prints the current stage; `/pipeline-reset` clears it.
-
-Enforced by the harness, not by convention: product-source edits are refused before `/build`, and `git commit` is refused until `pnpm verify` is green for the current code and a review report postdates it with no open High. Docs-only trees are exempt from the commit gate.
-
-One gate, one adapter: `scripts/pipeline-gate.ts` (Claude Code hooks) over `lib/pipeline-*.ts`. OpenCode adapter removed. Escape hatch `OPENCODE_PIPELINE=off opencode`; `/pipeline-reset` clears the stage. Body: `docs/agent-guide/workflow.md` → Build pipeline.
 
 ## Project docs
 
