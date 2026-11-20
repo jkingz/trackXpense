@@ -14,16 +14,17 @@ export async function updateDefaultAccount(accountId: string) {
     accountId = parseInput(z.string().min(1), accountId);
     //check if user is logged in
     const user = await checkUser();
-    // set all other accounts to false
-    await db.account.updateMany({
-      where: { userId: user.id, isDefault: true },
-      data: { isDefault: false },
-    });
-    // update the default account
-    const account = await db.account.update({
-      where: { id: accountId, userId: user.id },
-      data: { isDefault: true },
-    });
+    // One transaction: a failed set must not leave the user with no default.
+    const [, account] = await db.$transaction([
+      db.account.updateMany({
+        where: { userId: user.id, isDefault: true },
+        data: { isDefault: false },
+      }),
+      db.account.update({
+        where: { id: accountId, userId: user.id },
+        data: { isDefault: true },
+      }),
+    ]);
 
     // return the updated account
     revalidatePath("/dashboard");
@@ -146,6 +147,10 @@ export async function getPaginatedTransactions({
   accountId = parseInput(z.string().min(1), accountId);
   const user = await checkUser();
 
+  // URL-supplied: bad values fall back instead of crashing Prisma.
+  page = Math.max(1, Math.floor(page) || 1);
+  sortField = z.enum(["date", "amount", "category"]).catch("date").parse(sortField);
+  sortDirection = z.enum(["asc", "desc"]).catch("desc").parse(sortDirection);
   const skip = (page - 1) * itemsPerPage;
 
   const where = buildTransactionWhere({
