@@ -1,10 +1,11 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-import { sendEmail } from "@/actions/send-email";
+import { sendEmail } from "@/lib/email/send-email";
 import EmailTemplate from "@/emails/template";
 import { formatMoney, type LedgerCurrency } from "@/lib/money";
 import { db } from "@/lib/prisma";
 import { env } from "@/lib/env";
+import { GEMINI_MODEL } from "@/lib/gemini";
 import { applyRecurringTick, recurringPhase } from "@/lib/recurring-lifecycle";
 
 import { inngest } from "./client";
@@ -36,7 +37,7 @@ export const checkedBudgetAlert = inngest.createFunction(
         // current month expenses
         const currentDate = new Date();
         const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+        const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
         // Calculate total expenses for the default account only
         const expenses = await db.transaction.aggregate({
           where: {
@@ -45,7 +46,7 @@ export const checkedBudgetAlert = inngest.createFunction(
             type: "EXPENSE",
             date: {
               gte: startOfMonth,
-              lte: endOfMonth,
+              lt: nextMonth, // exclusive: the last day runs until midnight
             },
           },
           _sum: {
@@ -220,7 +221,7 @@ async function generateFinancialInsights(
   currency: LedgerCurrency,
 ) {
   const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? "");
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
   const prompt = `
     Analyze this financial data and provide 3 concise, actionable insights.
@@ -307,14 +308,14 @@ export const generateMonthlyReports = inngest.createFunction(
 // Utility functions
 async function getMonthlyStats(userId: string, month: Date): Promise<MonthlyStats> {
   const startDate = new Date(month.getFullYear(), month.getMonth(), 1);
-  const endDate = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+  const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
 
   const transactions = await db.transaction.findMany({
     where: {
       userId,
       date: {
         gte: startDate,
-        lte: endDate,
+        lt: nextMonth, // exclusive: the last day runs until midnight
       },
     },
   });

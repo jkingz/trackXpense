@@ -2,7 +2,7 @@ import "server-only";
 
 import { after } from "next/server";
 
-import { sendEmail } from "@/actions/send-email";
+import { sendEmail } from "@/lib/email/send-email";
 import VerifyEmail from "@/emails/verify-email";
 import ResetPassword from "@/emails/reset-password";
 import { env } from "@/lib/env";

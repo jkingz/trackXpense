@@ -1,6 +1,6 @@
 import { expect, it } from "vite-plus/test";
 
-import { accountSchema, transactionSchema } from "@/lib/schema";
+import { accountSchema, transactionSchema, transactionServerSchema } from "@/lib/schema";
 
 const validTransaction = {
   type: "EXPENSE",
@@ -82,4 +82,12 @@ it("transactionSchema requires an interval when recurring", () => {
 
 it("transactionSchema defaults isRecurring to false", () => {
   expect(transactionSchema.parse(validTransaction).isRecurring).toBe(false);
+});
+
+it("transactionServerSchema rejects zero and negative amounts", () => {
+  const ok = (amount: number) =>
+    transactionServerSchema.safeParse({ ...validTransaction, amount }).success;
+  expect(ok(42.5)).toBe(true);
+  expect(ok(0)).toBe(false);
+  expect(ok(-50)).toBe(false);
 });

@@ -94,7 +94,7 @@ app/
   robots.ts             — /robots.txt rules + sitemap pointer
   sitemap.ts            — /sitemap.xml from lib/site.ts publicRoutes
   layout.tsx globals.css page.tsx
-actions/                — server actions (accounts, budget, dashboard, seed, send-email, transaction)
+actions/                — server actions (accounts, budget, dashboard, seed, transaction)
   lib/                  — checkUser.ts (identity seam), calculateRecurring.ts, errors.ts, serializedAmount.ts, index.ts
 components/             — shared UI; ui/*.tsx = Base UI wrappers
   landing/ hero.tsx landing-flow.tsx

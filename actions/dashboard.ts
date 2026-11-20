@@ -31,23 +31,22 @@ export async function createAccount(data: AccountInput) {
 
     const shouldBeDefault = existingAccounts.length === 0 ? true : data.isDefault;
 
-    // check if this should be the default account, unset all other accounts
-    if (shouldBeDefault) {
-      // set all other accounts to false
-      await db.account.updateMany({
-        where: { userId: user.id, isDefault: true },
-        data: { isDefault: false },
+    // Unset other defaults and create in one transaction, so a failed create keeps the old default.
+    const account = await db.$transaction(async (tx) => {
+      if (shouldBeDefault) {
+        await tx.account.updateMany({
+          where: { userId: user.id, isDefault: true },
+          data: { isDefault: false },
+        });
+      }
+      return tx.account.create({
+        data: {
+          ...data,
+          balance: balanceFloat,
+          userId: user.id,
+          isDefault: shouldBeDefault,
+        },
       });
-    }
-
-    // create new user account
-    const account = await db.account.create({
-      data: {
-        ...data,
-        balance: balanceFloat,
-        userId: user.id,
-        isDefault: shouldBeDefault,
-      },
     });
     // serilize the account balance
     const serializedAccount = serializeTransaction(account);
@@ -80,9 +79,16 @@ export async function getUserAccounts() {
 export async function getDashboardData() {
   const user = await checkUser();
 
-  // Get all user transactions
+  // The dashboard reads at most this calendar year and the last 6 months, so skip older history.
+  const now = new Date();
+  const since = new Date(
+    Math.min(
+      new Date(now.getFullYear(), 0, 1).getTime(),
+      new Date(now.getFullYear(), now.getMonth() - 5, 1).getTime(),
+    ),
+  );
   const transactions = await db.transaction.findMany({
-    where: { userId: user.id },
+    where: { userId: user.id, date: { gte: since } },
     orderBy: { date: "desc" },
   });
 

@@ -13,7 +13,7 @@
 | Forms           | React Hook Form 7.90.0 + Zod 4                                                                          | `package.json`                                                                                             |
 | Tests           | Vitest 5.0.4 via Vite+ (`vp test`); unit, integration, e2e tiers                                        | `vite.config.ts`, `playwright.config.ts`. Totals → `service-architecture.md` Verification                  |
 | Background jobs | Inngest                                                                                                 | `inngest@4.24.0`, `lib/inngest/`                                                                           |
-| Email           | Resend                                                                                                  | `actions/send-email.ts`, called from `lib/inngest/functions.ts`                                            |
+| Email           | Resend                                                                                                  | `lib/email/send-email.ts`, called from `lib/inngest/functions.ts`                                          |
 | Rate limiting   | Arcjet                                                                                                  | `lib/arcjet.ts`. `tokenBucket` in `actions/transaction.ts` only; `proxy.ts` shield/detectBot commented out |
 | Lint            | ESLint via Vite+ (`vp lint` / `vp check`); types come from `tsc --noEmit` (TS 7.0.2) + `pnpm build`     | `vite.config.ts`                                                                                           |
 

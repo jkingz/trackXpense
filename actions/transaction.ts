@@ -7,7 +7,8 @@ import { revalidatePath } from "next/cache";
 import aj from "@/lib/arcjet";
 import { db } from "@/lib/prisma";
 import { env } from "@/lib/env";
-import { transactionServerSchema } from "@/lib/schema";
+import { GEMINI_MODEL } from "@/lib/gemini";
+import { MAX_RECEIPT_BYTES, transactionServerSchema } from "@/lib/schema";
 import type { TransactionInput } from "@/lib/schema";
 
 import { calculateNextRecurringDate, checkUser, serializeAmount } from "./lib";
@@ -16,20 +17,18 @@ import { toErrorMessage } from "./lib";
 
 const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? "");
 
-// Model chosen from measured behaviour against this key, not from a doc page.
-// Census on one receipt image, 3 attempts each: `gemini-2.5-flash` and
-// `gemini-2.5-flash-lite` 404 ("no longer available to new users") — that is what
-// broke the scan — while `gemini-3.8-flash` and `gemini-flash-latest` answered but
-// intermittently threw 503 "high demand" and took 38-92s. `gemini-3.1-flash-lite`
-// and `gemini-flash-lite-latest` went 10/10 in 2-5s with byte-identical
-// extraction. The versioned name is pinned over the rolling alias so the model
-// behind the feature cannot change under the app mid-demo.
-const RECEIPT_MODEL = "gemini-3.1-flash-lite";
-
 // Scan Receipt
 export async function scanReceipt(file: File) {
   try {
-    const model = genAI.getGenerativeModel({ model: RECEIPT_MODEL });
+    // Reachable from the browser: gate the Gemini spend on a session and the upload limits.
+    await checkUser();
+    if (!(file instanceof File) || !file.type.startsWith("image/")) {
+      throw new Error("unsupported file type");
+    }
+    if (file.size > MAX_RECEIPT_BYTES) {
+      throw new Error("file too large");
+    }
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
     // Convert File to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
@@ -158,8 +157,6 @@ export async function createTransaction(data: TransactionInput) {
     const amount = Number(data.amount);
     // calculate balance
     const balanceChange = data.type === "EXPENSE" ? -amount : amount;
-    // new balance
-    const newBalance = account.balance.toNumber() + balanceChange;
 
     // create transaction
     const transaction = await db.$transaction(async (tx) => {
@@ -180,9 +177,8 @@ export async function createTransaction(data: TransactionInput) {
         where: {
           id: data.accountId,
         },
-        data: {
-          balance: newBalance,
-        },
+        // increment, not read-then-write: concurrent entries would lose each other.
+        data: { balance: { increment: balanceChange } },
       });
       return newTransaction;
     });
@@ -224,9 +220,6 @@ export async function updateTransaction(data: TransactionInput, id: string) {
         id,
         userId: user.id,
       },
-      include: {
-        account: true,
-      },
     });
     if (!originalTransaction) {
       throw new Error("Transaction not found");
@@ -237,7 +230,14 @@ export async function updateTransaction(data: TransactionInput, id: string) {
         ? -originalTransaction.amount.toNumber()
         : originalTransaction.amount.toNumber();
     const newBalanceChange = data.type === "EXPENSE" ? -data.amount : data.amount;
-    const netBalanceChange = newBalanceChange - oldBalanceChange;
+
+    // The target account must be the caller's: the edit form can move an entry.
+    const targetAccount = await db.account.findUnique({
+      where: { id: data.accountId, userId: user.id },
+    });
+    if (!targetAccount) {
+      throw new Error("Account not found");
+    }
 
     // Update transaction and account balance in a transaction
     const transaction = await db.$transaction(async (tx) => {
@@ -255,21 +255,19 @@ export async function updateTransaction(data: TransactionInput, id: string) {
         },
       });
 
-      // Update account balance using the original balance
-      const currentBalance = originalTransaction.account.balance.toNumber();
-      const newBalance = currentBalance + netBalanceChange;
-      // update account balance
+      // Reverse the old effect on the old account, apply the new one on the target.
       await tx.account.update({
-        where: {
-          id: data.accountId,
-        },
-        data: {
-          balance: newBalance,
-        },
+        where: { id: originalTransaction.accountId },
+        data: { balance: { increment: -oldBalanceChange } },
+      });
+      await tx.account.update({
+        where: { id: data.accountId },
+        data: { balance: { increment: newBalanceChange } },
       });
       return updated;
     });
     revalidatePath("/dashboard");
+    revalidatePath(`/account/${originalTransaction.accountId}`);
     revalidatePath(`/account/${data.accountId}`);
     return { success: true, data: serializeAmount(transaction) };
   } catch (error) {
