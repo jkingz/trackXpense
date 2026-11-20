@@ -34,8 +34,17 @@ function getS3(endpoint: string, key: string, secret: string): S3Client {
   return s3;
 }
 
+const IMAGE_EXT: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+  "image/heic": ".heic",
+};
+
 export async function uploadReceipt(file: File): Promise<{ url: string }> {
-  const ext = path.extname(file.name) || ".bin";
+  // Extension from an allowlist, never file.name: a stored .html or .svg would run as script from /uploads.
+  const ext = IMAGE_EXT[file.type] ?? ".bin";
   const name = `${randomUUID()}${ext}`;
   const buf = Buffer.from(await file.arrayBuffer());
 

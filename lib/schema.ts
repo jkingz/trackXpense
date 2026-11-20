@@ -52,7 +52,7 @@ export type TransactionInput = Omit<z.input<typeof transactionSchema>, "amount">
 export const transactionServerSchema = z
   .object({
     type: z.enum(["INCOME", "EXPENSE"]),
-    amount: z.number().finite(),
+    amount: z.number().finite().positive("Amount must be greater than 0"),
     description: z.string().optional(),
     date: z.date({ error: "Date is required" }),
     accountId: z.string().min(1, "Account is required"),

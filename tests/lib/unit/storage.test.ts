@@ -55,32 +55,32 @@ afterEach(() => {
 
 describe("uploadReceipt", () => {
   it("writes to local disk and returns /uploads/<name> when R2 is unset", async () => {
-    const file = new File(["hi"], "a.txt", { type: "text/plain" });
+    const file = new File(["hi"], "a.png", { type: "image/png" });
     const res = await uploadReceipt(file);
     expect(mockMkdir).toHaveBeenCalled();
     expect(mockWriteFile).toHaveBeenCalled();
     expect(mockSend).not.toHaveBeenCalled();
-    expect(res.url).toMatch(/^\/uploads\/.+\.txt$/);
+    expect(res.url).toMatch(/^\/uploads\/.+\.png$/);
   });
 
   it("uploads to R2 and returns the public URL when configured", async () => {
     setRemoteEnv();
     mockSend.mockResolvedValue({});
-    const file = new File(["hi"], "a.txt", { type: "text/plain" });
+    const file = new File(["hi"], "a.png", { type: "image/png" });
     const res = await uploadReceipt(file);
     expect(mockSend).toHaveBeenCalled();
     const cmd = mockSend.mock.calls[0][0] as { Bucket: string; Key: string; ContentType: string };
     expect(cmd.Bucket).toBe("b");
-    expect(cmd.Key).toMatch(/\.txt$/);
-    expect(cmd.ContentType).toBe("text/plain");
-    expect(res.url).toMatch(/^https:\/\/pub\.r2\.dev\/.+\.txt$/);
+    expect(cmd.Key).toMatch(/\.png$/);
+    expect(cmd.ContentType).toBe("image/png");
+    expect(res.url).toMatch(/^https:\/\/pub\.r2\.dev\/.+\.png$/);
     expect(mockWriteFile).not.toHaveBeenCalled();
   });
 
   it("propagates upload failures", async () => {
     setRemoteEnv();
     mockSend.mockRejectedValue(new Error("boom"));
-    const file = new File(["hi"], "a.txt", { type: "text/plain" });
+    const file = new File(["hi"], "a.png", { type: "image/png" });
     await expect(uploadReceipt(file)).rejects.toThrow("boom");
   });
 
@@ -89,10 +89,20 @@ describe("uploadReceipt", () => {
     process.env.R2_BUCKET = "b";
     process.env.R2_ACCESS_KEY_ID = "ak";
     process.env.R2_SECRET_ACCESS_KEY = "sk";
-    const file = new File(["hi"], "a.txt", { type: "text/plain" });
+    const file = new File(["hi"], "a.png", { type: "image/png" });
     const res = await uploadReceipt(file);
     expect(mockSend).not.toHaveBeenCalled();
     expect(mockWriteFile).toHaveBeenCalled();
-    expect(res.url).toMatch(/^\/uploads\/.+\.txt$/);
+    expect(res.url).toMatch(/^\/uploads\/.+\.png$/);
+  });
+
+  it("ignores the client filename extension", async () => {
+    const res = await uploadReceipt(new File(["<script>"], "x.html", { type: "image/png" }));
+    expect(res.url).toMatch(/^\/uploads\/.+\.png$/);
+  });
+
+  it("stores non-allowlisted types as .bin", async () => {
+    const res = await uploadReceipt(new File(["<svg/>"], "x.svg", { type: "image/svg+xml" }));
+    expect(res.url).toMatch(/^\/uploads\/.+\.bin$/);
   });
 });
