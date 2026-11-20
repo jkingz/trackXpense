@@ -59,23 +59,20 @@ export async function renameAccount(accountId: string, name: string) {
 }
 
 export async function getAccountsWithTransactions(accountId: string) {
-  try {
-    const user = await checkUser();
+  const user = await checkUser();
 
-    // if (!account) return null;
-    const account = await db.account.findFirst({
-      where: { id: accountId, userId: user.id },
-      include: {
-        transactions: true,
-        _count: { select: { transactions: true } },
-      },
-    });
-    if (!account) return null;
-    return {
-      ...serializeTransaction(account),
-      transactions: account.transactions.map(serializeTransaction),
-    };
-  } catch {}
+  const account = await db.account.findFirst({
+    where: { id: accountId, userId: user.id },
+    include: {
+      transactions: true,
+      _count: { select: { transactions: true } },
+    },
+  });
+  if (!account) return null;
+  return {
+    ...serializeTransaction(account),
+    transactions: account.transactions.map(serializeTransaction),
+  };
 }
 
 export async function bulkDeleteTransactions(transactionsIds: string[]) {

@@ -4,7 +4,7 @@ const { mockCheckUser, db } = vi.hoisted(() => ({
   mockCheckUser: vi.fn(),
   db: {
     $transaction: vi.fn(),
-    account: { updateMany: vi.fn(), update: vi.fn() },
+    account: { updateMany: vi.fn(), update: vi.fn(), findFirst: vi.fn() },
     transaction: { findMany: vi.fn(), count: vi.fn() },
   },
 }));
@@ -13,7 +13,11 @@ vi.mock("@/actions/lib/checkUser", () => ({ checkUser: mockCheckUser }));
 vi.mock("@/lib/prisma", () => ({ db }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
-import { getPaginatedTransactions, updateDefaultAccount } from "@/actions/accounts";
+import {
+  getAccountsWithTransactions,
+  getPaginatedTransactions,
+  updateDefaultAccount,
+} from "@/actions/accounts";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -65,5 +69,19 @@ describe("getPaginatedTransactions", () => {
     expect(db.transaction.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 20, orderBy: { amount: "asc" } }),
     );
+  });
+});
+
+describe("getAccountsWithTransactions", () => {
+  it("surfaces DB errors instead of reporting the account missing", async () => {
+    db.account.findFirst.mockRejectedValue(new Error("connection lost"));
+
+    await expect(getAccountsWithTransactions("a")).rejects.toThrow("connection lost");
+  });
+
+  it("returns null only when the account is not the caller's", async () => {
+    db.account.findFirst.mockResolvedValue(null);
+
+    expect(await getAccountsWithTransactions("a")).toBeNull();
   });
 });

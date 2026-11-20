@@ -1,4 +1,5 @@
-"use server";
+// Not a server action: "use server" would let any browser call this as an open mail relay.
+import "server-only";
 
 import type { ReactNode } from "react";
 import { Resend } from "resend";

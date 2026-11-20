@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-import { sendEmail } from "@/actions/send-email";
+import { sendEmail } from "@/lib/email/send-email";
 import EmailTemplate from "@/emails/template";
 import { formatMoney, type LedgerCurrency } from "@/lib/money";
 import { db } from "@/lib/prisma";

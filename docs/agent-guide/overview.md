@@ -32,7 +32,7 @@ In:
 Out:
 
 - Recurring webhook processing — Inngest functions written + served, never fired (`INNGEST_EVENT_KEY`/`INNGEST_SIGNING_KEY` unset).
-- Email delivery — `actions/send-email.ts` written, called only by Inngest functions that never fire; `RESEND_API_KEY` present in `.env.local` (measured 2026-10-16), so unconfigured is not the gap.
+- Email delivery — `lib/email/send-email.ts` written, called only by Inngest functions that never fire; `RESEND_API_KEY` present in `.env.local` (measured 2026-10-16), so unconfigured is not the gap.
 - Receipt **storage** — OCR built + reachable (`scanReceipt` in `actions/transaction.ts`, rendered by `scan-receipt.tsx`); `receiptUrl` never written, no upload endpoint.
 - Social / multi-user sharing.
 - Mobile app.
