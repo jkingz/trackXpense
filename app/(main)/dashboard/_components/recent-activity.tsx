@@ -2,7 +2,7 @@ import { format } from "date-fns";
 import { ArrowRight, Repeat } from "lucide-react";
 import Link from "next/link";
 
-import { usd } from "@/lib/money";
+import { formatMoney, type LedgerCurrency } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 import { categoryLabel } from "./category-helpers";
@@ -24,8 +24,10 @@ export function RecentActivity({
   transactions,
   savedId,
   ledgerHref,
+  currency,
 }: {
   transactions: RecentTransaction[];
+  currency: LedgerCurrency;
   savedId?: string;
   ledgerHref: string | null;
 }) {
@@ -110,7 +112,8 @@ export function RecentActivity({
                     saved ? "font-bold text-navy" : isExpense ? "text-expense" : "text-income",
                   )}
                 >
-                  {isExpense ? "−" : "+"}${usd(transaction.amount)}
+                  {isExpense ? "−" : "+"}
+                  {formatMoney(transaction.amount, currency)}
                 </span>
               </li>
             );

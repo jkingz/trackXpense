@@ -18,7 +18,7 @@ A signed-in user sees the indigo/lime header, a dashboard that logs an entry fro
 
 ## Deferred / open questions
 
-- Currency: mockups show PHP/₱ and a currency pill. No currency field exists in `prisma/schema.prisma`; figures stay `$` via `lib/money.ts` and the pill is not built.
+- Currency: per-user PHP/USD from `specs/15-daily-ledger.md` increment 1, formatted by `formatMoney` (`lib/money.ts:15`); the pill is `CurrencyMenu` in the Accounts card (`app/(main)/dashboard/_components/accounts-card.tsx:81`).
 - No Budget page exists; "Budget" links to the dashboard budget card (`/dashboard#budget`).
 - "Ledger" links to the default account page; no all-accounts ledger route exists.
 

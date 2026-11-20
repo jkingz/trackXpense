@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useContext, useState, type FormEvent } from "react";
 import { toast } from "sonner";
 
 import { createTransaction } from "@/actions/transaction";
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/select";
 import { defaultCategories } from "@/data/categories";
 import useFetch from "@/hooks/use-fetch";
+import { currencySymbol } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 type Kind = "EXPENSE" | "INCOME";
@@ -30,6 +32,7 @@ export function QuickEntry({
   accounts: { id: string; name: string; isDefault: boolean }[];
 }) {
   const router = useRouter();
+  const currency = useContext(CurrencyContext);
   const [type, setType] = useState<Kind>("EXPENSE");
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
@@ -92,7 +95,7 @@ export function QuickEntry({
       </div>
 
       <label className="flex h-10 w-24 items-center gap-1 rounded-md px-2 font-mono text-lg focus-within:outline-2 focus-within:outline-indigo">
-        <span aria-hidden>$</span>
+        <span aria-hidden>{currencySymbol[currency]}</span>
         <span className="sr-only">Amount</span>
         <input
           inputMode="decimal"

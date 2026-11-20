@@ -2,7 +2,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import type { CategorySlice } from "@/lib/dashboard-stats";
-import { usd } from "@/lib/money";
+import { formatMoney, type LedgerCurrency } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 import { categoryLabel } from "./category-helpers";
@@ -21,7 +21,9 @@ export function WhereItWent({
   total,
   year,
   seeAllHref,
+  currency,
 }: {
+  currency: LedgerCurrency;
   slices: CategorySlice[];
   total: number;
   year: number;
@@ -40,7 +42,9 @@ export function WhereItWent({
         <h2 id="where-heading" className="text-lg font-semibold tracking-tight">
           Where it went <span className="text-sm font-normal text-muted-foreground">· {year}</span>
         </h2>
-        <p className="font-mono text-sm tabular-nums text-muted-foreground">${usd(total)}</p>
+        <p className="font-mono text-sm tabular-nums text-muted-foreground">
+          {formatMoney(total, currency)}
+        </p>
       </header>
 
       {total === 0 ? (
@@ -70,7 +74,9 @@ export function WhereItWent({
                 <span className="w-12 text-right font-mono text-xs tabular-nums text-muted-foreground">
                   {pct(slice.amount).toFixed(0)}%
                 </span>
-                <span className="w-24 text-right font-mono tabular-nums">${usd(slice.amount)}</span>
+                <span className="w-24 text-right font-mono tabular-nums">
+                  {formatMoney(slice.amount, currency)}
+                </span>
               </li>
             ))}
           </ul>

@@ -49,4 +49,3 @@ See `service-architecture.md` and `target-state.md`.
 
 - Recurring cadence — auto-create next occurrence, or manual trigger only?
 - Budget alerts — email, in-app toast, or both?
-- Currency — USD only, or multi-currency from day one?

@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Compare TrackXpense landing pages</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #eaeef0;
+        color: #162728;
+        font:
+          15px/1.5 system-ui,
+          sans-serif;
+      }
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+      h1 {
+        font-size: clamp(1.9rem, 3.2vw, 3.15rem);
+        line-height: 1.05;
+        letter-spacing: -0.055em;
+      }
+      h2 {
+        font-size: 1.1rem;
+        letter-spacing: -0.025em;
+      }
+      a {
+        color: #245d58;
+        text-underline-offset: 3px;
+      }
+      :focus-visible {
+        outline: 2px solid #04786c;
+        outline-offset: 3px;
+      }
+      .shell {
+        max-width: 1900px;
+        margin-inline: auto;
+        padding-inline: clamp(16px, 3vw, 48px);
+      }
+      .mast {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 16px 30px;
+        flex-wrap: wrap;
+        padding-block: clamp(24px, 5vw, 72px) 28px;
+      }
+      .mast p {
+        margin-top: 9px;
+        color: #475b5d;
+      }
+      .switch {
+        display: flex;
+        gap: 3px;
+        padding: 4px;
+        border: 1px solid #c8d2d5;
+        border-radius: 9px;
+        background: #f7f9f9;
+      }
+      button {
+        padding: 8px 13px;
+        border: 0;
+        border-radius: 5px;
+        background: none;
+        color: inherit;
+        font: inherit;
+        cursor: pointer;
+      }
+      button[aria-pressed="true"] {
+        background: #203a3b;
+        color: #f8fbfb;
+      }
+      .scroller {
+        overflow-x: auto;
+        padding-bottom: 24px;
+      }
+      .comparison {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(315px, 1fr));
+        gap: 16px;
+      }
+      .concept {
+        min-width: 0;
+        background: #fbfdfd;
+        border: 1px solid #cbd5d7;
+        border-radius: 13px;
+        overflow: hidden;
+      }
+      .concept header {
+        display: flex;
+        gap: 12px;
+        align-items: start;
+        justify-content: space-between;
+        padding: 15px 13px 13px;
+      }
+      .concept p {
+        color: #475b5d;
+        font-size: 13px;
+        margin-top: 3px;
+      }
+      .concept a {
+        white-space: nowrap;
+        font-size: 12px;
+      }
+      .frame {
+        position: relative;
+        height: 380px;
+        overflow: hidden;
+        border-top: 1px solid #cbd5d7;
+      }
+      iframe {
+        display: block;
+        position: absolute;
+        left: 50%;
+        margin-left: calc(var(--viewport, 1120px) / -2);
+        width: var(--viewport, 1120px);
+        height: 100%;
+        border: 0;
+        transform: scale(var(--scale, 0.28));
+        transform-origin: center top;
+      }
+      .mobile .comparison {
+        grid-template-columns: repeat(3, minmax(392px, 1fr));
+      }
+      .mobile .frame {
+        background: #e3e9eb;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="shell mast">
+      <div>
+        <h1>TrackXpense landing concepts</h1>
+        <p>
+          Compare the three pages side by side. Scroll inside each preview or open it full size.
+        </p>
+      </div>
+      <div class="switch" role="group" aria-label="Preview viewport">
+        <button type="button" data-width="1120" aria-pressed="true">Desktop</button>
+        <button type="button" data-width="390" aria-pressed="false">Mobile</button>
+      </div>
+    </header>
+    <main class="shell scroller" aria-label="Side-by-side landing pages" tabindex="0">
+      <div class="comparison">
+        <article class="concept">
+          <header>
+            <div>
+              <h2>Daily Ledger</h2>
+              <p>Paper tones and a handwritten-ledger feel</p>
+            </div>
+            <a
+              href="daily-ledger.html"
+              target="_blank"
+              rel="noopener"
+              aria-label="Open Daily Ledger full size"
+              >Full page ↗</a
+            >
+          </header>
+          <div class="frame">
+            <iframe src="daily-ledger.html" title="Daily Ledger landing page"></iframe>
+          </div>
+        </article>
+        <article class="concept">
+          <header>
+            <div>
+              <h2>Monthly Pulse</h2>
+              <p>Dark teal with a spending overview up front</p>
+            </div>
+            <a
+              href="monthly-pulse.html"
+              target="_blank"
+              rel="noopener"
+              aria-label="Open Monthly Pulse full size"
+              >Full page ↗</a
+            >
+          </header>
+          <div class="frame">
+            <iframe src="monthly-pulse.html" title="Monthly Pulse landing page"></iframe>
+          </div>
+        </article>
+        <article class="concept">
+          <header>
+            <div>
+              <h2>Pocket Log</h2>
+              <p>Cobalt and a quick expense-entry example</p>
+            </div>
+            <a
+              href="pocket-log.html"
+              target="_blank"
+              rel="noopener"
+              aria-label="Open Pocket Log full size"
+              >Full page ↗</a
+            >
+          </header>
+          <div class="frame">
+            <iframe src="pocket-log.html" title="Pocket Log landing page"></iframe>
+          </div>
+        </article>
+      </div>
+    </main>
+    <script>
+      const buttons = document.querySelectorAll("[data-width]");
+      const frames = document.querySelectorAll(".frame");
+      let viewport = 1120;
+
+      function fitPreviews() {
+        for (const frame of frames) {
+          const scale = Math.min(1, frame.clientWidth / viewport);
+          const visibleHeight = Math.max(345, Math.min(560, Math.round(810 * scale)));
+          frame.style.height = visibleHeight + "px";
+          frame.style.setProperty("--viewport", viewport + "px");
+          frame.style.setProperty("--scale", scale);
+          frame.firstElementChild.style.height = Math.ceil(visibleHeight / scale) + "px";
+        }
+      }
+
+      for (const button of buttons) {
+        button.addEventListener("click", () => {
+          viewport = Number(button.dataset.width);
+          document.body.classList.toggle("mobile", viewport === 390);
+          for (const option of buttons) {
+            option.setAttribute("aria-pressed", String(option === button));
+          }
+          fitPreviews();
+        });
+      }
+
+      const observer = new ResizeObserver(fitPreviews);
+      observer.observe(document.querySelector(".comparison"));
+      fitPreviews();
+    </script>
+  </body>
+</html>

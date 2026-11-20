@@ -1,13 +1,14 @@
 "use client";
 import { Check, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { updateBudget } from "@/actions/budget";
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import useFetch from "@/hooks/use-fetch";
-import { usd } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 /** Navy budget card: headroom first, then the share used and the days still to run. */
@@ -22,6 +23,7 @@ const BudgetProgress = ({
   monthName: string;
   daysLeft: number;
 }) => {
+  const currency = useContext(CurrencyContext);
   const [isEditing, setIsEditing] = useState(false);
   const [newBudget, setNewBudget] = useState(initialBudget?.amount?.toString() || "");
 
@@ -113,10 +115,10 @@ const BudgetProgress = ({
         <>
           <p className="mt-4 flex flex-wrap items-baseline gap-x-4">
             <span className={cn("font-mono text-3xl tabular-nums", headroom < 0 && "text-expense")}>
-              ${usd(Math.abs(headroom))}
+              {formatMoney(Math.abs(headroom), currency)}
             </span>
             <span className="text-sm text-white/75">
-              {headroom >= 0 ? "left" : "over"} of ${usd(initialBudget.amount)}
+              {headroom >= 0 ? "left" : "over"} of {formatMoney(initialBudget.amount, currency)}
             </span>
           </p>
           <div

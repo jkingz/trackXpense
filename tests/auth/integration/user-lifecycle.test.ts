@@ -17,6 +17,7 @@ describe("integration: user lifecycle", () => {
     const found = await db.user.findUnique({ where: { email } });
     expect(found?.id).toBe(created.id);
     expect(found?.emailVerified).toBe(true);
+    expect(found?.currency).toBe("PHP");
   });
 
   it("cascades sessions when the user is deleted", async () => {

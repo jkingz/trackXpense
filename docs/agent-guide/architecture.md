@@ -5,7 +5,7 @@
 | Layer           | Choice                                                                                                  | Verified against                                                                                           |
 | --------------- | ------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
 | Runtime         | Node 26.8.2 here; **no `engines`**, `packageManager pnpm@12.11.2`, no `.node-version`/`.nvmrc`/`.npmrc` | `package.json`, `pnpm-lock.yaml`, `node -v` — measured 2026-10-16                                          |
-| Framework       | Next.js 16.4.1 (Turbopack dev+build)                                                                    | `package.json`, `pnpm build`                                                                               |
+| Framework       | Next.js (Turbopack dev+build)                                                                           | `package.json:37`, `pnpm build`                                                                            |
 | Database        | Neon PostgreSQL via Prisma 7.10.0 + `@prisma/adapter-pg`                                                | `prisma/schema.prisma`, `lib/prisma.ts`, `DATABASE_URL`                                                    |
 | Auth            | Better Auth email/password                                                                              | `better-auth`, `lib/neon-auth.ts`, `app/api/auth/[...route]/route.ts`                                      |
 | Language        | TypeScript 7.0.2, `strict: true` + `noImplicitAny: false`, `useUnknownInCatchVariables: false`          | `tsconfig.json`                                                                                            |
@@ -36,7 +36,7 @@ Browser → Better Auth (email/password; API at /api/auth/*)
 
 ### Persistence schema
 
-- `users`: `id` uuid PK, unique `email`, `emailVerified`, nullable `name`/`image`/`password`, timestamps. Better Auth tables: `account`, `session`, `verification`.
+- `users`: `id` uuid PK, unique `email`, `emailVerified`, nullable `name`/`image`/`password`, timestamps, and one ledger currency (`prisma/schema.prisma:23`). New users default to PHP and existing users keep USD (`prisma/migrations/20261120000000_add_ledger_currency/migration.sql:6`). Better Auth tables: `account`, `session`, `verification`.
 - `accounts`: `id` uuid PK, `name`, `type` (CURRENT/SAVINGS), `balance` decimal, `isDefault`, `userId` FK→users CASCADE, timestamps.
 - `transactions`: `id` uuid PK, `type` (INCOME/EXPENSE), `amount` decimal, `description` nullable, `date`, `category`, `receiptUrl` nullable, `isRecurring`, `recurringInterval` (DAILY/WEEKLY/MONTHLY/YEARLY) nullable, `nextRecurringDate` nullable, `lastProcessed` nullable, `status` (PENDING/COMPLETED/FAILED), `userId` FK→users CASCADE, `accountId` FK→accounts CASCADE, timestamps.
 - `budgets`: `id` uuid PK, `amount` decimal, `lastAlertSent` nullable, `userId` UK FK→users CASCADE, timestamps.
@@ -62,7 +62,7 @@ Browser → Better Auth (email/password; API at /api/auth/*)
 | `/api/receipts`       | POST         | Session           | Receipt upload; `checkUser` session gate                 |
 | `/api/inngest`        | GET/POST/PUT | Inngest signature | `serve()` for 4 functions; never triggered               |
 
-Caching: no `no-store`/`revalidate` export anywhere; Cache Components on (`next.config.ts`). Three ledger pages `export const instant = false`. `revalidatePath()` at 9 sites across 4 action files (`actions/accounts.ts`×3, `budget.ts`×1, `transaction.ts`×4, `dashboard.ts`×1). Build page classes → `service-architecture.md` Pages.
+Caching: no `no-store`/`revalidate` export anywhere; Cache Components on (`next.config.ts`). Three ledger pages `export const instant = false`. Ledger currency changes invalidate signed-in layouts (`actions/currency.ts:19`). Build page classes → `service-architecture.md` Pages.
 
 ### HTTP surface — planned, not built
 

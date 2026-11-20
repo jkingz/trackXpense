@@ -3,15 +3,16 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CircleCheck } from "lucide-react";
-import { useCallback, useEffect, type ReactNode } from "react";
+import { useCallback, useContext, useEffect, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 
 import { createTransaction, updateTransaction } from "@/actions/transaction";
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
 import type { defaultCategories } from "@/data/categories";
 import useFetch from "@/hooks/use-fetch";
-import { signedUsd, usd } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import { transactionSchema } from "@/lib/schema";
 import type { TransactionInput } from "@/lib/schema";
 import { cn } from "@/lib/utils";
@@ -75,6 +76,7 @@ const AddTransactionForm = ({
   budgetLeft?: number | null;
 }) => {
   const router = useRouter();
+  const currency = useContext(CurrencyContext);
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
 
@@ -263,16 +265,16 @@ const AddTransactionForm = ({
                   <dt>{account.name}</dt>
                   <dd className="font-mono tabular-nums">
                     {amountValue > 0 && (
-                      <s className="mr-2 opacity-70">{signedUsd(account.balance)}</s>
+                      <s className="mr-2 opacity-70">{formatMoney(account.balance, currency)}</s>
                     )}
-                    {signedUsd(account.balance + signed)}
+                    {formatMoney(account.balance + signed, currency)}
                   </dd>
                 </div>
                 {showBudget && (
                   <div className="flex justify-between gap-4">
                     <dt>Budget left</dt>
                     <dd className="font-mono tabular-nums">
-                      ${usd((budgetLeft ?? 0) - amountValue)}
+                      {formatMoney((budgetLeft ?? 0) - amountValue, currency)}
                     </dd>
                   </div>
                 )}
