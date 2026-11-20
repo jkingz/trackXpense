@@ -1,4 +1,5 @@
 "use client";
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
 import { format } from "date-fns";
 import {
   ChevronDown,
@@ -11,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useReducer, useTransition } from "react";
+import { useContext, useEffect, useReducer, useTransition } from "react";
 import { toast } from "sonner";
 
 import { bulkDeleteTransactions } from "@/actions/accounts";
@@ -58,7 +59,7 @@ import {
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { categoryColors } from "@/data/categories";
 import useFetch from "@/hooks/use-fetch";
-import { usd } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import {
   initialTransactionTableState,
   transactionTableReducer,
@@ -94,6 +95,7 @@ const TransactionsTable = ({
   totalItems: number;
   searchParams: Record<string, string | undefined>;
 }) => {
+  const currency = useContext(CurrencyContext);
   const router = useRouter();
   const urlSearchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
@@ -391,7 +393,8 @@ const TransactionsTable = ({
                       color: transaction.type === "EXPENSE" ? "red" : "green",
                     }}
                   >
-                    {transaction.type === "EXPENSE" ? "−" : "+"}${usd(transaction.amount)}
+                    {transaction.type === "EXPENSE" ? "−" : "+"}
+                    {formatMoney(transaction.amount, currency)}
                   </TableCell>
                   <TableCell>
                     {transaction.isRecurring ? (

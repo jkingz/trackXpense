@@ -1,4 +1,4 @@
-import { usd } from "@/lib/money";
+import { formatMoney, type LedgerCurrency } from "@/lib/money";
 
 import { QuickEntry } from "./quick-entry";
 
@@ -13,7 +13,9 @@ export function BalanceHero({
   expenseDelta,
   previousMonth,
   today,
+  currency,
 }: {
+  currency: LedgerCurrency;
   accounts: Account[];
   totalBalance: number;
   income: number;
@@ -23,8 +25,9 @@ export function BalanceHero({
   previousMonth: string;
   today: string;
 }) {
-  const [whole, cents] = usd(Math.abs(totalBalance)).split(".");
-  const sign = totalBalance < 0 ? "−" : "";
+  const [whole, cents] = formatMoney(Math.abs(totalBalance), currency).split(".");
+  // Same threshold as formatMoney: a sub-cent negative prints as ₱0.00 with no minus.
+  const sign = totalBalance <= -0.005 ? "−" : "";
 
   return (
     <section
@@ -44,18 +47,19 @@ export function BalanceHero({
       </div>
 
       <p className="relative mt-1 text-6xl font-extrabold tracking-tighter tabular-nums sm:text-7xl">
-        {sign}${whole}
+        {sign}
+        {whole}
         <span className="text-indigo-soft">.{cents}</span>
       </p>
 
       <dl className="relative mt-10 flex flex-wrap gap-x-12 gap-y-4">
         <div>
           <dt className="text-sm text-white/75">In this month</dt>
-          <dd className="mt-1 font-mono text-lg tabular-nums">+${usd(income)}</dd>
+          <dd className="mt-1 font-mono text-lg tabular-nums">+{formatMoney(income, currency)}</dd>
         </div>
         <div>
           <dt className="text-sm text-white/75">Out this month</dt>
-          <dd className="mt-1 font-mono text-lg tabular-nums">−${usd(expense)}</dd>
+          <dd className="mt-1 font-mono text-lg tabular-nums">−{formatMoney(expense, currency)}</dd>
         </div>
         <div>
           <dt className="text-sm text-white/75">vs {previousMonth}</dt>

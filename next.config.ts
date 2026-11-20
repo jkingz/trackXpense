@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
   },
   experimental: {
+    agentUpgrade: "security",
     serverActions: {
       // Receipt uploads go through a server action; stay above the default 1MB.
       bodySizeLimit: "5mb",

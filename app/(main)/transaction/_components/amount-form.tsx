@@ -1,4 +1,8 @@
+import { useContext } from "react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
+
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
+import { currencySymbol } from "@/lib/money";
 
 import type { TransactionFormValues } from "./add-transaction-form";
 
@@ -11,14 +15,15 @@ const AmountForm = ({
   errors: FieldErrors<TransactionFormValues>;
   disabled?: boolean;
 }) => {
+  const currency = useContext(CurrencyContext);
   return (
     <div className="space-y-2">
       <label htmlFor="amount" className="text-sm text-muted-foreground">
-        Amount · USD
+        Amount · {currency}
       </label>
       <div className="flex items-baseline gap-1 rounded-xl px-1 font-mono text-5xl focus-within:outline-2 focus-within:outline-ring sm:text-6xl">
         <span aria-hidden className="text-indigo-soft">
-          $
+          {currencySymbol[currency]}
         </span>
         <input
           id="amount"

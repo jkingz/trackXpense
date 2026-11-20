@@ -113,7 +113,7 @@ lib/
   og-card.tsx           — shared 1200x630 social card body
   site.ts               — public origin + name/description; metadataBase source
   inngest/              — client + 4 functions
-  money.ts              — usd/signedUsd (grouping, decimals, sign)
+  money.ts              — ledger currency and formatMoney (grouping, decimals, sign)
   prisma.ts             — Prisma singleton (pg adapter)
   recurring-lifecycle.ts— due/scheduled phase + tick
   schema.ts             — Zod schemas

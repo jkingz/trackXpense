@@ -1,7 +1,8 @@
 import Link from "next/link";
 
 import CreateAccountDrawer from "@/components/create-account-drawer";
-import { signedUsd } from "@/lib/money";
+import { CurrencyMenu } from "@/app/(main)/_components/currency-menu";
+import { formatMoney, type LedgerCurrency } from "@/lib/money";
 
 type Account = {
   id: string;
@@ -13,16 +14,23 @@ type Account = {
 };
 
 /** Every account with its balance; the row opens that account's ledger. */
-export function AccountsCard({ accounts }: { accounts: Account[] }) {
+export function AccountsCard({
+  accounts,
+  currency,
+}: {
+  accounts: Account[];
+  currency: LedgerCurrency;
+}) {
   return (
     <section aria-labelledby="accounts-heading" className="rounded-3xl border bg-card p-6">
       <header className="flex items-center justify-between gap-4">
         <h2 id="accounts-heading" className="font-semibold tracking-tight">
           Accounts
         </h2>
-        <CreateAccountDrawer>
+        <CreateAccountDrawer currency={currency}>
           <button
             type="button"
+            aria-label="New account"
             className="rounded-sm text-sm font-semibold text-indigo focus-visible:outline-2 focus-visible:outline-ring dark:text-indigo-soft"
           >
             + New
@@ -59,7 +67,7 @@ export function AccountsCard({ accounts }: { accounts: Account[] }) {
                     </span>
                   </span>
                   <span className="shrink-0 font-mono tabular-nums">
-                    {signedUsd(account.balance)}
+                    {formatMoney(account.balance, currency)}
                   </span>
                 </Link>
               </li>
@@ -67,6 +75,11 @@ export function AccountsCard({ accounts }: { accounts: Account[] }) {
           })}
         </ul>
       )}
+
+      <div className="mt-4 flex items-center justify-between gap-2 border-t pt-3">
+        <span className="text-xs font-medium text-muted-foreground">Ledger currency</span>
+        <CurrencyMenu />
+      </div>
     </section>
   );
 }

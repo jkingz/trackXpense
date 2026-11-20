@@ -1,86 +1,90 @@
-"use client";
+import { Check } from "lucide-react";
 
-import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
-import Link from "next/link";
-import { useRef } from "react";
+import { PocketLogFigure } from "@/components/landing/pocket-log-figure";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
-import { LiveLedger } from "@/components/landing/live-ledger";
-import { BrandGlow, DotPattern } from "@/components/ambient";
-import { Button } from "@/components/ui/button";
-
-const HeroSection = () => {
-  const stageRef = useRef<HTMLDivElement>(null);
-  const reduceMotion = useReducedMotion();
-  const { scrollYProgress } = useScroll({
-    target: stageRef,
-    offset: ["start end", "center center"],
-  });
-
-  // The ledger arrives flat and lifts into place as the page settles under it.
-  const rotateX = useTransform(scrollYProgress, [0, 1], [12, 0]);
-  const scale = useTransform(scrollYProgress, [0, 1], [0.94, 1]);
-  const panelStyle = reduceMotion ? undefined : { rotateX, scale };
-
+export default function HeroSection() {
   return (
-    <section id="top" className="relative isolate overflow-hidden">
-      <DotPattern className="opacity-60" fade="ellipse" />
-      <BrandGlow className="top-24 right-[-6rem] opacity-50" />
+    <section
+      id="top"
+      aria-labelledby="landing-title"
+      className="mx-auto grid w-full max-w-7xl items-center gap-10 px-6 py-12 sm:px-10 md:grid-cols-[1fr_1.08fr] md:gap-8 md:py-20 lg:gap-16 lg:px-16 lg:py-24"
+    >
+      <div>
+        <h1
+          id="landing-title"
+          className="text-5xl leading-[0.93] font-bold tracking-tighter sm:text-6xl md:text-5xl lg:text-6xl xl:text-[5.25rem]"
+        >
+          Spend it.
+          <br />
+          Log it.
+          <br />
+          Get on with it.
+        </h1>
+        <p className="mt-6 max-w-md text-lg leading-relaxed text-muted-foreground">
+          From a coffee to the weekly shop, record the little things as they happen. Your balance
+          and budget update when you save.
+        </p>
+        <a
+          href="#flow"
+          className={cn(buttonVariants(), "mt-7 min-h-13 rounded-full px-6 text-base font-bold")}
+        >
+          See how to log an expense
+        </a>
+      </div>
 
-      <div className="container relative mx-auto grid grid-cols-1 items-center gap-x-10 gap-y-16 px-4 py-16 md:py-24 lg:grid-cols-12 lg:py-32">
-        <div className="lg:col-span-6 lg:col-start-1">
-          <h1 className="max-w-[15ch] text-[clamp(2.6rem,6vw,5rem)] font-bold leading-[0.95] tracking-tighter text-balance text-foreground">
-            Log the expense. <span className="--gradient-title">Watch the balance move.</span>
-          </h1>
+      <PocketLogFigure>
+        <div className="relative isolate grid min-h-92 place-items-center overflow-hidden rounded-3xl rounded-br-[4.5rem] bg-pocket-stage px-8 py-9 sm:px-10 lg:min-h-118 lg:rounded-br-[7rem]">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute top-1/4 -right-2/3 -z-10 aspect-square w-[125%] rounded-full border border-pocket-orbit outline outline-offset-[2.25rem] outline-pocket-orbit after:absolute after:-inset-18 after:rounded-full after:border after:border-pocket-orbit"
+          />
 
-          <p className="mt-7 max-w-xl text-lg leading-relaxed text-muted-foreground md:text-xl">
-            A two-account ledger you fill in yourself. One entry, one category, and the running
-            balance and budget headroom on your dashboard change the moment you save it.
-          </p>
-
-          <div className="mt-10 flex flex-wrap items-center gap-3">
-            <Link href="/dashboard" className="transition-transform hover:-translate-y-0.5">
-              <Button size="lg" className="rounded-full px-8 text-base">
-                Open the ledger
-              </Button>
-            </Link>
-            <Link
-              href="/transaction/create"
-              className="transition-transform hover:-translate-y-0.5"
-            >
-              <Button
-                size="lg"
-                variant="outline"
-                className="glass-panel rounded-full px-8 text-base"
-              >
-                Log an entry
-              </Button>
-            </Link>
+          <div
+            data-pocket-receipt
+            className="w-full max-w-72 -rotate-7 rounded-2xl border border-pocket-shadow bg-pocket-slip p-4 text-pocket-ink shadow-pocket-entry sm:mr-10 sm:p-5"
+          >
+            <div className="flex items-center justify-between gap-2 border-b border-pocket-slip-rule pb-3">
+              <strong>Add an expense</strong>
+              <span className="text-xs">Example</span>
+            </div>
+            <p className="py-3 font-mono text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">
+              ₱180
+            </p>
+            <dl className="text-sm">
+              <div className="flex justify-between gap-2 border-t border-pocket-slip-rule py-2">
+                <dt>What for</dt>
+                <dd className="font-bold">Weekend coffee</dd>
+              </div>
+              <div className="flex justify-between gap-2 border-t border-pocket-slip-rule py-2">
+                <dt>Category</dt>
+                <dd className="font-bold">Food</dd>
+              </div>
+              <div className="flex justify-between gap-2 border-t border-pocket-slip-rule py-2">
+                <dt>Account</dt>
+                <dd className="font-bold">Current</dd>
+              </div>
+            </dl>
           </div>
 
-          <p className="mt-8 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-            <span>No bank to connect</span>
-            <span aria-hidden className="text-border">
-              /
-            </span>
-            <span>Nothing to import</span>
-            <span aria-hidden className="text-border">
-              /
-            </span>
-            <span>Free while it is small</span>
-          </p>
+          <div
+            data-pocket-badge
+            className="absolute right-5 bottom-9 rotate-7 rounded-lg border border-pocket-shadow bg-pocket-saved px-4 py-3 text-pocket-ink shadow-pocket-confirmation sm:right-8 lg:bottom-16"
+          >
+            <p className="flex items-center gap-1.5 text-sm font-bold">
+              <Check aria-hidden className="size-4" />
+              Expense saved
+            </p>
+            <p className="text-xs">
+              New balance <span className="font-mono tabular-nums">₱18,450</span>
+            </p>
+          </div>
         </div>
-
-        <div
-          ref={stageRef}
-          className="--capture-stage relative z-10 lg:col-span-6 lg:col-start-7 lg:mt-20 xl:mt-28"
-        >
-          <motion.div style={panelStyle} className="relative">
-            <LiveLedger />
-          </motion.div>
-        </div>
-      </div>
+        <figcaption className="mt-3 text-sm text-muted-foreground">
+          Example expense and its updated account balance
+        </figcaption>
+      </PocketLogFigure>
     </section>
   );
-};
-
-export default HeroSection;
+}

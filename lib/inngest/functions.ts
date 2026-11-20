@@ -2,6 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 import { sendEmail } from "@/actions/send-email";
 import EmailTemplate from "@/emails/template";
+import { formatMoney, type LedgerCurrency } from "@/lib/money";
 import { db } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { applyRecurringTick, recurringPhase } from "@/lib/recurring-lifecycle";
@@ -65,11 +66,12 @@ export const checkedBudgetAlert = inngest.createFunction(
             subject: `Budget Alert for ${defaultAccount.name}`,
             react: EmailTemplate({
               userName: budget.user.name,
+              currency: budget.user.currency,
               type: "budget-alert",
               data: {
                 percentageUsed,
-                budgetAmount: budgetAmount.toFixed(1),
-                totalExpenses: totalExpenses.toFixed(1),
+                budgetAmount,
+                totalExpenses,
                 accountName: defaultAccount.name,
               },
             }),
@@ -212,7 +214,11 @@ type MonthlyStats = {
   transactionCount: number;
 };
 
-async function generateFinancialInsights(stats: MonthlyStats, month: string) {
+async function generateFinancialInsights(
+  stats: MonthlyStats,
+  month: string,
+  currency: LedgerCurrency,
+) {
   const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? "");
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
@@ -222,11 +228,11 @@ async function generateFinancialInsights(stats: MonthlyStats, month: string) {
     Keep it friendly and conversational.
 
     Financial Data for ${month}:
-    - Total Income: $${stats.totalIncome}
-    - Total Expenses: $${stats.totalExpenses}
-    - Net Income: $${stats.totalIncome - stats.totalExpenses}
+    - Total Income: ${formatMoney(stats.totalIncome, currency)}
+    - Total Expenses: ${formatMoney(stats.totalExpenses, currency)}
+    - Net Income: ${formatMoney(stats.totalIncome - stats.totalExpenses, currency)}
     - Expense Categories: ${Object.entries(stats.byCategory)
-      .map(([category, amount]) => `${category}: $${amount}`)
+      .map(([category, amount]) => `${category}: ${formatMoney(amount, currency)}`)
       .join(", ")}
 
     Format the response as a JSON array of strings, like this:
@@ -275,13 +281,14 @@ export const generateMonthlyReports = inngest.createFunction(
         });
 
         // Generate AI insights
-        const insights = await generateFinancialInsights(stats, monthName);
+        const insights = await generateFinancialInsights(stats, monthName, user.currency);
 
         await sendEmail({
           to: user.email,
           subject: `Your Monthly Financial Report - ${monthName}`,
           react: EmailTemplate({
             userName: user.name,
+            currency: user.currency,
             type: "monthly-report",
             data: {
               stats,

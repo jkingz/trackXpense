@@ -98,7 +98,7 @@ No `no-store`/`revalidate` export anywhere; no `revalidateTag`; `revalidatePath(
 
 ```bash
 pnpm typecheck        # exit 0 — tsc --noEmit (TS 7.0.2)
-pnpm test             # exit 0 — 83 passed (16 files); passes with and without TZ=UTC
+pnpm test             # exit 0 — 86 passed (17 files); passes with and without TZ=UTC
 pnpm lint             # exit 0 — vp check: format + lint 0 errors / 6 no-unused-vars warnings (129 files)
 pnpm verify           # exit 0 — test → test:integration → typecheck → lint → build → test:e2e
 pnpm build            # exit 0 — compiles, "Running TypeScript ...", 13 routes (/api/health dynamic)

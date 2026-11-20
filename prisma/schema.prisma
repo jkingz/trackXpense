@@ -20,6 +20,7 @@ model User {
   sessions     Session[]
   budgets      Budget?
   transactions Transaction[]
+  currency     LedgerCurrency @default(PHP)
 
   @@map("users")
 }
@@ -155,4 +156,9 @@ model RateLimit {
   lastRequest  BigInt
 
   @@map("rate_limits")
+}
+
+enum LedgerCurrency {
+  PHP
+  USD
 }

@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useContext, useState } from "react";
 
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
 import type { SpendBar, SpendRange } from "@/lib/dashboard-stats";
-import { usd } from "@/lib/money";
+import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 const RANGES: { key: SpendRange; label: string; title: string; caption: string }[] = [
@@ -25,6 +26,7 @@ const RANGES: { key: SpendRange; label: string; title: string; caption: string }
 /** Spend as bars; the last bar (today, or this month) is the lime one. */
 export function SpendBars({ series }: { series: Record<SpendRange, SpendBar[]> }) {
   const [range, setRange] = useState<SpendRange>("30d");
+  const currency = useContext(CurrencyContext);
   const active = RANGES.find((item) => item.key === range)!;
   const bars = series[range];
   const max = Math.max(0, ...bars.map((bar) => bar.amount));
@@ -74,10 +76,10 @@ export function SpendBars({ series }: { series: Record<SpendRange, SpendBar[]> }
               <li
                 key={bar.label}
                 className="flex h-full flex-1 items-end"
-                title={`${bar.label}: $${usd(bar.amount)}`}
+                title={`${bar.label}: ${formatMoney(bar.amount, currency)}`}
               >
                 <span className="sr-only">
-                  {bar.label}: ${usd(bar.amount)}
+                  {bar.label}: {formatMoney(bar.amount, currency)}
                 </span>
                 <span
                   aria-hidden

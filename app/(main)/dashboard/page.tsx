@@ -6,6 +6,7 @@ import { getCurrentBudget } from "@/actions/budget";
 import { getDashboardData, getUserAccounts } from "@/actions/dashboard";
 import { requireUser } from "@/actions/lib/checkUser";
 import { expenseDeltaPct, monthTotals, spendByCategory, spendSeries } from "@/lib/dashboard-stats";
+import type { LedgerCurrency } from "@/lib/money";
 
 import { AccountsCard } from "./_components/accounts-card";
 import { BalanceHero } from "./_components/balance-hero";
@@ -32,7 +33,15 @@ const loadTransactions = cache(() => getDashboardData());
 
 type Account = Awaited<ReturnType<typeof getUserAccounts>>[number];
 
-async function HeroSection({ accounts, now }: { accounts: Account[]; now: Date }) {
+async function HeroSection({
+  accounts,
+  now,
+  currency,
+}: {
+  accounts: Account[];
+  now: Date;
+  currency: LedgerCurrency;
+}) {
   const transactions = await loadTransactions();
   const { income, expense } = monthTotals(transactions, now);
   const previous = subMonths(now, 1);
@@ -46,6 +55,7 @@ async function HeroSection({ accounts, now }: { accounts: Account[]; now: Date }
       expenseDelta={expenseDeltaPct(expense, monthTotals(transactions, previous).expense)}
       previousMonth={format(previous, "MMMM")}
       today={format(now, "EEE · d MMM").toUpperCase()}
+      currency={currency}
     />
   );
 }
@@ -65,7 +75,15 @@ async function BudgetSection({ defaultAccountId, now }: { defaultAccountId?: str
   );
 }
 
-async function SpendSection({ now, ledgerHref }: { now: Date; ledgerHref: string | null }) {
+async function SpendSection({
+  now,
+  ledgerHref,
+  currency,
+}: {
+  now: Date;
+  ledgerHref: string | null;
+  currency: LedgerCurrency;
+}) {
   const transactions = await loadTransactions();
   const { slices, total } = spendByCategory(transactions, now, Infinity, "year");
 
@@ -86,6 +104,7 @@ async function SpendSection({ now, ledgerHref }: { now: Date; ledgerHref: string
           total={total}
           year={now.getFullYear()}
           seeAllHref={ledgerHref}
+          currency={currency}
         />
       </div>
     </>
@@ -96,10 +115,12 @@ async function RecentSection({
   accounts,
   savedId,
   ledgerHref,
+  currency,
 }: {
   accounts: Account[];
   savedId?: string;
   ledgerHref: string | null;
+  currency: LedgerCurrency;
 }) {
   const transactions = await loadTransactions();
   const names = new Map(accounts.map((account: any) => [account.id, account.name]));
@@ -110,7 +131,12 @@ async function RecentSection({
 
   return (
     <div className="--reveal lg:col-span-12">
-      <RecentActivity transactions={recent} savedId={savedId} ledgerHref={ledgerHref} />
+      <RecentActivity
+        transactions={recent}
+        savedId={savedId}
+        ledgerHref={ledgerHref}
+        currency={currency}
+      />
     </div>
   );
 }
@@ -118,7 +144,7 @@ async function RecentSection({
 const DashBoardPage = async ({ searchParams }: { searchParams: Promise<{ saved?: string }> }) => {
   // Before its data work: a signed-out visitor is sent to sign-in instead of
   // rendering a page whose first read throws.
-  await requireUser();
+  const { currency } = await requireUser();
   const accounts = await getUserAccounts();
   const { saved } = await searchParams;
   const defaultAccount = accounts?.find((account: any) => account.isDefault);
@@ -133,23 +159,28 @@ const DashBoardPage = async ({ searchParams }: { searchParams: Promise<{ saved?:
     <div className="grid gap-6 lg:grid-cols-12">
       <div className="lg:col-span-8">
         <Suspense fallback={<HeroSkeleton />}>
-          <HeroSection accounts={accounts} now={now} />
+          <HeroSection accounts={accounts} now={now} currency={currency} />
         </Suspense>
       </div>
 
       <div className="flex flex-col gap-6 lg:col-span-4">
-        <AccountsCard accounts={accounts} />
+        <AccountsCard accounts={accounts} currency={currency} />
         <Suspense fallback={<BudgetSkeleton />}>
           <BudgetSection defaultAccountId={defaultAccount?.id} now={now} />
         </Suspense>
       </div>
 
       <Suspense fallback={<ChartsSkeleton />}>
-        <SpendSection now={now} ledgerHref={ledgerHref} />
+        <SpendSection now={now} ledgerHref={ledgerHref} currency={currency} />
       </Suspense>
 
       <Suspense fallback={<RecentSkeleton />}>
-        <RecentSection accounts={accounts} savedId={saved} ledgerHref={ledgerHref} />
+        <RecentSection
+          accounts={accounts}
+          savedId={saved}
+          ledgerHref={ledgerHref}
+          currency={currency}
+        />
       </Suspense>
     </div>
   );

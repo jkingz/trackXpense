@@ -1,6 +1,8 @@
 import { Body, Container, Head, Heading, Html, Preview, Section, Text } from "react-email";
 import * as React from "react";
 
+import { defaultCurrency, formatMoney, type LedgerCurrency } from "@/lib/money";
+
 type MonthlyReportData = {
   month?: string;
   stats?: {
@@ -13,22 +15,26 @@ type MonthlyReportData = {
 
 type BudgetAlertData = {
   percentageUsed?: number;
-  budgetAmount?: number | string;
-  totalExpenses?: number | string;
+  budgetAmount?: number;
+  totalExpenses?: number;
   accountName?: string;
 };
 
 type EmailTemplateProps = {
   userName?: string | null;
+  currency?: LedgerCurrency;
   type?: "monthly-report" | "budget-alert";
   data?: MonthlyReportData & BudgetAlertData;
 };
 
 export default function EmailTemplate({
   userName = "",
+  currency = defaultCurrency,
   type = "monthly-report",
   data = {},
 }: EmailTemplateProps) {
+  const money = (amount = 0) => formatMoney(amount, currency);
+
   if (type === "monthly-report") {
     return (
       <Html>
@@ -45,16 +51,16 @@ export default function EmailTemplate({
             <Section style={styles.statsContainer}>
               <div style={styles.stat}>
                 <Text style={styles.text}>Total Income</Text>
-                <Text style={styles.heading}>${data?.stats!.totalIncome}</Text>
+                <Text style={styles.heading}>{money(data.stats?.totalIncome)}</Text>
               </div>
               <div style={styles.stat}>
                 <Text style={styles.text}>Total Expenses</Text>
-                <Text style={styles.heading}>${data?.stats!.totalExpenses}</Text>
+                <Text style={styles.heading}>{money(data.stats?.totalExpenses)}</Text>
               </div>
               <div style={styles.stat}>
                 <Text style={styles.text}>Net</Text>
                 <Text style={styles.heading}>
-                  ${(data?.stats!.totalIncome as number) - (data?.stats!.totalExpenses as number)}
+                  {money((data.stats?.totalIncome ?? 0) - (data.stats?.totalExpenses ?? 0))}
                 </Text>
               </div>
             </Section>
@@ -66,7 +72,7 @@ export default function EmailTemplate({
                 {Object.entries(data?.stats.byCategory).map(([category, amount]) => (
                   <div key={category} style={styles.row}>
                     <Text style={styles.text}>{category}</Text>
-                    <Text style={styles.text}>${amount}</Text>
+                    <Text style={styles.text}>{money(amount)}</Text>
                   </div>
                 ))}
               </Section>
@@ -109,16 +115,16 @@ export default function EmailTemplate({
             <Section style={styles.statsContainer}>
               <div style={styles.stat}>
                 <Text style={styles.text}>Budget Amount</Text>
-                <Text style={styles.heading}>${data?.budgetAmount}</Text>
+                <Text style={styles.heading}>{money(data.budgetAmount)}</Text>
               </div>
               <div style={styles.stat}>
                 <Text style={styles.text}>Spent So Far</Text>
-                <Text style={styles.heading}>${data?.totalExpenses}</Text>
+                <Text style={styles.heading}>{money(data.totalExpenses)}</Text>
               </div>
               <div style={styles.stat}>
                 <Text style={styles.text}>Remaining</Text>
                 <Text style={styles.heading}>
-                  ${(data?.budgetAmount as number) - (data?.totalExpenses as number)}
+                  {money((data.budgetAmount ?? 0) - (data.totalExpenses ?? 0))}
                 </Text>
               </div>
             </Section>
