@@ -43,23 +43,20 @@ export function expenseDeltaPct(current: number, previous: number): number | nul
   return ((current - previous) / previous) * 100;
 }
 
-/** Share of income kept, as a 0–1 fraction. Null when there is no income. */
-export function savingsRate(income: number, expense: number): number | null {
-  if (income === 0) return null;
-  return (income - expense) / income;
-}
-
 export type CategorySlice = { key: string; amount: number };
 
-/** Month expenses ranked, the tail folded into one `__rest` slice. */
+/** Month (or year) expenses ranked, the tail folded into one `__rest` slice. */
 export function spendByCategory(
   transactions: StatTransaction[],
   now: Date,
   topN = 6,
+  scope: "month" | "year" = "month",
 ): { slices: CategorySlice[]; total: number } {
+  const inScope = (value: Date | string) =>
+    scope === "month" ? sameMonth(value, now) : day(value).getFullYear() === now.getFullYear();
   const totals = new Map<string, number>();
   for (const t of transactions) {
-    if (t.type !== "EXPENSE" || !sameMonth(t.date, now)) continue;
+    if (t.type !== "EXPENSE" || !inScope(t.date)) continue;
     totals.set(t.category, (totals.get(t.category) ?? 0) + t.amount);
   }
   const ranked = [...totals.entries()].sort((a, b) => b[1] - a[1]);
@@ -90,44 +87,26 @@ export function cashflow(transactions: StatTransaction[], now: Date, days = 30):
   });
 }
 
-export type WeekdaySpend = { weekday: string; amount: number; isPeak: boolean };
+export type SpendRange = "7d" | "30d" | "6m";
+export type SpendBar = { label: string; amount: number };
 
-/** Expense per weekday over the trailing `days`, oldest first, peak flagged. */
-export function spendByWeekday(
+/**
+ * Expense per bar, oldest first: one bar per day for 7d/30d, one per calendar
+ * month for 6m. The last bar is always today / this month.
+ */
+export function spendSeries(
   transactions: StatTransaction[],
   now: Date,
-  days = 7,
-): WeekdaySpend[] {
-  const buckets = new Map<string, number>();
-  const start = subDays(now, days - 1);
-  for (const t of transactions) {
-    if (t.type !== "EXPENSE") continue;
-    const date = day(t.date);
-    if (date < start || date > now) continue;
-    buckets.set(dayKey(date), (buckets.get(dayKey(date)) ?? 0) + t.amount);
+  range: SpendRange,
+): SpendBar[] {
+  if (range !== "6m") {
+    return cashflow(transactions, now, range === "7d" ? 7 : 30).map(({ label, expense }) => ({
+      label,
+      amount: expense,
+    }));
   }
-  const amounts = Array.from({ length: days }, (_, index) => {
-    const date = subDays(now, days - 1 - index);
-    return { date, amount: buckets.get(dayKey(date)) ?? 0 };
+  return Array.from({ length: 6 }, (_, index) => {
+    const month = new Date(now.getFullYear(), now.getMonth() - 5 + index, 15);
+    return { label: format(month, "MMM"), amount: monthTotals(transactions, month).expense };
   });
-  const peak = Math.max(0, ...amounts.map((a) => a.amount));
-  return amounts.map(({ date, amount }) => {
-    return {
-      weekday: format(date, "EEE"),
-      amount,
-      isPeak: peak > 0 && amount === peak,
-    };
-  });
-}
-
-export function yearComparison(transactions: StatTransaction[], now: Date) {
-  let thisYear = 0;
-  let lastYear = 0;
-  for (const t of transactions) {
-    if (t.type !== "EXPENSE") continue;
-    const year = day(t.date).getFullYear();
-    if (year === now.getFullYear()) thisYear += t.amount;
-    else if (year === now.getFullYear() - 1) lastYear += t.amount;
-  }
-  return { thisYear, lastYear, deltaPct: expenseDeltaPct(thisYear, lastYear) };
 }

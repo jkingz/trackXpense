@@ -1,78 +1,107 @@
-import { format } from "date-fns";
+import { endOfMonth, differenceInCalendarDays, format, subMonths } from "date-fns";
 import { connection } from "next/server";
 import { cache, Suspense } from "react";
 
 import { getCurrentBudget } from "@/actions/budget";
 import { getDashboardData, getUserAccounts } from "@/actions/dashboard";
 import { requireUser } from "@/actions/lib/checkUser";
-import {
-  cashflow,
-  expenseDeltaPct,
-  monthTotals,
-  savingsRate,
-  spendByCategory,
-  spendByWeekday,
-  yearComparison,
-} from "@/lib/dashboard-stats";
+import { expenseDeltaPct, monthTotals, spendByCategory, spendSeries } from "@/lib/dashboard-stats";
 
+import { AccountsCard } from "./_components/accounts-card";
+import { BalanceHero } from "./_components/balance-hero";
 import BudgetProgress from "./_components/budget-progress";
-import { CashflowPanel } from "./_components/cashflow-panel";
-import { CategoryDonut } from "./_components/category-donut";
 import {
   BudgetSkeleton,
   ChartsSkeleton,
-  KpiCardsSkeleton,
-  YearSkeleton,
+  HeroSkeleton,
+  RecentSkeleton,
 } from "./_components/dashboard-skeleton";
-import { KpiRow } from "./_components/kpi-row";
 import { RecentActivity } from "./_components/recent-activity";
-import { YearCard } from "./_components/year-card";
+import { SpendBars } from "./_components/spend-bars";
+import { WhereItWent } from "./_components/where-it-went";
 
 // Reads the ledger on every request, so it cannot be prerendered: opt out of
 // instant prerendering, which cannot complete without request data.
 export const instant = false;
 
 /**
- * The statement band and the activity panel both read the same ledger, and
- * React.cache collapses those reads into one query per request while still
- * letting each boundary fill in on its own.
+ * Every section reads the same ledger, and React.cache collapses those reads
+ * into one query per request while still letting each boundary fill in on its own.
  */
 const loadTransactions = cache(() => getDashboardData());
 
 type Account = Awaited<ReturnType<typeof getUserAccounts>>[number];
 
-async function KpiSection({ accounts, monthName }: { accounts: Account[]; monthName: string }) {
+async function HeroSection({ accounts, now }: { accounts: Account[]; now: Date }) {
   const transactions = await loadTransactions();
-  const now = new Date();
   const { income, expense } = monthTotals(transactions, now);
-  const previous = monthTotals(
-    transactions,
-    new Date(now.getFullYear(), now.getMonth() - 1, 15),
-  ).expense;
+  const previous = subMonths(now, 1);
 
   return (
-    <KpiRow
-      accountCount={accounts.length}
+    <BalanceHero
+      accounts={accounts}
       totalBalance={accounts.reduce((total, account) => total + account.balance, 0)}
       income={income}
       expense={expense}
-      savings={savingsRate(income, expense)}
-      expenseDelta={expenseDeltaPct(expense, previous)}
-      monthName={monthName}
+      expenseDelta={expenseDeltaPct(expense, monthTotals(transactions, previous).expense)}
+      previousMonth={format(previous, "MMMM")}
+      today={format(now, "EEE · d MMM").toUpperCase()}
     />
   );
 }
 
-async function OverviewSection({
+async function BudgetSection({ defaultAccountId, now }: { defaultAccountId?: string; now: Date }) {
+  if (!defaultAccountId) return null;
+
+  const budget = await getCurrentBudget(defaultAccountId);
+
+  return (
+    <BudgetProgress
+      initialBudget={budget?.budget}
+      currentExpenses={budget?.currentExpenses || 0}
+      monthName={format(now, "MMMM")}
+      daysLeft={differenceInCalendarDays(endOfMonth(now), now)}
+    />
+  );
+}
+
+async function SpendSection({ now, ledgerHref }: { now: Date; ledgerHref: string | null }) {
+  const transactions = await loadTransactions();
+  const { slices, total } = spendByCategory(transactions, now, Infinity, "year");
+
+  return (
+    <>
+      <div className="--reveal lg:col-span-8">
+        <SpendBars
+          series={{
+            "7d": spendSeries(transactions, now, "7d"),
+            "30d": spendSeries(transactions, now, "30d"),
+            "6m": spendSeries(transactions, now, "6m"),
+          }}
+        />
+      </div>
+      <div className="--reveal lg:col-span-4">
+        <WhereItWent
+          slices={slices}
+          total={total}
+          year={now.getFullYear()}
+          seeAllHref={ledgerHref}
+        />
+      </div>
+    </>
+  );
+}
+
+async function RecentSection({
   accounts,
-  monthName,
+  savedId,
+  ledgerHref,
 }: {
   accounts: Account[];
-  monthName: string;
+  savedId?: string;
+  ledgerHref: string | null;
 }) {
   const transactions = await loadTransactions();
-  const now = new Date();
-  const { slices, total } = spendByCategory(transactions, now);
   const names = new Map(accounts.map((account: any) => [account.id, account.name]));
   const recent = transactions.map((transaction: any) => ({
     ...transaction,
@@ -80,46 +109,20 @@ async function OverviewSection({
   }));
 
   return (
-    <div className="--reveal grid items-start gap-4 lg:grid-cols-3">
-      <CategoryDonut slices={slices} total={total} monthName={monthName} />
-      <CashflowPanel days={cashflow(transactions, now)} week={spendByWeekday(transactions, now)} />
-      <RecentActivity transactions={recent} />
+    <div className="--reveal lg:col-span-12">
+      <RecentActivity transactions={recent} savedId={savedId} ledgerHref={ledgerHref} />
     </div>
   );
 }
 
-async function YearSection() {
-  const transactions = await loadTransactions();
-  const { thisYear, lastYear, deltaPct } = yearComparison(transactions, new Date());
-
-  return (
-    <div className="--reveal">
-      <YearCard thisYear={thisYear} lastYear={lastYear} deltaPct={deltaPct} />
-    </div>
-  );
-}
-
-async function BudgetSection({ defaultAccountId }: { defaultAccountId?: string }) {
-  if (!defaultAccountId) return null;
-
-  const budget = await getCurrentBudget(defaultAccountId);
-
-  return (
-    <div className="--reveal">
-      <BudgetProgress
-        initialBudget={budget?.budget}
-        currentExpenses={budget?.currentExpenses || 0}
-      />
-    </div>
-  );
-}
-
-const DashBoardPage = async () => {
+const DashBoardPage = async ({ searchParams }: { searchParams: Promise<{ saved?: string }> }) => {
   // Before its data work: a signed-out visitor is sent to sign-in instead of
   // rendering a page whose first read throws.
   await requireUser();
   const accounts = await getUserAccounts();
+  const { saved } = await searchParams;
   const defaultAccount = accounts?.find((account: any) => account.isDefault);
+  const ledgerHref = defaultAccount ? `/account/${defaultAccount.id}` : null;
   // Pin this render to a request before consulting the clock. Next refuses an
   // unstable `new Date()` during the prerender pass (blocking-prerender-current-
   // time), and the month names below are genuinely request data.
@@ -127,23 +130,26 @@ const DashBoardPage = async () => {
   const now = new Date();
 
   return (
-    <div className="space-y-4">
-      <div className="--reveal grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Suspense fallback={<BudgetSkeleton />}>
-          <BudgetSection defaultAccountId={defaultAccount?.id} />
+    <div className="grid gap-6 lg:grid-cols-12">
+      <div className="lg:col-span-8">
+        <Suspense fallback={<HeroSkeleton />}>
+          <HeroSection accounts={accounts} now={now} />
         </Suspense>
+      </div>
 
-        <Suspense fallback={<KpiCardsSkeleton />}>
-          <KpiSection accounts={accounts} monthName={format(now, "MMMM")} />
+      <div className="flex flex-col gap-6 lg:col-span-4">
+        <AccountsCard accounts={accounts} />
+        <Suspense fallback={<BudgetSkeleton />}>
+          <BudgetSection defaultAccountId={defaultAccount?.id} now={now} />
         </Suspense>
       </div>
 
       <Suspense fallback={<ChartsSkeleton />}>
-        <OverviewSection accounts={accounts} monthName={format(now, "MMMM")} />
+        <SpendSection now={now} ledgerHref={ledgerHref} />
       </Suspense>
 
-      <Suspense fallback={<YearSkeleton />}>
-        <YearSection />
+      <Suspense fallback={<RecentSkeleton />}>
+        <RecentSection accounts={accounts} savedId={saved} ledgerHref={ledgerHref} />
       </Suspense>
     </div>
   );

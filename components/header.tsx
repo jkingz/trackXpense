@@ -1,12 +1,13 @@
-import { SignOutButton } from "@/components/sign-out-button";
 import Link from "next/link";
 import { Suspense } from "react";
 
+import { getUserAccounts } from "@/actions/dashboard";
 import { currentUser } from "@/actions/lib/checkUser";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UserNav } from "@/components/user-nav";
 
 const landingLinks = [
   { label: "What's inside", href: "/#inside" },
@@ -21,7 +22,7 @@ const landingLinks = [
 function AuthSlotSkeleton() {
   return (
     <div className="flex items-center gap-2" aria-hidden>
-      <Skeleton className="size-8 rounded-md" />
+      <Skeleton className="size-9 rounded-full" />
     </div>
   );
 }
@@ -37,6 +38,7 @@ async function AuthSlot() {
   if (!user) {
     return (
       <div className="flex items-center gap-2">
+        <ThemeToggle />
         <Link href="/sign-in">
           <Button variant="ghost" size="sm" className="px-3">
             Sign in
@@ -46,10 +48,12 @@ async function AuthSlot() {
     );
   }
 
+  const defaultAccount = (await getUserAccounts()).find((account) => account.isDefault);
   return (
-    <div className="flex items-center gap-2">
-      <SignOutButton />
-    </div>
+    <UserNav
+      name={user.name || user.email}
+      ledgerHref={defaultAccount ? `/account/${defaultAccount.id}` : null}
+    />
   );
 }
 
@@ -93,7 +97,6 @@ export default function Header() {
         </Suspense>
 
         <div className="flex items-center gap-2">
-          <ThemeToggle />
           {/* Suspense boundary for AuthSlot - allows non-blocking render */}
           <Suspense fallback={<AuthSlotSkeleton />}>
             <AuthSlot />
