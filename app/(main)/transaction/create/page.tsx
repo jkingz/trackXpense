@@ -1,3 +1,4 @@
+import { getCurrentBudget } from "@/actions/budget";
 import { getUserAccounts } from "@/actions/dashboard";
 import { requireUser } from "@/actions/lib/checkUser";
 import { getTransactionById } from "@/actions/transaction";
@@ -19,7 +20,7 @@ const AddTransaction = async ({
   await requireUser();
   const accounts = await getUserAccounts();
   const resolvedSearchParams = await searchParams;
-  const editId = await resolvedSearchParams?.edit;
+  const editId = resolvedSearchParams?.edit;
 
   let initialData: any = null;
   if (editId) {
@@ -27,16 +28,32 @@ const AddTransaction = async ({
     initialData = transaction;
   }
 
+  const defaultAccount = accounts.find((account: any) => account.isDefault);
+  const budget = defaultAccount ? await getCurrentBudget(defaultAccount.id) : null;
+  const budgetLeft = budget?.budget ? budget.budget.amount - budget.currentExpenses : null;
+
   return (
-    <div className="max-w-3xl mx-auto px-5">
-      <h1 className="mb-8 border-b pb-6 text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-        {editId ? "Edit transaction" : "Add a transaction"}
-      </h1>
+    <div data-flat-canvas className="mx-auto max-w-6xl">
       <AddTransactionForm
         accounts={accounts}
         categories={defaultCategories}
         editMode={!!editId}
         initialData={initialData}
+        budgetLeft={budgetLeft}
+        aside={
+          <>
+            <p className="font-mono text-xs tracking-widest text-indigo uppercase dark:text-indigo-soft">
+              {editId ? "Edit entry" : "New entry"}
+            </p>
+            <h1 className="mt-5 text-5xl font-extrabold tracking-tighter sm:text-6xl">
+              {editId ? "Fix it while it's fresh." : "Log it while it's fresh."}
+            </h1>
+            <p className="mt-6 max-w-sm text-lg text-muted-foreground">
+              Amount first, then a tap for category. Your balance and budget move the moment you
+              save.
+            </p>
+          </>
+        }
       />
     </div>
   );

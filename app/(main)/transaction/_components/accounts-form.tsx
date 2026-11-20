@@ -1,5 +1,6 @@
-import { CurrencyContext } from "@/app/(main)/_components/currency-context";
 import { useContext } from "react";
+
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
 import CreateAccountDrawer from "@/components/create-account-drawer";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,34 +11,46 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatMoney } from "@/lib/money";
-import type { FieldErrors, UseFormGetValues, UseFormSetValue } from "react-hook-form";
+import type { FieldErrors, UseFormSetValue } from "react-hook-form";
 
 import type { SerializedAccount, TransactionFormValues } from "./add-transaction-form";
 
 const AccountsForm = ({
   accounts,
   setValue,
-  getValues,
+  accountId,
   errors,
 }: {
   accounts: SerializedAccount[];
   setValue: UseFormSetValue<TransactionFormValues>;
-  getValues: UseFormGetValues<TransactionFormValues>;
+  accountId?: string;
   errors: FieldErrors<TransactionFormValues>;
 }) => {
   const currency = useContext(CurrencyContext);
+  const selected = accounts.find((account) => account.id === accountId);
+
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Account</label>
+      <span id="account-label" className="text-sm text-muted-foreground">
+        Account
+      </span>
       {/* `items` lets the closed trigger show the account name: the SelectItem labels
           are not mounted until the popup opens, so without it the trigger renders the id. */}
       <Select
+        value={accountId ?? null}
         items={accounts.map((account) => ({ label: account.name, value: account.id }))}
         onValueChange={(value) => setValue("accountId", value ?? "")}
-        defaultValue={getValues("accountId")}
       >
-        <SelectTrigger className="w-full">
+        <SelectTrigger
+          aria-labelledby="account-label"
+          className="h-12 w-full rounded-xl bg-card px-4 text-base"
+        >
           <SelectValue placeholder="Select account" />
+          {selected && (
+            <span className="ml-auto font-mono text-xs tabular-nums text-muted-foreground">
+              {formatMoney(selected.balance, currency)}
+            </span>
+          )}
         </SelectTrigger>
         <SelectContent className="w-full">
           {accounts.map((account) => (

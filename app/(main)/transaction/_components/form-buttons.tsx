@@ -1,3 +1,5 @@
+import { CornerDownLeft } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 
 const FormButtons = ({
@@ -13,24 +15,23 @@ const FormButtons = ({
   onCancel?: () => void;
 }) => {
   return (
-    <div className="flex gap-4">
+    <div className="flex items-center gap-3">
       <Button
         type="button"
-        variant="outline"
+        variant="ghost"
         onClick={() => (onCancel ? onCancel() : router.back())}
-        className="w-full"
         disabled={transactionLoading}
+        className="h-11 px-5"
       >
         Cancel
       </Button>
-      <Button type="submit" loading={transactionLoading} className="w-full">
-        {transactionLoading
-          ? editMode
-            ? "Updating"
-            : "Creating"
-          : editMode
-            ? "Update Transaction"
-            : "Create Transaction"}
+      <Button
+        type="submit"
+        loading={transactionLoading}
+        className="h-12 rounded-xl px-7 text-base font-semibold"
+      >
+        {editMode ? "Update" : "Log it"}
+        <CornerDownLeft aria-hidden className="size-4" />
       </Button>
     </div>
   );

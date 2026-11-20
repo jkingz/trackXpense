@@ -1,31 +1,32 @@
 ## Standards
 
-- [x] **High** n/a — tenancy: the only new write `actions/currency.ts:18` is scoped through `checkUser`; migration adds a `NOT NULL DEFAULT 'USD'` column then switches the default to PHP, safe on existing rows.
-- [ ] **Medium** `docs/agent-guide/ui.md:18` — landing token lines (`brand-deep`, `brand-veil`, `ink`, `paper`) removed while the tokens still exist (`app/globals.css:61-66`) and are used (`components/header.tsx:83`). Fix: restore one line citing `globals.css:61`, or remove the tokens and their uses.
-- [ ] **Medium** `app/globals.css:262` — `.glass-panel` (also `:273`, `:366`, `:374`) has no product user after the landing deletions. Fix: delete the four blocks.
-- [ ] **Medium** `app/page.tsx:52` — JSON-LD `featureList` reads a hand-kept array (`data/landing.tsx:1`), no longer tied to rendered content. Fix: drop `featureList` or derive it from `components/landing-flow.tsx` steps.
-- [ ] **Low** `app/(main)/dashboard/_components/category-breakdown.tsx:40` — `Progress` carries both `aria-hidden` and `aria-label`. Fix: drop `aria-label`.
-- [ ] **Low** `app/(main)/account/_components/transaction-table.tsx:2` — `@/app/...` import above external imports; same in `accounts-form.tsx:1`, `account-row.tsx:3`, `budget-progress.tsx:2`, `account-chart.tsx:2`, `cashflow-panel.tsx:3`. Fix: move into the `@/` group.
-- [ ] **Low** `docs/agent-guide/ui.md:28` — says the Pocket Log hero renders as Server Components; the hero renders a client island (`components/landing/pocket-log-figure.tsx:1`). Fix: name the client island.
+Merge of origin/main (indigo/lime redesign, `specs/15-indigo-redesign.md`) with the ledger currency ported into main's components.
+
+- [x] **High** `docs/agent-guide/ui.md:12` — marquee/perspective claims had no CSS behind them. Fixed: removed; reduced-motion line cites `app/globals.css:398`.
+- [x] **High** `docs/agent-guide/ui.md:27` — said `components/hero.tsx` is a client component for scroll motion. Fixed: hero is server, receipt animation is the client island `components/landing/pocket-log-figure.tsx:1`; Pocket Log tokens restored (`globals.css:50`, `components/hero.tsx:38`).
+- [x] **Medium** `docs/agent-guide/ui.md:9-12` — stale `globals.css` citations. Fixed: `:60`, `:75`, `:365`, `:370`.
+- [x] **Low** `app/globals.css:192` — dead `.daily-ledger` palette and `.ledger-panel` after the layout dropped them. Fixed: deleted (grep: no users in app/ or components/).
+- [x] **Low** `app/(main)/dashboard/_components/balance-hero.tsx:30` — sign threshold differed from `formatMoney`. Fixed: `<= -0.005`.
+- Clean: no hard-coded `$`/`usd`/`signedUsd` left in app/, components/, emails/; no double minus; every `CurrencyContext` consumer sits under `CurrencyProvider` (`app/(main)/layout.tsx:14`).
 
 ## Spec
 
-Spec 15:
+Spec 15 (daily ledger):
 
-1. Met. Currency persists and reaches every signed-in money surface (`tests/auth/integration/user-lifecycle.test.ts:20`, `tests/dashboard/e2e/dashboard.spec.ts:32`).
-2. Met. Daily Ledger order with pinned rail (`app/(main)/_components/app-sidebar.tsx:50`); empty states and skeletons kept (`app/(main)/dashboard/page.tsx:154`).
+1. Met. Currency persists and reaches main's dashboard (`app/(main)/dashboard/page.tsx`), transaction form (`app/(main)/transaction/_components/amount-form.tsx:23`) and account pages; switcher in the Accounts card (`app/(main)/dashboard/_components/accounts-card.tsx:81`).
+2. Superseded by `specs/15-indigo-redesign.md` (merged from main); recorded at `PRODUCT.md:38`.
 
-Spec 16:
+Spec 15 (indigo redesign), as merged:
 
-1. Met. Pocket Log hero (`components/hero.tsx`, `components/landing/pocket-log-figure.tsx`).
-2. Met. Workflow and closing actions (`tests/smoke/e2e/smoke.spec.ts:19-26`).
+- [x] **High** `specs/15-indigo-redesign.md:21` — said figures stay `$` and the pill is not built. Fixed: names the per-user currency and `CurrencyMenu`.
 
-Shipped without a spec:
+1. Met. Hero, quick entry, Accounts card, budget, spend bars, Where it went, Recent entries.
+2. Met. Rail only on account pages (`app/(main)/account/layout.tsx`).
+3. Met by file diff; `?saved=` redirect not exercised beyond e2e.
 
-- [ ] **Medium** `next.config.ts:17` — `experimental.agentUpgrade: "security"` is in no spec. Fix: revert or name it.
-- [ ] **Medium** `package.json:37` — Next 16.4.2 → 16.4.6 bump with lockfile churn. Fix: split into its own `chore(deps)` change.
-- [ ] **Medium** `lib/brand-mark.tsx:2` — brand mark redrawn; `app/apple-icon.tsx:12` gained a `square` mode. Fix: revert, or add an icon increment to spec 16.
-- [ ] **Low** `app/page.tsx:56` — JSON-LD `priceCurrency` USD → PHP outside both specs. Fix: revert or name it in spec 16.
+E2E: `tests/dashboard/e2e/dashboard.spec.ts:12` matches the Accounts heading exactly; `:60` checks only visible balance text, because the hidden dashboard stays mounted after navigation.
+
+Extras: `currencySymbol` (`lib/money.ts:13`) needed by the split symbol layout; `aria-label="New account"` on the Accounts card button.
 
 ## Verdict
 

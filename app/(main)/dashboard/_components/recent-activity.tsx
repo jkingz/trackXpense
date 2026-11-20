@@ -1,10 +1,11 @@
 import { format } from "date-fns";
+import { ArrowRight, Repeat } from "lucide-react";
 import Link from "next/link";
 
 import { formatMoney, type LedgerCurrency } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
-import { categoryColor, categoryLabel } from "./category-helpers";
+import { categoryLabel } from "./category-helpers";
 
 export type RecentTransaction = {
   id: string;
@@ -14,69 +15,101 @@ export type RecentTransaction = {
   amount: number;
   type: "INCOME" | "EXPENSE";
   accountName: string;
+  isRecurring?: boolean;
+  recurringInterval?: string | null;
 };
 
-/** Latest entries across every account — the account name is the scope, so no filter is needed. */
+/** Latest entries across every account; the just-saved one wears the lime fill. */
 export function RecentActivity({
   transactions,
+  savedId,
+  ledgerHref,
   currency,
 }: {
   transactions: RecentTransaction[];
   currency: LedgerCurrency;
+  savedId?: string;
+  ledgerHref: string | null;
 }) {
   const recent = [...transactions]
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-    .slice(0, 6);
+    // The just-saved row leads even when backdated, so its highlight is never cut off.
+    .sort(
+      (a, b) =>
+        Number(b.id === savedId) - Number(a.id === savedId) ||
+        new Date(b.date).getTime() - new Date(a.date).getTime(),
+    )
+    .slice(0, 5);
 
   return (
-    <section aria-labelledby="activity-heading" className="ledger-panel">
-      <header className="flex items-center justify-between gap-4 border-b px-5 py-4">
-        <h2
-          id="activity-heading"
-          className="text-sm font-semibold tracking-tight text-card-foreground"
-        >
-          Recent activity
+    <section aria-labelledby="activity-heading" className="rounded-3xl border bg-card p-6 sm:p-8">
+      <header className="flex items-center justify-between gap-4">
+        <h2 id="activity-heading" className="text-lg font-semibold tracking-tight">
+          Recent entries{" "}
+          <span className="ml-2 text-sm font-normal text-muted-foreground">All accounts</span>
         </h2>
-        <p className="text-xs text-muted-foreground">All accounts</p>
+        {ledgerHref && (
+          <Link
+            href={ledgerHref}
+            className="flex items-center gap-1 rounded-sm text-sm font-semibold text-indigo focus-visible:outline-2 focus-visible:outline-ring dark:text-indigo-soft"
+          >
+            Open ledger <ArrowRight aria-hidden className="size-3.5" />
+          </Link>
+        )}
       </header>
 
       {recent.length === 0 ? (
-        <div className="px-5 py-10 text-center">
+        <div className="py-10 text-center">
           <p className="text-sm text-muted-foreground">Nothing logged yet.</p>
           <Link
             href="/transaction/create"
-            className="mt-2 inline-block text-sm font-medium text-primary underline-offset-4 hover:underline"
+            className="mt-2 inline-block text-sm font-medium text-indigo underline-offset-4 hover:underline dark:text-indigo-soft"
           >
             Add the first entry
           </Link>
         </div>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className="mt-4 divide-y divide-dashed">
           {recent.map((transaction) => {
             const isExpense = transaction.type === "EXPENSE";
+            const saved = transaction.id === savedId;
             return (
               <li
                 key={transaction.id}
-                className="flex flex-wrap items-center gap-x-3 gap-y-1 px-5 py-3 transition-colors hover:bg-accent/40"
+                className={cn(
+                  "grid grid-cols-[4rem_1fr_auto] items-center gap-4 px-4 py-3.5 md:grid-cols-[4rem_1fr_9rem_9rem_8rem]",
+                  saved && "--reveal rounded-xl border-0 bg-lime text-navy",
+                )}
               >
                 <span
-                  aria-hidden
-                  className="size-2 shrink-0 rounded-full"
-                  style={{ backgroundColor: categoryColor(transaction.category) }}
-                />
-                <span className="min-w-24 flex-1">
-                  <span className="block truncate text-sm font-medium text-card-foreground">
+                  className={cn("font-mono text-xs", saved ? "text-navy" : "text-muted-foreground")}
+                >
+                  {format(new Date(transaction.date), "d MMM")}
+                </span>
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className={cn("truncate", saved && "font-bold")}>
                     {transaction.description || categoryLabel(transaction.category)}
                   </span>
-                  <span className="mt-0.5 block truncate text-xs text-muted-foreground">
-                    {transaction.accountName} · {format(new Date(transaction.date), "d MMM")} ·{" "}
-                    {categoryLabel(transaction.category)}
-                  </span>
+                  {saved && <span className="shrink-0 text-xs">· just saved</span>}
+                  {transaction.isRecurring && transaction.recurringInterval && (
+                    <span
+                      className={cn(
+                        "flex shrink-0 items-center gap-1 font-mono text-xs tracking-wider uppercase",
+                        saved ? "text-navy" : "text-indigo dark:text-indigo-soft",
+                      )}
+                    >
+                      <Repeat aria-hidden className="size-3" />
+                      {transaction.recurringInterval}
+                    </span>
+                  )}
                 </span>
+                <span className="hidden truncate text-sm md:block">
+                  {categoryLabel(transaction.category)}
+                </span>
+                <span className="hidden truncate text-sm md:block">{transaction.accountName}</span>
                 <span
                   className={cn(
-                    "shrink-0 font-mono text-sm font-semibold tabular-nums",
-                    isExpense ? "text-expense" : "text-income",
+                    "text-right font-mono tabular-nums",
+                    saved ? "font-bold text-navy" : isExpense ? "text-expense" : "text-income",
                   )}
                 >
                   {isExpense ? "−" : "+"}

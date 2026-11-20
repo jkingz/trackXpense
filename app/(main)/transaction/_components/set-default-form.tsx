@@ -10,6 +10,13 @@ import type { FieldErrors, UseFormGetValues, UseFormSetValue } from "react-hook-
 
 import type { TransactionFormValues } from "./add-transaction-form";
 
+const INTERVALS = [
+  { value: "DAILY", label: "Daily" },
+  { value: "WEEKLY", label: "Weekly" },
+  { value: "MONTHLY", label: "Monthly" },
+  { value: "YEARLY", label: "Yearly" },
+];
+
 const SetDefaultForm = ({
   getValues,
   setValue,
@@ -22,50 +29,42 @@ const SetDefaultForm = ({
   errors: FieldErrors<TransactionFormValues>;
 }) => {
   return (
-    <>
-      <div className="flex items-center justify-between rounded-lg border p-3 gap-2">
-        <div className="space-y-0.5">
-          <label htmlFor="isDefault" className="font-medium text-sm cursor-pointer">
-            Recurring Transaction
-          </label>
-          <p className="text-sm text-muted-foreground">
-            Set up a recurring schedule for this transaction.
-          </p>
-        </div>
-        <Switch
-          id="isDefault"
-          onCheckedChange={(checked) => setValue("isRecurring", checked)}
-          checked={isRecurring}
-        ></Switch>
-      </div>
+    <div className="flex flex-wrap items-center gap-3">
+      <Switch
+        id="isRecurring"
+        onCheckedChange={(checked) => setValue("isRecurring", checked)}
+        checked={isRecurring}
+      />
+      <label htmlFor="isRecurring" className="cursor-pointer text-sm">
+        Repeat this entry
+      </label>
       {isRecurring && (
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Recurring Interval</label>
-          <Select
-            onValueChange={(value) =>
-              setValue(
-                "recurringInterval",
-                (value ?? undefined) as TransactionFormValues["recurringInterval"],
-              )
-            }
-            defaultValue={getValues("recurringInterval")}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select recurring Interval" />
-            </SelectTrigger>
-            <SelectContent className="w-full">
-              <SelectItem value="DAILY">Daily</SelectItem>
-              <SelectItem value="WEEKLY">Weekly</SelectItem>
-              <SelectItem value="MONTHLY">Monthly</SelectItem>
-              <SelectItem value="YEARLY">Yearly</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.recurringInterval && (
-            <p className="text-sm text-destructive">{errors.recurringInterval.message}</p>
-          )}
-        </div>
+        <Select
+          items={INTERVALS}
+          onValueChange={(value) =>
+            setValue(
+              "recurringInterval",
+              (value ?? undefined) as TransactionFormValues["recurringInterval"],
+            )
+          }
+          defaultValue={getValues("recurringInterval")}
+        >
+          <SelectTrigger aria-label="Repeat interval" className="h-9 rounded-lg">
+            <SelectValue placeholder="How often" />
+          </SelectTrigger>
+          <SelectContent>
+            {INTERVALS.map((interval) => (
+              <SelectItem key={interval.value} value={interval.value}>
+                {interval.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
-    </>
+      {errors.recurringInterval && (
+        <p className="w-full text-sm text-destructive">{errors.recurringInterval.message}</p>
+      )}
+    </div>
   );
 };
 

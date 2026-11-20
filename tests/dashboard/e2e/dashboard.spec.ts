@@ -8,20 +8,15 @@ test.beforeEach(async ({ page }) => {
 
 test("dashboard loads", async ({ page }) => {
   await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.getByRole("heading", { name: "Dashboard", level: 1 })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Balance and monthly totals" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Cash flow" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Spending by category" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Monthly budget" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Recent activity" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Add transaction" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Total balance/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Accounts", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Recent entries/ })).toBeVisible();
 });
 
 test("the ledger fits a narrow viewport", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
-  await expect(page.getByRole("heading", { name: "Dashboard", level: 1 })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Cash flow" })).toBeVisible();
-  await expect(page.getByRole("region", { name: "Recent activity" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Total balance/ })).toBeVisible();
+  await expect(page.getByRole("region", { name: /Recent entries/ })).toBeVisible();
   await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth)).toBe(375);
 });
 
@@ -61,9 +56,12 @@ test("ledger currency persists and follows the user into the account and transac
 
     await balance.click();
     await expect(page.getByRole("heading", { name: "Everyday" })).toBeVisible();
-    await expect(page.getByText(`₱${dollars}`, { exact: true }).last()).toBeVisible();
+    // The dashboard stays mounted but hidden after navigation, so match only visible copies.
+    await expect(
+      page.getByText(`₱${dollars}`, { exact: true }).filter({ visible: true }).first(),
+    ).toBeVisible();
     await page.goto("/transaction/create");
-    await expect(page.getByLabel("Amount (PHP)")).toBeVisible();
+    await expect(page.getByLabel("Amount · PHP")).toBeVisible();
   } finally {
     await page.goto("/dashboard");
     await choose(original);

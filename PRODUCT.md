@@ -35,7 +35,7 @@ web
 - One ledger currency per user, PHP or USD (`lib/money.ts:1`). New users get PHP and existing users keep USD. There are no exchange rates and no mixed-currency entries.
 - Built but inactive: recurring processing (Inngest never fires), budget alert email (Resend never sends) and receipt storage.
 - Out of scope: multi-user sharing, bank sync and a native mobile app.
-- Product names in use: "Daily Ledger" for the dashboard layout (`specs/15-daily-ledger.md`) and "Pocket Log" for the landing hero (`specs/16-pocket-log.md`).
+- Product names in use: the indigo/lime dashboard (`specs/15-indigo-redesign.md`) and "Pocket Log" for the landing hero (`specs/16-pocket-log.md`). Per-user ledger currency comes from `specs/15-daily-ledger.md` increment 1.
 
 ## Brand Commitments
 

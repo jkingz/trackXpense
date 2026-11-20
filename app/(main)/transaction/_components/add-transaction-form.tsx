@@ -2,14 +2,17 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect } from "react";
+import { CircleCheck } from "lucide-react";
+import { useCallback, useContext, useEffect, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
 
 import { createTransaction, updateTransaction } from "@/actions/transaction";
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
 import type { defaultCategories } from "@/data/categories";
 import useFetch from "@/hooks/use-fetch";
+import { formatMoney } from "@/lib/money";
 import { transactionSchema } from "@/lib/schema";
 import type { TransactionInput } from "@/lib/schema";
 import { cn } from "@/lib/utils";
@@ -53,6 +56,8 @@ const AddTransactionForm = ({
   onSuccess,
   onCancel,
   stickyFooter = false,
+  aside,
+  budgetLeft = null,
 }: {
   // getUserAccounts serializes rows, so balance is a number and _count is present; the serialized view needs its own type.
   accounts: SerializedAccount[];
@@ -65,13 +70,18 @@ const AddTransactionForm = ({
   onCancel?: () => void;
   // Pins the actions to the bottom of the dialog's scroll area.
   stickyFooter?: boolean;
+  // Page mode: the headline column; turns on the two-column layout and the save preview.
+  aside?: ReactNode;
+  // What is left of this month's budget on the default account, for the preview.
+  budgetLeft?: number | null;
 }) => {
   const router = useRouter();
+  const currency = useContext(CurrencyContext);
   const searchParams = useSearchParams();
   const editId = searchParams.get("edit");
 
   // Inference is not untyped here: zodResolver binds the schema's input type onto
-  // defaultValues, where create mode's `date: ''` is not a Date. Measured without <any>:
+  // defaultValues, which create mode's empty fields do not satisfy. Measured without <any>:
   // 24 errors project-wide, 1 here (TS2322 on defaultValues). Closing it needs a cast or
   // a behaviour change, so field-value typing waits for Plan B.
   const {
@@ -103,7 +113,8 @@ const AddTransactionForm = ({
             amount: "",
             description: "",
             accountId: accounts.find((ac) => ac.isDefault)?.id,
-            date: "",
+            date: new Date(),
+            category: "",
             isRecurring: false,
           },
   });
@@ -122,6 +133,9 @@ const AddTransactionForm = ({
   const isRecurring = watch("isRecurring");
   const date = watch("date");
   const categoryValue = watch("category");
+  const accountId = watch("accountId");
+  const amountValue = Number(watch("amount")) || 0;
+  const description = watch("description");
 
   const filteredCategory = categories.filter((category) => category.type === type);
 
@@ -141,6 +155,8 @@ const AddTransactionForm = ({
       reset();
       if (onSuccess) {
         onSuccess(transactionResult.data.accountId);
+      } else if (!editMode) {
+        router.push(`/dashboard?saved=${transactionResult.data.id}`);
       } else {
         router.push(`/account/${transactionResult.data.accountId}`);
       }
@@ -169,50 +185,108 @@ const AddTransactionForm = ({
     [setValue],
   );
 
-  return (
-    <div>
-      <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-        {/* Receipt Scan */}
-        {!editMode && <ReceiptScanner onScanComplete={handleScanComplete} />}
+  const account = accounts.find((item) => item.id === accountId);
+  const signed = type === "EXPENSE" ? -amountValue : amountValue;
+  const showBudget = budgetLeft !== null && type === "EXPENSE" && Boolean(account?.isDefault);
 
+  const form = (
+    <form
+      className={cn("space-y-7", aside && "offset-shadow rounded-3xl border bg-card p-6 sm:p-10")}
+      onSubmit={handleSubmit(onSubmit)}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <TypeForm type={type} setValue={setValue} errors={errors} />
-        <div className="grid md:grid-cols-2 gap-6">
-          <AmountForm register={register} errors={errors} />
-          <AccountsForm
-            accounts={accounts}
-            setValue={setValue}
-            getValues={getValues}
-            errors={errors}
-          />
-        </div>
-        <CategoriesForm
-          categories={filteredCategory}
+        {!editMode && <ReceiptScanner onScanComplete={handleScanComplete} />}
+      </div>
+
+      <AmountForm register={register} errors={errors} />
+
+      <hr className="border-dashed" />
+
+      <CategoriesForm
+        categories={filteredCategory}
+        setValue={setValue}
+        category={categoryValue}
+        errors={errors}
+      />
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <AccountsForm
+          accounts={accounts}
           setValue={setValue}
-          category={categoryValue}
+          accountId={accountId}
           errors={errors}
         />
         <DateForm date={date} setValue={setValue} errors={errors} />
-        <DescriptionForm register={register} errors={errors} />
+      </div>
+
+      <DescriptionForm register={register} errors={errors} />
+
+      <div
+        className={cn(
+          "flex flex-wrap items-center justify-between gap-4 border-t border-dashed pt-6",
+          stickyFooter && "sticky bottom-0 z-10 -mx-5 bg-background px-5 py-4",
+        )}
+      >
         <SetDefaultForm
           setValue={setValue}
           isRecurring={isRecurring}
           getValues={getValues}
           errors={errors}
         />
-        <div
-          className={cn(
-            "grid grid-cols-2 md:grid-cols-2 gap-4",
-            stickyFooter && "sticky bottom-0 z-10 -mx-5 border-t bg-background px-5 py-4",
-          )}
-        >
-          <FormButtons
-            router={router}
-            transactionLoading={transactionLoading}
-            editMode={editMode}
-            onCancel={onCancel}
-          />
-        </div>
-      </form>
+        <FormButtons
+          router={router}
+          transactionLoading={transactionLoading}
+          editMode={editMode}
+          onCancel={onCancel}
+        />
+      </div>
+    </form>
+  );
+
+  if (!aside) return form;
+
+  return (
+    <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-16">
+      <div className="lg:col-span-5 lg:pt-6">
+        {aside}
+        {!editMode && account && (
+          <div className="mt-14 hidden lg:block" aria-live="polite">
+            <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase">
+              After you save
+            </p>
+            <div className="offset-shadow mt-4 max-w-sm -rotate-1 rounded-2xl border-2 border-navy bg-lime p-5 text-navy">
+              <p className="flex items-center gap-2 font-semibold">
+                <CircleCheck aria-hidden className="size-5 fill-navy text-lime" />
+                {description?.trim() || "Entry"} saved
+              </p>
+              <dl className="mt-3 space-y-1.5 text-sm">
+                <div className="flex justify-between gap-4">
+                  <dt>{account.name}</dt>
+                  <dd className="font-mono tabular-nums">
+                    {amountValue > 0 && (
+                      <s className="mr-2 opacity-70">{formatMoney(account.balance, currency)}</s>
+                    )}
+                    {formatMoney(account.balance + signed, currency)}
+                  </dd>
+                </div>
+                {showBudget && (
+                  <div className="flex justify-between gap-4">
+                    <dt>Budget left</dt>
+                    <dd className="font-mono tabular-nums">
+                      {formatMoney((budgetLeft ?? 0) - amountValue, currency)}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+            <p className="mt-4 max-w-sm text-sm text-muted-foreground">
+              Highlighted on the dashboard when you land there.
+            </p>
+          </div>
+        )}
+      </div>
+      <div className="lg:col-span-7">{form}</div>
     </div>
   );
 };

@@ -17,7 +17,8 @@ test("sign out clears the session", async ({ page }) => {
   await page.getByRole("button", { name: /try the demo/i }).click();
   await page.waitForURL(/\/dashboard/);
 
-  await page.locator('button[title="Sign out"]').click();
+  await page.getByRole("button", { name: "Account menu" }).click();
+  await page.getByRole("menuitem", { name: /sign out/i }).click();
   await page.waitForURL("http://localhost:3000/");
 
   await page.goto("/dashboard");

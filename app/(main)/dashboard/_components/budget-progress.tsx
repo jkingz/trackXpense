@@ -1,23 +1,27 @@
 "use client";
-import { CurrencyContext } from "@/app/(main)/_components/currency-context";
-import { Check, Pencil, X } from "lucide-react";
+import { Check, X } from "lucide-react";
 import { useContext, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { updateBudget } from "@/actions/budget";
+import { CurrencyContext } from "@/app/(main)/_components/currency-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import useFetch from "@/hooks/use-fetch";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
+/** Navy budget card: headroom first, then the share used and the days still to run. */
 const BudgetProgress = ({
   initialBudget,
   currentExpenses,
+  monthName,
+  daysLeft,
 }: {
   initialBudget: { amount: number } | null | undefined;
   currentExpenses: number;
+  monthName: string;
+  daysLeft: number;
 }) => {
   const currency = useContext(CurrencyContext);
   const [isEditing, setIsEditing] = useState(false);
@@ -54,23 +58,23 @@ const BudgetProgress = ({
   // Error toast lives in useFetch (single source).
 
   return (
-    <section aria-labelledby="budget-heading" className="ledger-panel flex flex-col p-5">
+    <section
+      id="budget"
+      aria-labelledby="budget-heading"
+      className="flex h-full scroll-mt-24 flex-col rounded-3xl bg-navy p-6 text-white dark:border dark:border-white/10"
+    >
       <header className="flex items-center justify-between gap-4">
-        <h2
-          id="budget-heading"
-          className="text-sm font-semibold tracking-tight text-card-foreground"
-        >
-          Monthly budget
+        <h2 id="budget-heading" className="font-semibold tracking-tight">
+          {monthName} budget
         </h2>
         {!isEditing && (
-          <Button
-            variant="ghost"
-            size="icon"
+          <button
+            type="button"
             onClick={() => setIsEditing(true)}
-            aria-label="Set monthly budget"
+            className="rounded-sm text-sm text-indigo-soft hover:text-white focus-visible:outline-2 focus-visible:outline-indigo-soft"
           >
-            <Pencil className="size-3.5" />
-          </Button>
+            Edit
+          </button>
         )}
       </header>
 
@@ -80,9 +84,9 @@ const BudgetProgress = ({
             type="number"
             value={newBudget}
             onChange={(e) => setNewBudget(e.target.value)}
-            className="w-full"
-            aria-label={`Monthly budget (${currency})`}
+            className="w-full border-white/20 bg-white/10 text-white"
             placeholder="New budget"
+            aria-label="Monthly budget"
             autoFocus
             disabled={isLoading}
           />
@@ -92,8 +96,9 @@ const BudgetProgress = ({
             onClick={handleUpdateBudget}
             loading={isLoading}
             aria-label="Save budget"
+            className="hover:bg-white/10"
           >
-            <Check className="size-4 text-income" />
+            <Check className="size-4 text-lime" />
           </Button>
           <Button
             variant="ghost"
@@ -101,47 +106,46 @@ const BudgetProgress = ({
             onClick={handleCancel}
             disabled={isLoading}
             aria-label="Cancel"
+            className="hover:bg-white/10"
           >
-            <X className="size-4 text-muted-foreground" />
+            <X className="size-4 text-white/70" />
           </Button>
         </div>
-      ) : (
+      ) : initialBudget ? (
         <>
-          <p className="mt-3 break-words font-mono text-xl font-semibold tabular-nums leading-none tracking-tight text-foreground">
-            {formatMoney(currentExpenses, currency)}
-            {initialBudget && (
-              <span className="text-base font-medium text-muted-foreground">
-                {" "}
-                / {formatMoney(initialBudget.amount, currency)}
-              </span>
-            )}
+          <p className="mt-4 flex flex-wrap items-baseline gap-x-4">
+            <span className={cn("font-mono text-3xl tabular-nums", headroom < 0 && "text-expense")}>
+              {formatMoney(Math.abs(headroom), currency)}
+            </span>
+            <span className="text-sm text-white/75">
+              {headroom >= 0 ? "left" : "over"} of {formatMoney(initialBudget.amount, currency)}
+            </span>
           </p>
-
-          {initialBudget ? (
-            <div className="mt-4 space-y-2">
-              <Progress
-                value={percentUsed}
-                aria-label="Budget used"
-                extraStyles={
-                  percentUsed >= 90 ? "bg-expense" : percentUsed >= 75 ? "bg-warn" : "bg-primary"
-                }
-              />
-              <p className="text-xs text-muted-foreground">
-                {headroom >= 0
-                  ? `${formatMoney(headroom, currency)} left`
-                  : `${formatMoney(Math.abs(headroom), currency)} over`}
-                <span aria-hidden> · </span>
-                <span className={cn("font-mono tabular-nums", percentUsed >= 90 && "text-expense")}>
-                  {percentUsed.toFixed(1)}% used
-                </span>
-              </p>
-            </div>
-          ) : (
-            <p className="mt-3 text-sm text-muted-foreground">
-              Set a budget to track spending from your default account.
-            </p>
-          )}
+          <div
+            role="progressbar"
+            aria-label="Budget used"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(Math.min(100, percentUsed))}
+            className="mt-5 h-2.5 overflow-hidden rounded-full bg-white/10"
+          >
+            <div
+              className={cn(
+                "--share-bar h-full rounded-full",
+                percentUsed >= 100 ? "bg-expense" : "bg-lime",
+              )}
+              style={{ width: `${Math.min(100, percentUsed)}%` }}
+            />
+          </div>
+          <p className="mt-4 text-xs text-white/75">
+            <span className="font-mono tabular-nums">{percentUsed.toFixed(1)}%</span> used ·{" "}
+            {daysLeft} {daysLeft === 1 ? "day" : "days"} left
+          </p>
         </>
+      ) : (
+        <p className="mt-4 text-sm text-white/75">
+          No budget yet. Set one and this card tracks the default account against it.
+        </p>
       )}
     </section>
   );
