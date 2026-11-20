@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { checkUser } from "@/actions/lib/checkUser";
+import { csvField } from "@/lib/csv";
 import { db } from "@/lib/prisma";
 import { transactionExportSchema } from "@/lib/schema";
 
@@ -46,8 +47,8 @@ export async function GET(request: Request) {
           t.id,
           t.type,
           t.amount,
-          JSON.stringify(t.description ?? ""),
-          t.category,
+          csvField(t.description ?? ""),
+          csvField(t.category),
           t.date.toISOString(),
           t.accountId,
         ].join(","),

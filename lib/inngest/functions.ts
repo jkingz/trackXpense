@@ -5,6 +5,7 @@ import EmailTemplate from "@/emails/template";
 import { formatMoney, type LedgerCurrency } from "@/lib/money";
 import { db } from "@/lib/prisma";
 import { env } from "@/lib/env";
+import { GEMINI_MODEL } from "@/lib/gemini";
 import { applyRecurringTick, recurringPhase } from "@/lib/recurring-lifecycle";
 
 import { inngest } from "./client";
@@ -220,7 +221,7 @@ async function generateFinancialInsights(
   currency: LedgerCurrency,
 ) {
   const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? "");
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
   const prompt = `
     Analyze this financial data and provide 3 concise, actionable insights.

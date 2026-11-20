@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import aj from "@/lib/arcjet";
 import { db } from "@/lib/prisma";
 import { env } from "@/lib/env";
+import { GEMINI_MODEL } from "@/lib/gemini";
 import { MAX_RECEIPT_BYTES, transactionServerSchema } from "@/lib/schema";
 import type { TransactionInput } from "@/lib/schema";
 
@@ -15,16 +16,6 @@ import { parseInput } from "./lib/parseInput";
 import { toErrorMessage } from "./lib";
 
 const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY ?? "");
-
-// Model chosen from measured behaviour against this key, not from a doc page.
-// Census on one receipt image, 3 attempts each: `gemini-2.5-flash` and
-// `gemini-2.5-flash-lite` 404 ("no longer available to new users") — that is what
-// broke the scan — while `gemini-3.8-flash` and `gemini-flash-latest` answered but
-// intermittently threw 503 "high demand" and took 38-92s. `gemini-3.1-flash-lite`
-// and `gemini-flash-lite-latest` went 10/10 in 2-5s with byte-identical
-// extraction. The versioned name is pinned over the rolling alias so the model
-// behind the feature cannot change under the app mid-demo.
-const RECEIPT_MODEL = "gemini-3.1-flash-lite";
 
 // Scan Receipt
 export async function scanReceipt(file: File) {
@@ -37,7 +28,7 @@ export async function scanReceipt(file: File) {
     if (file.size > MAX_RECEIPT_BYTES) {
       throw new Error("file too large");
     }
-    const model = genAI.getGenerativeModel({ model: RECEIPT_MODEL });
+    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
 
     // Convert File to ArrayBuffer
     const arrayBuffer = await file.arrayBuffer();
