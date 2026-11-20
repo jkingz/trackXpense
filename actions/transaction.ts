@@ -7,7 +7,7 @@ import { revalidatePath } from "next/cache";
 import aj from "@/lib/arcjet";
 import { db } from "@/lib/prisma";
 import { env } from "@/lib/env";
-import { transactionServerSchema } from "@/lib/schema";
+import { MAX_RECEIPT_BYTES, transactionServerSchema } from "@/lib/schema";
 import type { TransactionInput } from "@/lib/schema";
 
 import { calculateNextRecurringDate, checkUser, serializeAmount } from "./lib";
@@ -29,6 +29,14 @@ const RECEIPT_MODEL = "gemini-3.1-flash-lite";
 // Scan Receipt
 export async function scanReceipt(file: File) {
   try {
+    // Reachable from the browser: gate the Gemini spend on a session and the upload limits.
+    await checkUser();
+    if (!(file instanceof File) || !file.type.startsWith("image/")) {
+      throw new Error("unsupported file type");
+    }
+    if (file.size > MAX_RECEIPT_BYTES) {
+      throw new Error("file too large");
+    }
     const model = genAI.getGenerativeModel({ model: RECEIPT_MODEL });
 
     // Convert File to ArrayBuffer
@@ -224,9 +232,6 @@ export async function updateTransaction(data: TransactionInput, id: string) {
         id,
         userId: user.id,
       },
-      include: {
-        account: true,
-      },
     });
     if (!originalTransaction) {
       throw new Error("Transaction not found");
@@ -237,7 +242,14 @@ export async function updateTransaction(data: TransactionInput, id: string) {
         ? -originalTransaction.amount.toNumber()
         : originalTransaction.amount.toNumber();
     const newBalanceChange = data.type === "EXPENSE" ? -data.amount : data.amount;
-    const netBalanceChange = newBalanceChange - oldBalanceChange;
+
+    // The target account must be the caller's: the edit form can move an entry.
+    const targetAccount = await db.account.findUnique({
+      where: { id: data.accountId, userId: user.id },
+    });
+    if (!targetAccount) {
+      throw new Error("Account not found");
+    }
 
     // Update transaction and account balance in a transaction
     const transaction = await db.$transaction(async (tx) => {
@@ -255,21 +267,19 @@ export async function updateTransaction(data: TransactionInput, id: string) {
         },
       });
 
-      // Update account balance using the original balance
-      const currentBalance = originalTransaction.account.balance.toNumber();
-      const newBalance = currentBalance + netBalanceChange;
-      // update account balance
+      // Reverse the old effect on the old account, apply the new one on the target.
       await tx.account.update({
-        where: {
-          id: data.accountId,
-        },
-        data: {
-          balance: newBalance,
-        },
+        where: { id: originalTransaction.accountId },
+        data: { balance: { increment: -oldBalanceChange } },
+      });
+      await tx.account.update({
+        where: { id: data.accountId },
+        data: { balance: { increment: newBalanceChange } },
       });
       return updated;
     });
     revalidatePath("/dashboard");
+    revalidatePath(`/account/${originalTransaction.accountId}`);
     revalidatePath(`/account/${data.accountId}`);
     return { success: true, data: serializeAmount(transaction) };
   } catch (error) {
