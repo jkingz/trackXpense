@@ -44,7 +44,7 @@ Browser → Better Auth (email/password; API at /api/auth/*)
 ### Auth & tenancy
 
 - **Identity** — Better Auth session cookie validated by `neonAuth.api.getSession()` in `proxy.ts` and `actions/lib/checkUser.ts`.
-- **Authority** — `proxy.ts` gates `/dashboard`, `/account`, and `/transaction` via `lib/route-guard.ts`; anonymous requests redirect to `/sign-in`. `requireUser()` guards ledger pages; `checkUser()` guards actions and API reads. `/api/demo` explicitly signs into the shared demo account.
+- **Authority** — `proxy.ts` gates `/dashboard`, `/account`, `/budget`, and `/transaction` via `lib/route-guard.ts:8`; anonymous requests redirect to `/sign-in`. `requireUser()` guards ledger pages; `checkUser()` guards actions and API reads. `/api/demo` explicitly signs into the shared demo account.
 - **Ownership** — all reads scoped to the `userId` the seam resolves. No privileged bypass.
 - **Demo** — `/api/demo` provisions the shared demo account if needed, then creates a Better Auth session. Demo sign-in is explicit; there is no anonymous ledger fallback.
 
@@ -62,7 +62,7 @@ Browser → Better Auth (email/password; API at /api/auth/*)
 | `/api/receipts`       | POST         | Session           | Receipt upload; `checkUser` session gate                 |
 | `/api/inngest`        | GET/POST/PUT | Inngest signature | `serve()` for 4 functions; never triggered               |
 
-Caching: no `no-store`/`revalidate` export anywhere; Cache Components on (`next.config.ts`). Three ledger pages `export const instant = false`. Ledger currency changes invalidate signed-in layouts (`actions/currency.ts:19`). Build page classes → `service-architecture.md` Pages.
+Caching: no `no-store`/`revalidate` export anywhere; Cache Components on (`next.config.ts`). Ledger currency changes invalidate signed-in layouts (`actions/currency.ts:19`). Build page classes → `service-architecture.md` Pages.
 
 ### HTTP surface — planned, not built
 
