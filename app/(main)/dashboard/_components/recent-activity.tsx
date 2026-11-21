@@ -44,8 +44,7 @@ export function RecentActivity({
     <section aria-labelledby="activity-heading" className="rounded-3xl border bg-card p-6 sm:p-8">
       <header className="flex items-center justify-between gap-4">
         <h2 id="activity-heading" className="text-lg font-semibold tracking-tight">
-          Recent entries{" "}
-          <span className="ml-2 text-sm font-normal text-muted-foreground">All accounts</span>
+          Recent entries
         </h2>
         {ledgerHref && (
           <Link
@@ -60,12 +59,6 @@ export function RecentActivity({
       {recent.length === 0 ? (
         <div className="py-10 text-center">
           <p className="text-sm text-muted-foreground">Nothing logged yet.</p>
-          <Link
-            href="/transaction/create"
-            className="mt-2 inline-block text-sm font-medium text-indigo underline-offset-4 hover:underline dark:text-indigo-soft"
-          >
-            Add the first entry
-          </Link>
         </div>
       ) : (
         <ul className="mt-4 divide-y divide-dashed">

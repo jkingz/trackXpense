@@ -1,6 +1,6 @@
 "use client";
 import { Check, X } from "lucide-react";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useId, useState } from "react";
 import { toast } from "sonner";
 
 import { updateBudget } from "@/actions/budget";
@@ -24,6 +24,7 @@ const BudgetProgress = ({
   daysLeft: number;
 }) => {
   const currency = useContext(CurrencyContext);
+  const headingId = useId();
   const [isEditing, setIsEditing] = useState(false);
   const [newBudget, setNewBudget] = useState(initialBudget?.amount?.toString() || "");
 
@@ -59,12 +60,11 @@ const BudgetProgress = ({
 
   return (
     <section
-      id="budget"
-      aria-labelledby="budget-heading"
-      className="flex h-full scroll-mt-24 flex-col rounded-3xl bg-navy p-6 text-white dark:border dark:border-white/10"
+      aria-labelledby={headingId}
+      className="flex h-full flex-col rounded-3xl bg-navy p-6 text-white dark:border dark:border-white/10"
     >
       <header className="flex items-center justify-between gap-4">
-        <h2 id="budget-heading" className="font-semibold tracking-tight">
+        <h2 id={headingId} className="font-semibold tracking-tight">
           {monthName} budget
         </h2>
         {!isEditing && (
@@ -138,8 +138,7 @@ const BudgetProgress = ({
             />
           </div>
           <p className="mt-4 text-xs text-white/75">
-            <span className="font-mono tabular-nums">{percentUsed.toFixed(1)}%</span> used ·{" "}
-            {daysLeft} {daysLeft === 1 ? "day" : "days"} left
+            {daysLeft === 0 ? "Ends today" : `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left`}
           </p>
         </>
       ) : (

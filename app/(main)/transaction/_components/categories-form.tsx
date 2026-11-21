@@ -42,7 +42,7 @@ const CategoriesForm = ({
             aria-label="All categories"
             className="h-auto gap-1 border-0 p-0 text-sm font-semibold text-indigo shadow-none dark:bg-transparent dark:text-indigo-soft dark:hover:bg-transparent [&>svg:last-child]:hidden"
           >
-            All {categories.length} <ArrowRight aria-hidden className="size-3.5 text-current" />
+            All categories <ArrowRight aria-hidden className="size-3.5 text-current" />
           </SelectTrigger>
           <SelectContent>
             {categories.map((opt) => (

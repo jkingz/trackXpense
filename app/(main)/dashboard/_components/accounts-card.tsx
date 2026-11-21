@@ -10,7 +10,6 @@ type Account = {
   type: string;
   balance: number;
   isDefault: boolean;
-  _count?: { transactions?: number } | null;
 };
 
 /** Every account with its balance; the row opens that account's ledger. */
@@ -40,39 +39,35 @@ export function AccountsCard({
 
       {accounts.length === 0 ? (
         <p className="mt-4 text-sm text-muted-foreground">
-          Add an account — a current account, a cash wallet — and every entry rolls up here.
+          Add an account to start logging entries.
         </p>
       ) : (
         <ul className="mt-2 divide-y divide-dashed">
-          {accounts.map((account) => {
-            const entries = account._count?.transactions ?? 0;
-            return (
-              <li key={account.id}>
-                <Link
-                  href={`/account/${account.id}`}
-                  className="flex items-center justify-between gap-4 rounded-md py-3 focus-visible:outline-2 focus-visible:outline-ring"
-                >
-                  <span className="min-w-0">
-                    <span className="flex items-baseline gap-2 font-semibold">
-                      <span className="truncate">{account.name}</span>
-                      {account.isDefault && (
-                        <span className="text-xs font-bold tracking-wider text-indigo uppercase dark:text-indigo-soft">
-                          Default
-                        </span>
-                      )}
-                    </span>
-                    <span className="block text-xs text-muted-foreground">
-                      {account.type.charAt(0) + account.type.slice(1).toLowerCase()} · {entries}{" "}
-                      {entries === 1 ? "entry" : "entries"}
-                    </span>
+          {accounts.map((account) => (
+            <li key={account.id}>
+              <Link
+                href={`/account/${account.id}`}
+                className="flex items-center justify-between gap-4 rounded-md py-3 focus-visible:outline-2 focus-visible:outline-ring"
+              >
+                <span className="min-w-0">
+                  <span className="flex items-baseline gap-2 font-semibold">
+                    <span className="truncate">{account.name}</span>
+                    {account.isDefault && (
+                      <span className="text-xs font-bold tracking-wider text-indigo uppercase dark:text-indigo-soft">
+                        Default
+                      </span>
+                    )}
                   </span>
-                  <span className="shrink-0 font-mono tabular-nums">
-                    {formatMoney(account.balance, currency)}
+                  <span className="block text-xs text-muted-foreground">
+                    {account.type.charAt(0) + account.type.slice(1).toLowerCase()}
                   </span>
-                </Link>
-              </li>
-            );
-          })}
+                </span>
+                <span className="shrink-0 font-mono tabular-nums">
+                  {formatMoney(account.balance, currency)}
+                </span>
+              </Link>
+            </li>
+          ))}
         </ul>
       )}
 

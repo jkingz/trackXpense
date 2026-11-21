@@ -7,20 +7,10 @@ import type { SpendBar, SpendRange } from "@/lib/dashboard-stats";
 import { formatMoney } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
-const RANGES: { key: SpendRange; label: string; title: string; caption: string }[] = [
-  { key: "7d", label: "7D", title: "Last 7 days", caption: "Daily spend. Taller bar, bigger day." },
-  {
-    key: "30d",
-    label: "30D",
-    title: "Last 30 days",
-    caption: "Daily spend. Taller bar, bigger day.",
-  },
-  {
-    key: "6m",
-    label: "6M",
-    title: "Last 6 months",
-    caption: "Monthly spend. Taller bar, bigger month.",
-  },
+const RANGES: { key: SpendRange; label: string; title: string }[] = [
+  { key: "7d", label: "7D", title: "Last 7 days" },
+  { key: "30d", label: "30D", title: "Last 30 days" },
+  { key: "6m", label: "6M", title: "Last 6 months" },
 ];
 
 /** Spend as bars; the last bar (today, or this month) is the lime one. */
@@ -42,13 +32,13 @@ export function SpendBars({ series }: { series: Record<SpendRange, SpendBar[]> }
           <h2 id="spend-heading" className="text-lg font-semibold tracking-tight">
             {active.title}
           </h2>
-          <p className="text-sm text-muted-foreground">{active.caption}</p>
         </div>
         <div role="group" aria-label="Range" className="flex rounded-xl bg-muted p-1">
           {RANGES.map((item) => (
             <button
               key={item.key}
               type="button"
+              aria-label={item.title}
               aria-pressed={range === item.key}
               onClick={() => setRange(item.key)}
               className={cn(

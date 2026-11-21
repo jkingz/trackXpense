@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { formatMoney, type LedgerCurrency } from "@/lib/money";
 
 import { QuickEntry } from "./quick-entry";
@@ -10,9 +12,6 @@ export function BalanceHero({
   totalBalance,
   income,
   expense,
-  expenseDelta,
-  previousMonth,
-  today,
   currency,
 }: {
   currency: LedgerCurrency;
@@ -20,10 +19,6 @@ export function BalanceHero({
   totalBalance: number;
   income: number;
   expense: number;
-  /** Percent change of spend vs last month. Null when last month spent nothing. */
-  expenseDelta: number | null;
-  previousMonth: string;
-  today: string;
 }) {
   const [whole, cents] = formatMoney(Math.abs(totalBalance), currency).split(".");
   // Same threshold as formatMoney: a sub-cent negative prints as ₱0.00 with no minus.
@@ -39,12 +34,9 @@ export function BalanceHero({
         className="pointer-events-none absolute -top-28 -right-20 size-112 rounded-full border border-white/20"
       />
 
-      <div className="relative flex items-start justify-between gap-4">
-        <h2 id="balance-heading" className="text-sm text-white/80">
-          Total balance · {accounts.length} {accounts.length === 1 ? "account" : "accounts"}
-        </h2>
-        <p className="font-mono text-xs tracking-widest text-indigo-soft">{today}</p>
-      </div>
+      <h2 id="balance-heading" className="relative text-sm text-white/80">
+        Total balance
+      </h2>
 
       <p className="relative mt-1 text-6xl font-extrabold tracking-tighter tabular-nums sm:text-7xl">
         {sign}
@@ -54,26 +46,24 @@ export function BalanceHero({
 
       <dl className="relative mt-10 flex flex-wrap gap-x-12 gap-y-4">
         <div>
-          <dt className="text-sm text-white/75">In this month</dt>
-          <dd className="mt-1 font-mono text-lg tabular-nums">+{formatMoney(income, currency)}</dd>
+          <dt className="text-sm text-white/75">Income this month</dt>
+          <dd className="mt-1 font-mono text-lg tabular-nums">{formatMoney(income, currency)}</dd>
         </div>
         <div>
-          <dt className="text-sm text-white/75">Out this month</dt>
-          <dd className="mt-1 font-mono text-lg tabular-nums">−{formatMoney(expense, currency)}</dd>
-        </div>
-        <div>
-          <dt className="text-sm text-white/75">vs {previousMonth}</dt>
-          <dd className="mt-1 font-mono text-lg tabular-nums text-lime">
-            {expenseDelta === null
-              ? "—"
-              : `${Math.abs(expenseDelta).toFixed(0)}% ${expenseDelta <= 0 ? "less" : "more"}`}
-          </dd>
+          <dt className="text-sm text-white/75">Spent this month</dt>
+          <dd className="mt-1 font-mono text-lg tabular-nums">{formatMoney(expense, currency)}</dd>
         </div>
       </dl>
 
       {accounts.length > 0 && (
         <div className="relative mt-10">
           <QuickEntry accounts={accounts} />
+          <Link
+            href="/transaction/create"
+            className="mt-4 inline-block rounded-sm text-sm font-medium text-white underline decoration-white/50 underline-offset-4 hover:decoration-white focus-visible:outline-2 focus-visible:outline-white"
+          >
+            Log from a receipt or add details
+          </Link>
         </div>
       )}
     </section>

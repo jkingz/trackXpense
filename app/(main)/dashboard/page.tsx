@@ -1,16 +1,14 @@
-import { endOfMonth, differenceInCalendarDays, format, subMonths } from "date-fns";
 import { connection } from "next/server";
 import { cache, Suspense } from "react";
 
-import { getCurrentBudget } from "@/actions/budget";
 import { getDashboardData, getUserAccounts } from "@/actions/dashboard";
 import { requireUser } from "@/actions/lib/checkUser";
-import { expenseDeltaPct, monthTotals, spendByCategory, spendSeries } from "@/lib/dashboard-stats";
+import { monthTotals, spendByCategory, spendSeries } from "@/lib/dashboard-stats";
 import type { LedgerCurrency } from "@/lib/money";
 
+import { BudgetSection } from "../_components/budget-section";
 import { AccountsCard } from "./_components/accounts-card";
 import { BalanceHero } from "./_components/balance-hero";
-import BudgetProgress from "./_components/budget-progress";
 import {
   BudgetSkeleton,
   ChartsSkeleton,
@@ -44,7 +42,6 @@ async function HeroSection({
 }) {
   const transactions = await loadTransactions();
   const { income, expense } = monthTotals(transactions, now);
-  const previous = subMonths(now, 1);
 
   return (
     <BalanceHero
@@ -52,38 +49,12 @@ async function HeroSection({
       totalBalance={accounts.reduce((total, account) => total + account.balance, 0)}
       income={income}
       expense={expense}
-      expenseDelta={expenseDeltaPct(expense, monthTotals(transactions, previous).expense)}
-      previousMonth={format(previous, "MMMM")}
-      today={format(now, "EEE · d MMM").toUpperCase()}
       currency={currency}
     />
   );
 }
 
-async function BudgetSection({ defaultAccountId, now }: { defaultAccountId?: string; now: Date }) {
-  if (!defaultAccountId) return null;
-
-  const budget = await getCurrentBudget(defaultAccountId);
-
-  return (
-    <BudgetProgress
-      initialBudget={budget?.budget}
-      currentExpenses={budget?.currentExpenses || 0}
-      monthName={format(now, "MMMM")}
-      daysLeft={differenceInCalendarDays(endOfMonth(now), now)}
-    />
-  );
-}
-
-async function SpendSection({
-  now,
-  ledgerHref,
-  currency,
-}: {
-  now: Date;
-  ledgerHref: string | null;
-  currency: LedgerCurrency;
-}) {
+async function SpendSection({ now, currency }: { now: Date; currency: LedgerCurrency }) {
   const transactions = await loadTransactions();
   const { slices, total } = spendByCategory(transactions, now, Infinity, "year");
 
@@ -99,13 +70,7 @@ async function SpendSection({
         />
       </div>
       <div className="--reveal lg:col-span-4">
-        <WhereItWent
-          slices={slices}
-          total={total}
-          year={now.getFullYear()}
-          seeAllHref={ledgerHref}
-          currency={currency}
-        />
+        <WhereItWent slices={slices} total={total} year={now.getFullYear()} currency={currency} />
       </div>
     </>
   );
@@ -165,13 +130,17 @@ const DashBoardPage = async ({ searchParams }: { searchParams: Promise<{ saved?:
 
       <div className="flex flex-col gap-6 lg:col-span-4">
         <AccountsCard accounts={accounts} currency={currency} />
-        <Suspense fallback={<BudgetSkeleton />}>
-          <BudgetSection defaultAccountId={defaultAccount?.id} now={now} />
-        </Suspense>
+        {defaultAccount && (
+          <div id="budget" className="scroll-mt-24">
+            <Suspense fallback={<BudgetSkeleton />}>
+              <BudgetSection accountId={defaultAccount.id} now={now} />
+            </Suspense>
+          </div>
+        )}
       </div>
 
       <Suspense fallback={<ChartsSkeleton />}>
-        <SpendSection now={now} ledgerHref={ledgerHref} currency={currency} />
+        <SpendSection now={now} currency={currency} />
       </Suspense>
 
       <Suspense fallback={<RecentSkeleton />}>

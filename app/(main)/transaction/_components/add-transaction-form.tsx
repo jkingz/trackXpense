@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { CircleCheck } from "lucide-react";
 import { useCallback, useContext, useEffect, type ReactNode } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -135,7 +134,6 @@ const AddTransactionForm = ({
   const categoryValue = watch("category");
   const accountId = watch("accountId");
   const amountValue = Number(watch("amount")) || 0;
-  const description = watch("description");
 
   const filteredCategory = categories.filter((category) => category.type === type);
 
@@ -250,39 +248,25 @@ const AddTransactionForm = ({
     <div className="grid items-start gap-10 lg:grid-cols-12 lg:gap-16">
       <div className="lg:col-span-5 lg:pt-6">
         {aside}
-        {!editMode && account && (
-          <div className="mt-14 hidden lg:block" aria-live="polite">
-            <p className="font-mono text-xs tracking-widest text-muted-foreground uppercase">
-              After you save
-            </p>
-            <div className="offset-shadow mt-4 max-w-sm -rotate-1 rounded-2xl border-2 border-navy bg-lime p-5 text-navy">
-              <p className="flex items-center gap-2 font-semibold">
-                <CircleCheck aria-hidden className="size-5 fill-navy text-lime" />
-                {description?.trim() || "Entry"} saved
-              </p>
-              <dl className="mt-3 space-y-1.5 text-sm">
+        {!editMode && account && amountValue > 0 && (
+          <div className="mt-8 max-w-sm rounded-2xl border bg-card p-5">
+            <p className="font-semibold">After saving</p>
+            <dl className="mt-3 space-y-1.5 text-sm">
+              <div className="flex justify-between gap-4">
+                <dt>{account.name}</dt>
+                <dd className="font-mono tabular-nums">
+                  {formatMoney(account.balance + signed, currency)}
+                </dd>
+              </div>
+              {showBudget && (
                 <div className="flex justify-between gap-4">
-                  <dt>{account.name}</dt>
+                  <dt>Budget left</dt>
                   <dd className="font-mono tabular-nums">
-                    {amountValue > 0 && (
-                      <s className="mr-2 opacity-70">{formatMoney(account.balance, currency)}</s>
-                    )}
-                    {formatMoney(account.balance + signed, currency)}
+                    {formatMoney((budgetLeft ?? 0) - amountValue, currency)}
                   </dd>
                 </div>
-                {showBudget && (
-                  <div className="flex justify-between gap-4">
-                    <dt>Budget left</dt>
-                    <dd className="font-mono tabular-nums">
-                      {formatMoney((budgetLeft ?? 0) - amountValue, currency)}
-                    </dd>
-                  </div>
-                )}
-              </dl>
-            </div>
-            <p className="mt-4 max-w-sm text-sm text-muted-foreground">
-              Highlighted on the dashboard when you land there.
-            </p>
+              )}
+            </dl>
           </div>
         )}
       </div>
