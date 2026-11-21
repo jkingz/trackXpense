@@ -36,7 +36,7 @@ Browser (Better Auth session, or none)
 | `lib/social-card.ts`             | `socialCard({title, description?, path})` — one page's `<title>`, `og:*`, `twitter:*`, `og:url`, canonical. Called by `app/page.tsx`, `app/terms/page.tsx`, `app/privacy/page.tsx`. Tested.         |
 | `actions/`                       | 16 exported server actions (`getUserAccounts`, `getDashboardData`, `signOutAction` take no input; write paths parse input via `actions/lib/parseInput.ts`). Includes `scanReceipt` (Gemini OCR).    |
 | `app/(auth)/`                    | Better Auth email/password sign-in/up pages; demo sign-in button. `layout.tsx` emits `noindex` and a neutral non-landing title (spec 14 increment 3).                                               |
-| `app/(main)/`                    | Dashboard, account, transaction pages; session required.                                                                                                                                            |
+| `app/(main)/`                    | Dashboard, account, budget, transaction pages; session required (`app/(main)/layout.tsx:12`).                                                                                                       |
 | `app/not-found.tsx`              | Root 404 page for unmatched URLs; own title, `noindex`, no `og:url` (spec 14 increment 4).                                                                                                          |
 | `app/api/receipts/`              | `POST` receipt upload (session-gated, `image/*` ≤ `MAX_RECEIPT_BYTES`); R2 when `R2_*` set, else `public/uploads`.                                                                                  |
 | `app/api/inngest/`               | `serve()` GET/POST/PUT for the 4 functions. Not connected to a running Inngest account.                                                                                                             |
@@ -60,6 +60,7 @@ Anything not built gets no row.
 | `/api/auth/*`         | GET/POST     | Better Auth       | Better Auth handler                                                                     |
 | `/api/demo`           | POST         | None              | Creates/signs into the shared demo account                                              |
 | `/(main)/dashboard`   | GET          | Session           | Accounts, transactions, budget                                                          |
+| `/budget`             | GET          | Session           | Redirects to `/dashboard` (`app/(main)/budget/page.tsx:6`)                              |
 | `/(main)/account`     | GET          | Session           | Create/manage accounts                                                                  |
 | `/(main)/transaction` | GET          | Session           | Create/view transactions                                                                |
 | `/api/transactions`   | GET          | Session           | Date-range export, JSON or CSV; `transactionExportSchema`                               |
@@ -87,7 +88,7 @@ Anything not built gets no row.
 Per `pnpm build` (measured 2026-10-16, Next 16.4.1, Cache Components on):
 
 - `/`, `/_not-found` — `○` static.
-- `/dashboard`, `/account/[id]`, `/transaction/create`, `/sign-in/[[...sign-in]]`, `/sign-up/[[...sign-up]]` — `◐` partial prerender. The three ledger pages `export const instant = false` (read ledger per request).
+- Account, dashboard and transaction entry pages read ledger data per request and export `instant = false` (`app/(main)/dashboard/page.tsx:24`).
 - `/api/inngest`, `/api/receipts`, `/api/transactions` — `ƒ` dynamic.
 
 `new Date()` in a synchronous page-shell component logs `blocking-prerender-current-time` and error-boundaries that section even with `instant = false`; `dashboard/page.tsx` awaits `connection()` before formatting the month label.

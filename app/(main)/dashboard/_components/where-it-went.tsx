@@ -1,6 +1,3 @@
-import { ArrowRight } from "lucide-react";
-import Link from "next/link";
-
 import type { CategorySlice } from "@/lib/dashboard-stats";
 import { formatMoney, type LedgerCurrency } from "@/lib/money";
 import { cn } from "@/lib/utils";
@@ -20,17 +17,14 @@ export function WhereItWent({
   slices,
   total,
   year,
-  seeAllHref,
   currency,
 }: {
   currency: LedgerCurrency;
   slices: CategorySlice[];
   total: number;
   year: number;
-  seeAllHref: string | null;
 }) {
   const top = slices.slice(0, 4);
-  const more = slices.length - top.length;
   const pct = (amount: number) => (total > 0 ? (amount / total) * 100 : 0);
 
   return (
@@ -71,31 +65,13 @@ export function WhereItWent({
               <li key={slice.key} className="flex items-center gap-3">
                 <span aria-hidden className={cn("size-2.5 shrink-0 rounded-sm", SWATCH[index])} />
                 <span className="min-w-0 flex-1 truncate">{categoryLabel(slice.key)}</span>
-                <span className="w-12 text-right font-mono text-xs tabular-nums text-muted-foreground">
-                  {pct(slice.amount).toFixed(0)}%
-                </span>
+                <span className="sr-only">{pct(slice.amount).toFixed(0)}% of spending</span>
                 <span className="w-24 text-right font-mono tabular-nums">
                   {formatMoney(slice.amount, currency)}
                 </span>
               </li>
             ))}
           </ul>
-
-          <div className="mt-auto flex items-center justify-between gap-4 border-t border-dashed pt-4 text-sm">
-            <span className="text-muted-foreground">
-              {more > 0
-                ? `${more} more ${more === 1 ? "category" : "categories"} with spend`
-                : "Every category shown"}
-            </span>
-            {seeAllHref && (
-              <Link
-                href={seeAllHref}
-                className="flex items-center gap-1 rounded-sm font-semibold text-indigo focus-visible:outline-2 focus-visible:outline-ring dark:text-indigo-soft"
-              >
-                See all <ArrowRight aria-hidden className="size-3.5" />
-              </Link>
-            )}
-          </div>
         </>
       )}
     </section>

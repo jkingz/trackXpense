@@ -7,7 +7,7 @@
  */
 
 /** Routes that require a session. Everything else is public. */
-const PROTECTED = /^\/(dashboard|account|transaction)(\/|$)/;
+const PROTECTED = /^\/(dashboard|account|budget|transaction)(\/|$)/;
 
 /** The marketing page. A signed-in visitor is sent to the ledger instead. */
 const LANDING = /^\/$/;

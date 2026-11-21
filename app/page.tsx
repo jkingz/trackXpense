@@ -1,4 +1,5 @@
 import ClosingCta from "@/components/landing/closing-cta";
+import { LandingMotion } from "@/components/landing/landing-motion";
 import HeroSection from "@/components/hero";
 import LandingFlow from "@/components/landing-flow";
 import type { Metadata } from "next";
@@ -69,9 +70,10 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
-      <HeroSection />
-
-      <LandingFlow />
+      <LandingMotion>
+        <HeroSection />
+        <LandingFlow />
+      </LandingMotion>
 
       <ClosingCta />
     </div>

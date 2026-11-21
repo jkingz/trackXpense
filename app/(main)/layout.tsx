@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { ViewTransition, type ReactNode } from "react";
 
 import { redirect } from "next/navigation";
 
@@ -13,7 +13,9 @@ const MainLayout = async ({ children }: { children: ReactNode }) => {
 
   return (
     <CurrencyProvider currency={user.currency}>
-      <div className="container mx-auto px-4 py-10 md:py-12">{children}</div>
+      <ViewTransition default="none" update={{ "ledger-budget": "ledger-budget", default: "none" }}>
+        <div className="container mx-auto px-4 py-10 md:py-12">{children}</div>
+      </ViewTransition>
     </CurrencyProvider>
   );
 };

@@ -78,9 +78,7 @@ const AccountsPage = async ({
         </div>
       </div>
 
-      {/* Both halves render from the transactions already awaited above, so the
-          route's loading.tsx is the boundary here — no nested Suspense needed. */}
-      <div className="--reveal space-y-8">
+      <div className="space-y-8">
         <AccountChart transactions={transactions} />
 
         <TransactionsTable

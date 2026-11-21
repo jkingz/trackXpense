@@ -41,18 +41,9 @@ const AddTransaction = async ({
         initialData={initialData}
         budgetLeft={budgetLeft}
         aside={
-          <>
-            <p className="font-mono text-xs tracking-widest text-indigo uppercase dark:text-indigo-soft">
-              {editId ? "Edit entry" : "New entry"}
-            </p>
-            <h1 className="mt-5 text-5xl font-extrabold tracking-tighter sm:text-6xl">
-              {editId ? "Fix it while it's fresh." : "Log it while it's fresh."}
-            </h1>
-            <p className="mt-6 max-w-sm text-lg text-muted-foreground">
-              Amount first, then a tap for category. Your balance and budget move the moment you
-              save.
-            </p>
-          </>
+          <h1 className="text-5xl font-extrabold tracking-tighter sm:text-6xl">
+            {editId ? "Edit entry" : "Log an entry"}
+          </h1>
         }
       />
     </div>

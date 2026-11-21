@@ -19,23 +19,19 @@ import {
 import { cn } from "@/lib/utils";
 
 /**
- * Signed-in half of the header: the three app links (folded into the avatar
+ * Signed-in half of the header: the ledger and budget links (folded into the avatar
  * menu below `md`), the theme control, and the avatar that signs out.
  */
 export function UserNav({ name, ledgerHref }: { name: string; ledgerHref: string | null }) {
   const pathname = usePathname();
   const [pending, startTransition] = useTransition();
 
-  const links = [
-    { label: "Dashboard", href: "/dashboard", active: pathname === "/dashboard" },
-    {
-      label: "Ledger",
-      href: ledgerHref ?? "/dashboard",
-      active: pathname.startsWith("/account/"),
-    },
-    // The budget card renders only for a default account, the same condition as ledgerHref.
-    { label: "Budget", href: ledgerHref ? "/dashboard#budget" : "/dashboard", active: false },
-  ];
+  const links = ledgerHref
+    ? [
+        { label: "Ledger", href: ledgerHref, active: pathname.startsWith("/account/") },
+        { label: "Budget", href: "/dashboard", active: pathname === "/dashboard" },
+      ]
+    : [];
 
   const signOut = () =>
     startTransition(async () => {
@@ -47,23 +43,26 @@ export function UserNav({ name, ledgerHref }: { name: string; ledgerHref: string
 
   return (
     <div className="flex items-center gap-2 sm:gap-4">
-      <nav aria-label="Primary" className="hidden items-center gap-6 md:flex">
-        {links.map((link) => (
-          <Link
-            key={link.label}
-            href={link.href}
-            aria-current={link.active ? "page" : undefined}
-            className={cn(
-              "rounded-sm text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring",
-              link.active
-                ? "font-semibold text-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {link.label}
-          </Link>
-        ))}
-      </nav>
+      {links.length > 0 && (
+        <nav aria-label="Primary" className="hidden items-center gap-6 md:flex">
+          {links.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
+              transitionTypes={["ledger-budget"]}
+              aria-current={link.active ? "page" : undefined}
+              className={cn(
+                "rounded-sm text-sm transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring",
+                link.active
+                  ? "font-semibold text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+      )}
 
       <ThemeToggle />
 
@@ -83,12 +82,18 @@ export function UserNav({ name, ledgerHref }: { name: string; ledgerHref: string
             <DropdownMenuItem
               key={link.label}
               className="md:hidden"
-              render={<Link href={link.href} />}
+              render={
+                <Link
+                  href={link.href}
+                  transitionTypes={["ledger-budget"]}
+                  aria-current={link.active ? "page" : undefined}
+                />
+              }
             >
               {link.label}
             </DropdownMenuItem>
           ))}
-          <DropdownMenuSeparator className="md:hidden" />
+          {links.length > 0 && <DropdownMenuSeparator className="md:hidden" />}
           <DropdownMenuItem onClick={signOut} disabled={pending}>
             <LogOut />
             Sign out

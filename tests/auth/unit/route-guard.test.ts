@@ -13,6 +13,7 @@ it("lets an anonymous visitor read the landing page", () => {
 it("sends an anonymous visitor on a protected route to sign-in", () => {
   expect(routeDecision("/dashboard", false)).toBe("sign-in");
   expect(routeDecision("/account/abc", false)).toBe("sign-in");
+  expect(routeDecision("/budget", false)).toBe("sign-in");
   expect(routeDecision("/transaction/create", false)).toBe("sign-in");
 });
 
