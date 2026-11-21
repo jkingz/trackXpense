@@ -47,15 +47,17 @@
 }
 
 @theme {
-  --color-pocket-stage: #342bc4;
-  --color-pocket-orbit: #a29afa;
-  --color-pocket-slip: #fffdfb;
-  --color-pocket-slip-rule: #e0def1;
-  --color-pocket-ink: #14163b;
-  --color-pocket-shadow: #17116f;
-  --color-pocket-saved: #eaf68a;
-  --shadow-pocket-entry: 0.5rem 0.5625rem 0 var(--color-pocket-shadow);
-  --shadow-pocket-confirmation: 0.3125rem 0.3125rem 0 var(--color-pocket-shadow);
+  --color-landing-cobalt: #3155ff;
+  --color-landing-sage: #a8d5ba;
+  --color-landing-cream: #fff4dc;
+  --color-landing-ink: #19243a;
+  --color-landing-sheet: #fffcf6;
+  --color-landing-muted: #505763;
+  --color-landing-rule: #e1d6c2;
+  --color-landing-night: #111a2b;
+  --color-landing-night-sheet: #1b2940;
+  --color-landing-night-muted: #bbcadf;
+  --color-landing-light-blue: #b8caff;
 
   --color-brand: oklch(0.5 0.1 196);
   --color-brand-deep: oklch(0.47 0.1 208);
@@ -167,26 +169,107 @@
 
 /* The homepage shares its palette with the global navigation and footer. */
 body:has(.pocket-log) {
-  --background: #f2f0ff;
-  --foreground: var(--color-pocket-ink);
-  --muted-foreground: #484c75;
-  --primary: #3128b8;
+  --background: var(--color-landing-cream);
+  --foreground: var(--color-landing-ink);
+  --card: var(--color-landing-sheet);
+  --muted-foreground: var(--color-landing-muted);
+  --primary: var(--color-landing-cobalt);
   --primary-foreground: white;
-  --accent: #e4e0ff;
+  --accent: #f5ead4;
   --accent-foreground: var(--foreground);
-  --border: #cecced;
+  --border: var(--color-landing-rule);
   --ring: var(--primary);
   --color-brand-deep: var(--primary);
 }
 
 .dark body:has(.pocket-log) {
-  --background: #19172d;
-  --foreground: #f2f0ff;
-  --muted-foreground: #c1bde5;
-  --primary: #c4bcff;
-  --primary-foreground: var(--color-pocket-ink);
-  --accent: #242043;
-  --border: #3e3861;
+  --background: var(--color-landing-night);
+  --foreground: var(--color-landing-sheet);
+  --card: var(--color-landing-night-sheet);
+  --muted-foreground: var(--color-landing-night-muted);
+  --primary: var(--color-landing-light-blue);
+  --primary-foreground: var(--color-landing-ink);
+  --accent: var(--color-landing-night-sheet);
+  --border: #33445f;
+}
+
+.landing-stage {
+  background-image: repeating-radial-gradient(
+    circle at 86% 16%,
+    transparent 0 2.5rem,
+    rgb(255 255 255 / 20%) 2.5rem calc(2.5rem + 1px),
+    transparent calc(2.5rem + 1px) 3.75rem
+  );
+}
+
+/* Wide, low-contrast ripples sit behind the landing hero. */
+.landing-water {
+  --water-wash: color-mix(in srgb, var(--color-landing-sage) 65%, transparent);
+  --water-ripple: color-mix(in srgb, var(--color-landing-cobalt) 13%, transparent);
+  --water-light: color-mix(in srgb, var(--color-landing-sheet) 75%, transparent);
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: clip;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 85% 90%, var(--water-wash), transparent 57%),
+    radial-gradient(ellipse at 0% 24%, var(--water-wash), transparent 48%);
+  mask-image: linear-gradient(black 85%, transparent);
+}
+
+.dark .landing-water {
+  --water-wash: color-mix(in srgb, var(--color-landing-sage) 14%, transparent);
+  --water-ripple: color-mix(in srgb, var(--color-landing-light-blue) 22%, transparent);
+  --water-light: color-mix(in srgb, var(--color-landing-sage) 18%, transparent);
+}
+
+.landing-water::before,
+.landing-water::after {
+  position: absolute;
+  inset: -22%;
+  content: "";
+  background: repeating-radial-gradient(
+    ellipse at 82% 95%,
+    transparent 0 2rem,
+    var(--water-ripple) 2.25rem,
+    var(--water-light) 2.5rem,
+    transparent 3.5rem 4.25rem
+  );
+  mask-image: radial-gradient(ellipse at 69% 73%, black, transparent 66%);
+  transform: translate(-2%, -1%) rotate(-7deg);
+}
+
+.landing-water::after {
+  opacity: 0.65;
+  mask-image: radial-gradient(ellipse at 29% 37%, black, transparent 57%);
+  transform: translate(1%, -4%) rotate(161deg) scale(1.13);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .landing-water::before {
+    animation: water-drift 32s ease-in-out infinite alternate;
+  }
+
+  .landing-water::after {
+    animation: water-drift-back 40s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes water-drift {
+  to {
+    transform: translate(2%, 2%) rotate(-3deg) scale(1.06);
+  }
+}
+
+@keyframes water-drift-back {
+  to {
+    transform: translate(-2%, -1%) rotate(166deg) scale(1.18);
+  }
+}
+
+body:has(.pocket-log) .app-aurora {
+  display: none;
 }
 
 @layer base {
@@ -232,6 +315,37 @@ body:has(.pocket-log) {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+::view-transition {
+  pointer-events: none;
+}
+
+::view-transition-group(.ledger-budget) {
+  animation: none;
+}
+
+::view-transition-old(.ledger-budget),
+::view-transition-new(.ledger-budget) {
+  height: auto;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(.ledger-budget) {
+  animation: 200ms ease-in-out both ledger-budget-in reverse;
+}
+
+::view-transition-new(.ledger-budget) {
+  animation: 200ms ease-in-out both ledger-budget-in;
+}
+
+@keyframes ledger-budget-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
@@ -396,6 +510,11 @@ body:has([data-flat-canvas]) .app-aurora {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(.ledger-budget),
+  ::view-transition-new(.ledger-budget) {
+    animation: none;
+  }
+
   .app-aurora .blob {
     animation: none;
   }

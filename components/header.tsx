@@ -5,14 +5,14 @@ import { getUserAccounts } from "@/actions/dashboard";
 import { currentUser } from "@/actions/lib/checkUser";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserNav } from "@/components/user-nav";
 
 const landingLinks = [
-  { label: "What's inside", href: "/#inside" },
   { label: "How it works", href: "/#flow" },
-  { label: "Categories", href: "/#categories" },
+  { label: "Budget", href: "/#inside" },
+  { label: "Accounts", href: "/#categories" },
 ];
 
 /**
@@ -39,10 +39,8 @@ async function AuthSlot() {
     return (
       <div className="flex items-center gap-2">
         <ThemeToggle />
-        <Link href="/sign-in">
-          <Button variant="ghost" size="sm" className="px-3">
-            Sign in
-          </Button>
+        <Link href="/sign-in" className={buttonVariants({ variant: "ghost", size: "sm" })}>
+          Sign in
         </Link>
       </div>
     );
