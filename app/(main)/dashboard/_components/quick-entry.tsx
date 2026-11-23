@@ -106,7 +106,7 @@ export function QuickEntry({
         />
       </label>
 
-      <label className="basis-full sm:min-w-28 sm:flex-1 sm:basis-auto">
+      <label className="basis-full sm:min-w-28 sm:flex-1 sm:basis-0">
         <span className="sr-only">What for</span>
         <input
           value={description}
