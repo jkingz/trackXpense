@@ -47,7 +47,7 @@ export function AppSidebar({ accounts, today }: { accounts: SidebarAccount[]; to
   return (
     <aside
       aria-label="Ledger navigation"
-      className="flex w-full shrink-0 flex-col gap-4 rounded-lg border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground lg:sticky lg:top-24 lg:w-64 lg:self-start"
+      className="hidden w-full shrink-0 flex-col gap-4 rounded-lg border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground lg:sticky lg:flex lg:top-24 lg:w-64 lg:self-start"
     >
       <nav aria-label="Primary">
         <Link

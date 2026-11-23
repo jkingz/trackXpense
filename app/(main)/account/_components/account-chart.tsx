@@ -114,16 +114,16 @@ const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) =>
           </Select>
         </CardHeader>
         <CardContent>
-          <div className="flex justify-around mb-6 text-sm">
+          <div className="mb-6 grid grid-cols-3 gap-2 text-xs sm:text-sm">
             <div className="text-center">
               <p className="text-muted-foreground">Total Income</p>
-              <p className="font-mono text-lg font-bold text-income tabular-nums">
+              <p className="font-mono text-sm font-bold sm:text-lg text-income tabular-nums">
                 {formatMoney(totals.income, currency)}
               </p>
             </div>
             <div className="text-center">
               <p className="text-muted-foreground">Total Expenses</p>
-              <p className="font-mono text-lg font-bold text-expense tabular-nums">
+              <p className="font-mono text-sm font-bold sm:text-lg text-expense tabular-nums">
                 {formatMoney(totals.expense, currency)}
               </p>
             </div>
@@ -131,7 +131,7 @@ const AccountChart = ({ transactions }: { transactions: ChartTransaction[] }) =>
               <p className="text-muted-foreground">Net</p>
               <p
                 className={cn(
-                  "font-mono text-lg font-bold tabular-nums",
+                  "font-mono text-sm font-bold sm:text-lg tabular-nums",
                   totals.income > totals.expense ? "text-income" : "text-expense",
                 )}
               >

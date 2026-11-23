@@ -107,7 +107,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       data-scroll-behavior="smooth"
       className={`${firaSans.variable} ${firaCode.variable}`}
     >
-      <body className="min-h-screen bg-background text-foreground antialiased">
+      <body className="min-h-screen bg-background text-foreground antialiased max-lg:has-[[data-tab-bar]]:pb-[calc(4rem+env(safe-area-inset-bottom))]">
         {/* First in <body> so the theme class lands before the browser paints. */}
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
         <div aria-hidden className="app-aurora">
@@ -120,7 +120,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               and only the auth-aware slot waits on the database. */}
           <Header />
           <main className="flex min-h-[calc(100vh-9rem)] w-full flex-col">{children}</main>
-          <Toaster richColors />
+          <Toaster richColors mobileOffset={{ bottom: 80 }} />
           <Footer />
         </ThemeProviderWrapper>
       </body>

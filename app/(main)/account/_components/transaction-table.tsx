@@ -174,6 +174,27 @@ const TransactionsTable = ({
     startTransition(() => router.push("?page=1"));
   };
 
+  const rowActions = (id: string) => (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        render={
+          <Button variant="ghost" className="h-8 w-8 p-0" aria-label="Entry actions">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        }
+      />
+      <DropdownMenuContent>
+        <DropdownMenuItem onClick={() => router.push(`/transaction/create?edit=${id}`)}>
+          Edit
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem className="text-destructive" onClick={() => deleteFn([id])}>
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+
   return (
     <div className="space-y-4">
       {(deleteLoading || isPending) && (
@@ -201,7 +222,7 @@ const TransactionsTable = ({
               updateSearchParams("type", next);
             }}
           >
-            <SelectTrigger className="w-[110px]">
+            <SelectTrigger className="flex-1 sm:w-[110px] sm:flex-none">
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
             <SelectContent>
@@ -218,7 +239,7 @@ const TransactionsTable = ({
               updateSearchParams("recurring", next);
             }}
           >
-            <SelectTrigger className="w-[170px]">
+            <SelectTrigger className="flex-1 sm:w-[170px] sm:flex-none">
               <SelectValue placeholder="All Transactions" />
             </SelectTrigger>
             <SelectContent>
@@ -279,9 +300,69 @@ const TransactionsTable = ({
         </div>
       </div>
 
+      {/* Phones get one card per entry instead of a seven-column table. */}
+      <ul
+        className={cn(
+          "space-y-2 transition-opacity duration-300 md:hidden",
+          (isPending || deleteLoading) && "opacity-60",
+        )}
+        aria-busy={isPending || deleteLoading || undefined}
+      >
+        {transactions.length === 0 && (
+          <li className="rounded-lg border p-6 text-center text-sm text-muted-foreground">
+            No Transactions
+          </li>
+        )}
+        {transactions.map((transaction: TableTransaction) => (
+          <li key={transaction.id} className="flex items-start gap-3 rounded-lg border bg-card p-3">
+            <Checkbox
+              className="mt-1"
+              onCheckedChange={() => handleSelect(transaction.id)}
+              checked={selectedIds.includes(transaction.id)}
+              aria-label="Select transaction"
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline justify-between gap-3">
+                <p className="truncate font-medium">
+                  {transaction.description || transaction.category}
+                </p>
+                <p
+                  className={cn(
+                    "shrink-0 font-mono text-sm font-semibold tabular-nums",
+                    transaction.type === "EXPENSE" ? "text-expense" : "text-income",
+                  )}
+                >
+                  {transaction.type === "EXPENSE" ? "−" : "+"}
+                  {formatMoney(transaction.amount, currency)}
+                </p>
+              </div>
+              <div className="mt-2 flex items-center gap-2 text-xs">
+                <span
+                  style={{ background: categoryColors[transaction.category] }}
+                  className="rounded px-2 py-0.5 text-white"
+                >
+                  {transaction.category}
+                </span>
+                {transaction.isRecurring && (
+                  <Badge variant="outline" className="gap-1">
+                    <RefreshCcw className="h-3 w-3" />
+                    {transaction.recurringInterval &&
+                      RECURRING_INTERVALS[transaction.recurringInterval]}
+                  </Badge>
+                )}
+                <span className="ml-auto text-muted-foreground">
+                  {format(new Date(transaction.date), "MMM d")}
+                </span>
+              </div>
+            </div>
+            {rowActions(transaction.id)}
+          </li>
+        ))}
+      </ul>
+
       <div
         className={cn(
-          "rounded-md border transition-opacity duration-300",
+          "hidden rounded-md border transition-opacity duration-300 md:block",
           (isPending || deleteLoading) && "opacity-60",
         )}
         aria-busy={isPending || deleteLoading || undefined}
@@ -427,31 +508,7 @@ const TransactionsTable = ({
                       </Badge>
                     )}
                   </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger
-                        render={
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        }
-                      />
-                      <DropdownMenuContent>
-                        <DropdownMenuItem
-                          onClick={() => router.push(`/transaction/create?edit=${transaction.id}`)}
-                        >
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-destructive"
-                          onClick={() => deleteFn([transaction.id])}
-                        >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
+                  <TableCell>{rowActions(transaction.id)}</TableCell>
                 </TableRow>
               ))
             )}

@@ -51,7 +51,7 @@ const AccountsPage = async ({
   const account = accountData as any;
   const entryCount = account._count?.transactions || total;
   return (
-    <div className="space-y-8 px-5">
+    <div className="space-y-8 md:px-5">
       <div className="flex flex-wrap items-end justify-between gap-4 border-b pb-6">
         <div>
           <p className="text-sm text-muted-foreground">
