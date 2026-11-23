@@ -1,7 +1,6 @@
 "use client";
 
-import { LayoutDashboard, Plus } from "lucide-react";
-import Link from "next/link";
+import { Plus } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useContext, useEffect, useState } from "react";
 
@@ -9,7 +8,6 @@ import { AccountRow } from "@/app/(main)/dashboard/_components/account-row";
 import AddTransactionDialog from "@/components/add-transaction-dialog";
 import CreateAccountDrawer from "@/components/create-account-drawer";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 import { CurrencyContext } from "./currency-context";
 import { CurrencyMenu } from "./currency-menu";
@@ -24,14 +22,13 @@ type SidebarAccount = {
 };
 
 /**
- * The app rail for every (main) route: primary action, one nav link, then the
- * account stack that switches ledgers. Stacks above content on small screens,
- * docks left on desktop.
+ * The app rail for every (main) route: primary action, then the
+ * account stack that switches ledgers. Docks left from `lg`; hidden below, where
+ * the mobile tab bar takes over.
  */
 export function AppSidebar({ accounts, today }: { accounts: SidebarAccount[]; today: string }) {
   const currency = useContext(CurrencyContext);
   const pathname = usePathname();
-  const onDashboard = pathname === "/dashboard";
 
   // On an account route only that account stays in the rail; the others come
   // back through the toggle or by leaving the account page. Route change resets
@@ -49,22 +46,6 @@ export function AppSidebar({ accounts, today }: { accounts: SidebarAccount[]; to
       aria-label="Ledger navigation"
       className="hidden w-full shrink-0 flex-col gap-4 rounded-lg border border-sidebar-border bg-sidebar p-4 text-sidebar-foreground lg:sticky lg:flex lg:top-24 lg:w-64 lg:self-start"
     >
-      <nav aria-label="Primary">
-        <Link
-          href="/dashboard"
-          aria-current={onDashboard ? "page" : undefined}
-          className={cn(
-            "flex min-h-10 items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-            onDashboard
-              ? "bg-sidebar-accent font-semibold text-primary"
-              : "hover:bg-sidebar-accent",
-          )}
-        >
-          <LayoutDashboard className="size-4" aria-hidden />
-          Dashboard
-        </Link>
-      </nav>
-
       <AddTransactionDialog accounts={accounts}>
         <Button className="w-full" size="lg">
           <Plus data-icon="inline-start" />
