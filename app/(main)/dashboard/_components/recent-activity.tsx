@@ -69,7 +69,7 @@ export function RecentActivity({
               <li
                 key={transaction.id}
                 className={cn(
-                  "grid grid-cols-[4rem_1fr_auto] items-center gap-4 px-4 py-3.5 md:grid-cols-[4rem_1fr_9rem_9rem_8rem]",
+                  "grid grid-cols-[3.25rem_1fr_auto] items-center gap-3 px-2 py-3.5 sm:grid-cols-[4rem_1fr_auto] sm:gap-4 sm:px-4 md:grid-cols-[4rem_1fr_9rem_9rem_8rem]",
                   saved && "--reveal rounded-xl border-0 bg-lime text-navy",
                 )}
               >
@@ -86,7 +86,7 @@ export function RecentActivity({
                   {transaction.isRecurring && transaction.recurringInterval && (
                     <span
                       className={cn(
-                        "flex shrink-0 items-center gap-1 font-mono text-xs tracking-wider uppercase",
+                        "hidden shrink-0 items-center gap-1 font-mono text-xs tracking-wider uppercase sm:flex",
                         saved ? "text-navy" : "text-indigo dark:text-indigo-soft",
                       )}
                     >

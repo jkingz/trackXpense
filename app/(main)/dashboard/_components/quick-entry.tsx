@@ -94,7 +94,7 @@ export function QuickEntry({
         ))}
       </div>
 
-      <label className="flex h-10 w-24 items-center gap-1 rounded-md px-2 font-mono text-lg focus-within:outline-2 focus-within:outline-indigo">
+      <label className="flex h-10 min-w-24 flex-1 items-center gap-1 rounded-md px-2 font-mono text-lg sm:w-24 sm:flex-none focus-within:outline-2 focus-within:outline-indigo">
         <span aria-hidden>{currencySymbol[currency]}</span>
         <span className="sr-only">Amount</span>
         <input
@@ -106,7 +106,7 @@ export function QuickEntry({
         />
       </label>
 
-      <label className="min-w-28 flex-1">
+      <label className="basis-full sm:min-w-28 sm:flex-1 sm:basis-auto">
         <span className="sr-only">What for</span>
         <input
           value={description}
@@ -153,7 +153,7 @@ export function QuickEntry({
       <Button
         type="submit"
         loading={loading}
-        className="h-10 rounded-lg bg-indigo px-5 font-semibold text-white hover:bg-indigo/90"
+        className="h-10 flex-1 rounded-lg bg-indigo px-5 sm:flex-none font-semibold text-white hover:bg-indigo/90"
       >
         Log it
       </Button>
