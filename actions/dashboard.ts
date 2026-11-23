@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cache } from "react";
 
 import { db } from "@/lib/prisma";
 import type { AccountInput } from "@/lib/schema";
@@ -59,12 +60,11 @@ export async function createAccount(data: AccountInput) {
   }
 }
 
-export async function getUserAccounts() {
-  const user = await checkUser();
-
-  //get all accounts for this user
+// The main layout, header and account layout all read this per render; cache dedupes them to one query.
+// A "use server" file may only export async functions, so the cached read stays private.
+const readUserAccounts = cache(async (userId: string) => {
   const accounts = await db.account.findMany({
-    where: { userId: user.id },
+    where: { userId },
     orderBy: { createdAt: "desc" },
     include: {
       _count: {
@@ -72,8 +72,12 @@ export async function getUserAccounts() {
       },
     },
   });
-  const serializedAccount = accounts.map(serializeTransaction);
-  return serializedAccount;
+  return accounts.map(serializeTransaction);
+});
+
+export async function getUserAccounts() {
+  const user = await checkUser();
+  return readUserAccounts(user.id);
 }
 
 export async function getDashboardData() {
